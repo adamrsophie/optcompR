@@ -50,7 +50,7 @@ opt_objective(m, x^2 + x * y + y^2)
 opt_classify(m)
 #> <opt_classification: QP, convex>
 #>   - syntactic: objective is quadratic; constraint rows: none
-#>   - numerical eigenvalues: objective is convex (smallest eigenvalue 1 (tolerance 3e-09))
+#>   - numerical eigenvalues: objective is convex (smallest eigenvalue 1 (rounding level 1.33227e-13, tolerance 3e-09))
 opt_objective(m, x^2 - 3 * x * y + y^2)
 opt_classify(m)$convexity
 #> [1] "nonconvex"

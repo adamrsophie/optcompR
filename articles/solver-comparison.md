@@ -95,7 +95,7 @@ opt_solver_capabilities("highs")
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md) | no | start point |
 | ipopt | NLP, QCQP, QP, LP (exact Hessians) | convex problems | yes | no | start point |
 | nlpbb | MINLP, MIQCQP, MIQP | convex relaxations | no | no | no |
-| roi | whatever the chosen ROI plugin solves | plugin | plugin | no | no |
+| roi | LP, MILP and convex QP with linear rows, through the chosen plugin | LP, MILP | no | no | no |
 
 Indicator and SOS constraints are native in SCIP and are reformulated
 exactly (big-M rows from finite bounds, auxiliary binaries) for other
@@ -161,6 +161,11 @@ r <- opt_solve(m, solver = "roi", options = list(roi_solver = "glpk"))
 opt_value(r, x)
 #> [1] 6 0
 ```
+
+The ROI adapter passes linear rows only and returns no duals. A time
+limit is sent as `tm_limit` in milliseconds, the control GLPK reads;
+other plugins may name their limit differently, so pass it in `options`
+for them.
 
 ## Solver options
 

@@ -28,8 +28,8 @@ cl <- opt_classify(m)
 cl$convexity
 #> [1] "convex"
 cl$evidence
-#> [1] "syntactic: objective is quadratic; constraint rows: none"                            
-#> [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 1 (tolerance 3e-09))"
+#> [1] "syntactic: objective is quadratic; constraint rows: none"                                                        
+#> [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 1 (rounding level 1.33227e-13, tolerance 3e-09))"
 opt_objective(m, x[1]^2 + 3 * x[1] * x[2] + x[2]^2)
 opt_classify(m)$convexity
 #> [1] "nonconvex"

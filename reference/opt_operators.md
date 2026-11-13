@@ -45,7 +45,8 @@ x %*% y
 
 - ...:
 
-  Unused.
+  For [`log()`](https://rdrr.io/r/base/Log.html), an optional `base`;
+  otherwise unused.
 
 - na.rm:
 

@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Linear programming • optcompR</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
@@ -91,8 +96,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Linear programming</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Linear programming</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/adamrsophie/optcompR/blob/main/vignettes/linear-programming.Rmd" class="external-link"><code>vignettes/linear-programming.Rmd</code></a></small>
@@ -203,7 +207,7 @@ tools:</p>
 <span><span class="fu"><a href="../reference/opt_write_model.html">opt_write_model</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">f</span><span class="op">)</span></span>
 <span><span class="co">#&gt; WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0</span></span>
 <span><span class="co">#&gt; WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0</span></span>
-<span><span class="co">#&gt; Writing the model to /tmp/RtmpaMqpwK/file23a04b449151.mps</span></span>
+<span><span class="co">#&gt; Writing the model to /tmp/Rtmps42TBv/file23c37d3b7b2c.mps</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "NAME        " "ROWS"         " N  Obj     " " E  r0      " " L  r1      "</span></span>
 <span><span class="co">#&gt; [6] "COLUMNS"</span></span></code></pre></div>
