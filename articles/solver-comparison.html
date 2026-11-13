@@ -116,16 +116,18 @@ features it supports.</p>
 <span><span class="co">#&gt; 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE</span></span>
 <span><span class="co">#&gt; 4     osqp      osqp      TRUE                                   LP QP  TRUE</span></span>
 <span><span class="co">#&gt; 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE</span></span>
-<span><span class="co">#&gt; 6      roi ROI, slam      TRUE                              LP MILP QP FALSE</span></span>
-<span><span class="co">#&gt; 7    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span></span>
+<span><span class="co">#&gt; 6    ipopt                TRUE                          NLP QCQP QP LP  TRUE</span></span>
+<span><span class="co">#&gt; 7      roi ROI, slam      TRUE                              LP MILP QP FALSE</span></span>
+<span><span class="co">#&gt; 8    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span></span>
 <span><span class="co">#&gt;                                                                                    description</span></span>
 <span><span class="co">#&gt; 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span></span>
 <span><span class="co">#&gt; 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs</span></span>
 <span><span class="co">#&gt; 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span></span>
 <span><span class="co">#&gt; 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span></span>
 <span><span class="co">#&gt; 5                            NLopt SLSQP (default): local gradient-based nonlinear programming</span></span>
-<span><span class="co">#&gt; 6               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span></span>
-<span><span class="co">#&gt; 7   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)</span></span>
+<span><span class="co">#&gt; 6                     IPOPT: interior point for nonlinear programs with exact Hessians (local)</span></span>
+<span><span class="co">#&gt; 7               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span></span>
+<span><span class="co">#&gt; 8   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)</span></span>
 <span><span class="fu"><a href="../reference/opt_solver_capabilities.html">opt_solver_capabilities</a></span><span class="op">(</span><span class="st">"highs"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $name</span></span>
 <span><span class="co">#&gt; [1] "highs"</span></span>
@@ -239,6 +241,14 @@ features it supports.</p>
 <td>start point</td>
 </tr>
 <tr class="even">
+<td>ipopt</td>
+<td>NLP, QCQP, QP, LP (exact Hessians)</td>
+<td>convex problems</td>
+<td>yes</td>
+<td>no</td>
+<td>start point</td>
+</tr>
+<tr class="odd">
 <td>nlpbb</td>
 <td>MINLP, MIQCQP, MIQP</td>
 <td>convex relaxations</td>
@@ -246,7 +256,7 @@ features it supports.</p>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>roi</td>
 <td>whatever the chosen ROI plugin solves</td>
 <td>plugin</td>
@@ -258,8 +268,9 @@ features it supports.</p>
 </table>
 <p>Indicator and SOS constraints are native in SCIP and are reformulated
 exactly (big-M rows from finite bounds, auxiliary binaries) for other
-mixed-integer backends. IPOPT is not available because it has no
-interface on CRAN; nonlinear models use NLopt.</p>
+mixed-integer backends. The IPOPT backend exists when optcompR was
+installed with IPOPT on the <code>pkg-config</code> path;
+<code><a href="../reference/opt_ipopt_available.html">opt_ipopt_available()</a></code> tells.</p>
 </div>
 <div class="section level2">
 <h2 id="automatic-choice">Automatic choice<a class="anchor" aria-label="anchor" href="#automatic-choice"></a>
@@ -277,7 +288,7 @@ each backend was rejected:</p>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">t</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> No installed solver supports this MICONIC (convex). highs does not support MICONIC problems; clarabel does not support MICONIC problems; scip does not support MICONIC problems; osqp does not support MICONIC problems; nloptr does not support MICONIC problems; roi does not support MICONIC problems; nlpbb does not support MICONIC problems.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> No installed solver supports this MICONIC (convex). highs does not support MICONIC problems; clarabel does not support MICONIC problems; scip does not support MICONIC problems; osqp does not support MICONIC problems; nloptr does not support MICONIC problems; ipopt does not support MICONIC problems; roi does not support MICONIC problems; nlpbb does not support MICONIC problems.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="comparing-backends-on-one-model">Comparing backends on one model<a class="anchor" aria-label="anchor" href="#comparing-backends-on-one-model"></a>

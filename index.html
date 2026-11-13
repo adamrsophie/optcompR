@@ -200,6 +200,15 @@
 <td>start point</td>
 </tr>
 <tr>
+<td>ipopt</td>
+<td>IPOPT library</td>
+<td>NLP, QCQP, QP, LP (exact Hessians)</td>
+<td>convex problems</td>
+<td>yes</td>
+<td>no</td>
+<td>start point</td>
+</tr>
+<tr>
 <td>nlpbb</td>
 <td>nloptr</td>
 <td>MINLP, MIQCQP, MIQP</td>
@@ -219,7 +228,7 @@
 </tr>
 </tbody>
 </table>
-<p>HiGHS is required; the others are optional. IPOPT is not supported because it has no interface on CRAN; nonlinear models use NLopt.</p>
+<p>HiGHS is required; the others are optional. The IPOPT backend is compiled in when <code>pkg-config</code> finds IPOPT at installation (<code>brew install ipopt</code>, <code>apt install coinor-libipopt-dev</code>); check with <code><a href="reference/opt_ipopt_available.html">opt_ipopt_available()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>

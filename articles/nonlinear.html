@@ -159,7 +159,7 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 <span><span class="co">#&gt; [1] 1.405089e-11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $stationarity_residual</span></span>
-<span><span class="co">#&gt; [1]  2.220446e-16  6.597087e-09 -8.619240e-09  1.192852e-09</span></span>
+<span><span class="co">#&gt; [1]  1.554312e-15  6.597086e-09 -8.619240e-09  1.192852e-09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $pass</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -168,9 +168,38 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="ipopt">IPOPT<a class="anchor" aria-label="anchor" href="#ipopt"></a>
+</h2>
+<p><a href="https://coin-or.github.io/Ipopt/" class="external-link">IPOPT</a> is an interior
+point solver for large nonlinear programs. optcompR binds to its C
+interface when IPOPT is found with <code>pkg-config</code> at
+installation (<code>brew install ipopt</code> on macOS,
+<code>apt install coinor-libipopt-dev</code> on Debian and Ubuntu), and
+then <code><a href="../reference/opt_ipopt_available.html">opt_ipopt_available()</a></code> is <code>TRUE</code>. IPOPT
+receives the exact gradient, Jacobian and Hessian of the Lagrangian; for
+external functions without a Hessian it uses a limited-memory
+quasi-Newton approximation. Unlike SLSQP it returns multipliers, so
+duals and the KKT check use solver values rather than estimates.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span>, solver <span class="op">=</span> <span class="st">"ipopt"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "locally_optimal"</span></span>
+<span><span class="fu"><a href="../reference/opt_objective_value.html">opt_objective_value</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 17.01402</span></span>
+<span><span class="fu"><a href="../reference/opt_dual.html">opt_dual</a></span><span class="op">(</span><span class="va">r</span>, <span class="st">"product"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   product </span></span>
+<span><span class="co">#&gt; 0.5522937</span></span>
+<span><span class="fu"><a href="../reference/opt_check.html">opt_check</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">$</span><span class="va">kkt</span><span class="op">$</span><span class="va">estimated</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span></code></pre></div>
+<p>IPOPT is a local solver: on nonconvex models its result is
+<code>"locally_optimal"</code>, exactly as for NLopt. The binding passes
+dense Jacobian and Hessian structures, which suits models with up to a
+few hundred variables.</p>
+</div>
+<div class="section level2">
 <h2 id="exact-derivatives">Exact derivatives<a class="anchor" aria-label="anchor" href="#exact-derivatives"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"y"</span><span class="op">)</span></span>
@@ -195,7 +224,7 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 <p>Functions that are not written with optcompR operators, such as
 simulation losses, enter through <code><a href="../reference/opt_function.html">opt_function()</a></code>. The
 gradient source is explicit:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rosen</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">100</span> <span class="op">*</span> <span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
 <span><span class="va">rosen_grad</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">400</span> <span class="op">*</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>,</span>
 <span>                            <span class="fl">200</span> <span class="op">*</span> <span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="va">v</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>

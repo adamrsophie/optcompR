@@ -12,7 +12,8 @@
 - Backends: HiGHS (LP, MILP, convex QP, ranging, warm starts), SCIP
   (global MIQCQP and MISOCP, native indicator and SOS constraints),
   Clarabel (LP, convex QP and conic programs), OSQP (convex QP), NLopt
-  SLSQP (local NLP), NLP branch and bound for MINLP, and ROI plugins.
+  SLSQP (local NLP), IPOPT with exact Hessians (compiled in when found
+  with pkg-config), NLP branch and bound for MINLP, and ROI plugins.
 - Cone constraints
   ([`opt_soc_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md),
   [`opt_exp_cone()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md),

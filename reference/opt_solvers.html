@@ -99,16 +99,18 @@ R binding exposes, which can be less than the native solver supports.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4     osqp      osqp      TRUE                                   LP QP  TRUE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      roi ROI, slam      TRUE                              LP MILP QP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6    ipopt                TRUE                          NLP QCQP QP LP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      roi ROI, slam      TRUE                              LP MILP QP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                    description</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5                            NLopt SLSQP (default): local gradient-based nonlinear programming</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6                     IPOPT: interior point for nonlinear programs with exact Hessians (local)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

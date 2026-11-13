@@ -95,6 +95,8 @@
   : Available optimization solvers
 - [`opt_solver_capabilities()`](https://adamrsophie.github.io/optcompR/reference/opt_solver_capabilities.md)
   : Capabilities of one solver backend
+- [`opt_ipopt_available()`](https://adamrsophie.github.io/optcompR/reference/opt_ipopt_available.md)
+  : Is the IPOPT backend available?
 - [`opt_classify()`](https://adamrsophie.github.io/optcompR/reference/opt_classify.md)
   : Classify an optimization model
 - [`opt_standard_form()`](https://adamrsophie.github.io/optcompR/reference/opt_standard_form.md)

@@ -61,7 +61,7 @@ opt_check(r)$kkt
 #> [1] 1.405089e-11
 #> 
 #> $stationarity_residual
-#> [1]  2.220446e-16  6.597087e-09 -8.619240e-09  1.192852e-09
+#> [1]  1.554312e-15  6.597086e-09 -8.619240e-09  1.192852e-09
 #> 
 #> $pass
 #> [1] TRUE
@@ -69,6 +69,39 @@ opt_check(r)$kkt
 #> $estimated
 #> [1] TRUE
 ```
+
+## IPOPT
+
+[IPOPT](https://coin-or.github.io/Ipopt/) is an interior point solver
+for large nonlinear programs. optcompR binds to its C interface when
+IPOPT is found with `pkg-config` at installation (`brew install ipopt`
+on macOS, `apt install coinor-libipopt-dev` on Debian and Ubuntu), and
+then
+[`opt_ipopt_available()`](https://adamrsophie.github.io/optcompR/reference/opt_ipopt_available.md)
+is `TRUE`. IPOPT receives the exact gradient, Jacobian and Hessian of
+the Lagrangian; for external functions without a Hessian it uses a
+limited-memory quasi-Newton approximation. Unlike SLSQP it returns
+multipliers, so duals and the KKT check use solver values rather than
+estimates.
+
+``` r
+
+r <- opt_solve(m, solver = "ipopt")
+opt_status(r)
+#> [1] "locally_optimal"
+opt_objective_value(r)
+#> [1] 17.01402
+opt_dual(r, "product")
+#>   product 
+#> 0.5522937
+opt_check(r)$kkt$estimated
+#> [1] FALSE
+```
+
+IPOPT is a local solver: on nonconvex models its result is
+`"locally_optimal"`, exactly as for NLopt. The binding passes dense
+Jacobian and Hessian structures, which suits models with up to a few
+hundred variables.
 
 ## Exact derivatives
 
