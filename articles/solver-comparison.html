@@ -310,10 +310,10 @@ each backend was rejected:</p>
 <span>           objective <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">opt_objective_value</span>, <span class="fl">0</span><span class="op">)</span>,</span>
 <span>           max_row_violation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">res</span>, <span class="kw">function</span><span class="op">(</span><span class="va">r</span><span class="op">)</span> <span class="fu"><a href="../reference/opt_check.html">opt_check</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">$</span><span class="va">max_row_violation</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   solver  status objective max_row_violation</span></span>
-<span><span class="co">#&gt; 1  highs optimal 0.1171429      1.110223e-16</span></span>
-<span><span class="co">#&gt; 2   osqp optimal 0.1171429      0.000000e+00</span></span>
-<span><span class="co">#&gt; 3   scip optimal 0.1171429      0.000000e+00</span></span>
-<span><span class="co">#&gt; 4 nloptr optimal 0.1171429      0.000000e+00</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  highs optimal 0.1171429                 0</span></span>
+<span><span class="co">#&gt; 2   osqp optimal 0.1171429                 0</span></span>
+<span><span class="co">#&gt; 3   scip optimal 0.1171429                 0</span></span>
+<span><span class="co">#&gt; 4 nloptr optimal 0.1171429                 0</span></span></code></pre></div>
 <p>The objective in every result is evaluated from the model, not copied
 from the solver, so the numbers are comparable.
 <code>opt_objective_value(r, solver = TRUE)</code> returns the solver’s

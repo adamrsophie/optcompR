@@ -32,8 +32,10 @@ opt_z3_certify(result, tol = 1e-09, coefficients = c("decimal", "binary"))
 
 ## Value
 
-A list with `certified` (`TRUE`, `FALSE` or `NA` when Z3 returns
-unknown), `status`, the `threshold` that was tested and, when a better
+A list with `certified` (`TRUE` when no feasible point beats the
+reported value by more than the margin and some feasible point attains
+it within the margin, `FALSE` otherwise, `NA` when Z3 returns unknown),
+`attained`, `status`, the `threshold` that was tested and, when a better
 point exists, `better_point`.
 
 ## Examples

@@ -28,6 +28,7 @@
 - [`Ops(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
   [`Math(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
   [`Summary(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`mean(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
   [`matrixOps(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
   [`` `%*%`( ``*`<Matrix>`*`,`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
   [`` `%*%`( ``*`<opt_expr>`*`,`*`<Matrix>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)

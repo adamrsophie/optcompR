@@ -130,7 +130,7 @@ one-half convention and checks convexity before choosing a solver.</p>
 <span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;opt_classification: QP, convex&gt;</span></span>
 <span><span class="co">#&gt;   - syntactic: objective is quadratic; constraint rows: linear = 2</span></span>
-<span><span class="co">#&gt;   - numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 6.66134e-14, tolerance 1e-09))</span></span>
+<span><span class="co">#&gt;   - numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 2.48609e-14, tolerance 3.73211e-10))</span></span>
 <span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">w</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.3469 0.3469 0.3061</span></span>
@@ -147,8 +147,8 @@ for more return.</p>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">evidence</span></span>
-<span><span class="co">#&gt; [1] "syntactic: objective is quadratic; constraint rows: linear = 2"                                                         </span></span>
-<span><span class="co">#&gt; [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 6.66134e-14, tolerance 1e-09))"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "syntactic: objective is quadratic; constraint rows: linear = 2"                                                               </span></span>
+<span><span class="co">#&gt; [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 2.48609e-14, tolerance 3.73211e-10))"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="a-nonconvex-qp">A nonconvex QP<a class="anchor" aria-label="anchor" href="#a-nonconvex-qp"></a>

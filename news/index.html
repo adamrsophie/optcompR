@@ -93,6 +93,18 @@
 <code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code> requires an optimal termination, the KKT conditions and the second-order sufficient condition, and handles solutions where every variable sits at a bound. Estimated multipliers respect sign restrictions.</li>
 <li>
 <code><a href="../reference/opt_fixed_relaxation.html">opt_fixed_relaxation()</a></code> resolves indicator and SOS constraints at the incumbent. Cone and indicator constructors accept products with parameters. Constraint references from another model are refused. <code><a href="../reference/opt_scenarios.html">opt_scenarios()</a></code> validates values. <code>warm_start = FALSE</code> is honored by NLopt and IPOPT. IPOPT options are type checked and rejected options are errors. Exact Z3 coefficients cover subnormal numbers.</li>
+<li>Local NLP solvers start strictly inside the bounds when no start is given, and stop with a clear message when a function is not finite at the start. NLopt points with NaN are reported as no solution.</li>
+<li>
+<code>nlpbb</code> counts nodes without a certified verdict as lost, reports <code>"unknown"</code> instead of infeasible when nodes were lost, catches node errors, and re-solves with integers fixed before accepting a rounded incumbent.</li>
+<li>Clarabel accepts quadratic objectives with cross terms and returns cone multipliers for models with cones only. ROI loads its plugins itself and passes equality rows correctly.</li>
+<li>IPOPT: single precision builds fall back to the stub, older IPOPT uses <code>max_cpu_time</code> for time limits, options are tried in the type of the R value first, and callback errors keep their message; a failed trial evaluation is a warning when IPOPT recovers.</li>
+<li>Curvature tests are relative to the largest eigenvalue and the large matrix Cholesky test shifts only at rounding level. Quadratic rows without finite bounds no longer make a model nonconvex.</li>
+<li>Matrix indices <code>X[cbind(i, j)]</code> select coordinates. <code><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean()</a></code> works on expressions. Element names must be unique across blocks.</li>
+<li>
+<code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code> checks primal feasibility, refuses <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs()</a></code> at a kink, and treats a point near a bound with a zero multiplier as interior. Row and bound feasibility scale each side by its own bound.</li>
+<li>Indicator switches must stay binary. <code><a href="../reference/opt_fixed_relaxation.html">opt_fixed_relaxation()</a></code> refuses a result whose model changed since the solve. Automatic selection skips solvers that cannot reformulate indicator or SOS constraints, and controls a backend ignores are reported in the result warnings.</li>
+<li>
+<code><a href="../reference/opt_z3_certify.html">opt_z3_certify()</a></code> also proves that the reported value is attained, and <code><a href="../reference/opt_z3_check.html">opt_z3_check()</a></code> works with nonlinear objectives.</li>
 </ul></div>
   </main></div>
 

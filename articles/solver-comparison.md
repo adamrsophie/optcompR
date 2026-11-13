@@ -139,10 +139,10 @@ data.frame(solver = solvers,
            objective = vapply(res, opt_objective_value, 0),
            max_row_violation = vapply(res, function(r) opt_check(r)$max_row_violation, 0))
 #>   solver  status objective max_row_violation
-#> 1  highs optimal 0.1171429      1.110223e-16
-#> 2   osqp optimal 0.1171429      0.000000e+00
-#> 3   scip optimal 0.1171429      0.000000e+00
-#> 4 nloptr optimal 0.1171429      0.000000e+00
+#> 1  highs optimal 0.1171429                 0
+#> 2   osqp optimal 0.1171429                 0
+#> 3   scip optimal 0.1171429                 0
+#> 4 nloptr optimal 0.1171429                 0
 ```
 
 The objective in every result is evaluated from the model, not copied

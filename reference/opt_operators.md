@@ -24,6 +24,9 @@ Math(x, ...)
 Summary(..., na.rm = FALSE)
 
 # S3 method for class 'opt_expr'
+mean(x, ...)
+
+# S3 method for class 'opt_expr'
 matrixOps(x, y)
 
 # S4 method for class 'Matrix,opt_expr'

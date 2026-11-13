@@ -3,7 +3,9 @@
 Updates parameter values in place. Cached standard forms built for the
 old values are invalidated; the next
 [`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)
-rebuilds the numerical data while reusing the model structure.
+rebuilds the numerical standard form from the unchanged expressions (the
+symbolic model is kept; the lowering and the backend model are built
+again).
 
 ## Usage
 

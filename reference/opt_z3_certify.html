@@ -114,8 +114,10 @@ solver tolerances. Exact solving can be slow for large integer models.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with <code>certified</code> (<code>TRUE</code>, <code>FALSE</code> or <code>NA</code> when Z3 returns
-unknown), <code>status</code>, the <code>threshold</code> that was tested and, when a better
+    <p>A list with <code>certified</code> (<code>TRUE</code> when no feasible point beats the
+reported value by more than the margin and some feasible point attains
+it within the margin, <code>FALSE</code> otherwise, <code>NA</code> when Z3 returns unknown),
+<code>attained</code>, <code>status</code>, the <code>threshold</code> that was tested and, when a better
 point exists, <code>better_point</code>.</p>
     </div>
 
