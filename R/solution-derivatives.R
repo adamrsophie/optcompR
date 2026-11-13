@@ -99,13 +99,10 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
                  fmt_num(kkt$stationarity), fmt_num(kkt$dual_feasibility)),
          call. = FALSE)
   }
-  rs <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(up), up, 0)))
-  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs) |
-    (is.finite(up) & abs(v - up) <= sqrt(tol) * rs)
-  bs <- pmax(1, abs(ifelse(is.finite(sf$lower), sf$lower, 0)),
-             abs(ifelse(is.finite(sf$upper), sf$upper, 0)))
-  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs) |
-    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs)
+  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))) |
+    (is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up)))
+  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower))) |
+    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * pmax(1, abs(sf$upper)))
   # strict complementarity concerns inequalities only
   ineq <- !(is.finite(lo) & lo == up)
   bineq <- !(sf$lower == sf$upper)

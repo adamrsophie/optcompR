@@ -1,10 +1,17 @@
 # Robust and stochastic optimization through exact reformulations.
 
 aux_name <- function(model, base) {
+  # helper variables and rows are named <nm>.<suffix>, so a base is free
+  # only if no variable block or constraint uses it or extends it
+  used <- c(ls(model$block_index, all.names = TRUE),
+            ls(model$cons_index, all.names = TRUE),
+            unlist(lapply(model$special %||% list(), function(kind) {
+              vapply(kind, `[[`, "", "name")
+            }), use.names = FALSE))
   k <- 1L
   repeat {
     nm <- sprintf(".%s%d", base, k)
-    if (is.na(index_get(model$block_index, nm))) return(nm)
+    if (!any(used == nm | startsWith(used, paste0(nm, ".")))) return(nm)
     k <- k + 1L
   }
 }

@@ -165,3 +165,41 @@ test_that("subnormal coefficients convert to exact rationals", {
   expect_false(grepl("Inf", txt))
   expect_equal(nchar(sub("^1/", "", txt)), 324L)
 })
+
+test_that("repeated robust and CVaR builders get distinct names", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2, lower = 0, upper = 1)
+  opt_robust_constraint(m, x, a0 = c(1, 1), b = 3, delta = 0.1)
+  expect_silent(opt_robust_constraint(m, x, a0 = c(1, 2), b = 4, delta = 0.1))
+  P <- diag(2)
+  opt_robust_constraint(m, x, a0 = c(1, 1), b = 3, uncertainty = "ellipsoid",
+                        P = P)
+  expect_silent(opt_robust_constraint(m, x, a0 = c(1, 1), b = 5,
+                                      uncertainty = "ellipsoid", P = P))
+  L <- opt_cvar(m, x, alpha = 0.5)
+  expect_silent(opt_cvar(m, x, alpha = 0.9))
+})
+
+test_that("a variable far from a distant opposite bound is not active", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 1e6)
+  p <- opt_parameter(m, "p", value = 1)
+  opt_objective(m, (x - p)^2)
+  r <- opt_solve(m, solver = "highs")
+  d <- opt_solution_jacobian(r, p)
+  expect_equal(as.vector(d$solution), 1, tolerance = 1e-6)
+})
+
+test_that("fixed relaxation keeps cone constraints", {
+  skip_if_not_installed("scip")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", dim = 2, lower = -5, upper = 5)
+  t <- opt_variable(m, "t", lower = 0, upper = 1)
+  z <- opt_variable(m, "z", type = "binary")
+  opt_soc_constraint(m, x, t)
+  opt_indicator(m, z, t <= 0.5, active = 0)
+  opt_objective(m, sum(x) - 0.1 * z)
+  r <- suppressWarnings(opt_solve(m, solver = "scip"))
+  fr <- suppressWarnings(opt_fixed_relaxation(r, solver = "scip"))
+  expect_lte(sqrt(sum(opt_value(fr, x)^2)), opt_value(fr, t) + 1e-6)
+})

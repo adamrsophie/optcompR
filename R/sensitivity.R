@@ -147,7 +147,8 @@ opt_fixed_relaxation <- function(result, ...) {
     }, add = TRUE, after = FALSE)
     model$lower[sos_cols] <- 0
     model$upper[sos_cols] <- 0
-    model$special <- NULL
+    # cones are continuous and stay
+    model$special <- if (length(sp$cone)) list(cone = sp$cone) else NULL
   }
   touch_structure(model)
   out <- opt_solve(model, ...)

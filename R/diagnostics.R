@@ -102,13 +102,10 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
   n <- length(cols)
   g <- if (is.null(result$objective)) numeric(n) else
     as.vector(jac_expr(result$objective, z, ns)$J[, cols, drop = FALSE])
-  rs <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(up), up, 0)))
-  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs) |
-    (is.finite(up) & abs(v - up) <= sqrt(tol) * rs)
-  bs <- pmax(1, abs(ifelse(is.finite(sf$lower), sf$lower, 0)),
-             abs(ifelse(is.finite(sf$upper), sf$upper, 0)))
-  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs) |
-    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs)
+  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))) |
+    (is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up)))
+  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower))) |
+    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * pmax(1, abs(sf$upper)))
   y <- numeric(length(v))
   zc <- numeric(n)
   if (any(act) || any(bact)) {
@@ -123,10 +120,10 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
     # give an unrestricted solution with wrong signs although valid
     # multipliers exist, so refit with the signs enforced.
     s <- if (result$sense == "max") -1 else 1
-    r_lo <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs)[act]
-    r_up <- (is.finite(up) & abs(v - up) <= sqrt(tol) * rs)[act]
-    b_lo <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs)[bact]
-    b_up <- (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs)[bact]
+    r_lo <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo)))[act]
+    r_up <- (is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up)))[act]
+    b_lo <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower)))[bact]
+    b_up <- (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * pmax(1, abs(sf$upper)))[bact]
     sg <- s * c(ifelse(r_lo & r_up, 0, ifelse(r_lo, 1, -1)),
                 ifelse(b_lo & b_up, 0, ifelse(b_lo, 1, -1)))
     if (any(sg * sol < -1e-10 * max(1, abs(sol)))) {
@@ -168,9 +165,8 @@ kkt_check <- function(result, v, lo, up, tol) {
   stat_rel <- max(c(abs(stat) / pmax(1, abs(g)), 0))
   s <- if (result$sense == "max") -1 else 1
   # row dual signs: at upper bound y*s <= 0, at lower y*s >= 0
-  rs <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(up), up, 0)))
-  at_lo <- is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs
-  at_up <- is.finite(up) & abs(v - up) <= sqrt(tol) * rs
+  at_lo <- is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))
+  at_up <- is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up))
   ys <- s * y
   dviol <- ifelse(at_lo & at_up, 0,
                   ifelse(at_up, pmax(ys, 0),
@@ -178,10 +174,8 @@ kkt_check <- function(result, v, lo, up, tol) {
   slack <- pmin(abs(v - lo), abs(up - v))
   comp <- abs(y) * ifelse(is.finite(slack), slack, 0)
   # bound duals
-  bs <- pmax(1, abs(ifelse(is.finite(sf$lower), sf$lower, 0)),
-             abs(ifelse(is.finite(sf$upper), sf$upper, 0)))
-  bl <- is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs
-  bu <- is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs
+  bl <- is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower))
+  bu <- is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * pmax(1, abs(sf$upper))
   zs <- s * zc
   zviol <- ifelse(bl & bu, 0, ifelse(bu, pmax(zs, 0),
                                      ifelse(bl, pmax(-zs, 0), abs(zs))))
