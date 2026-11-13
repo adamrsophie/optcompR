@@ -14,7 +14,10 @@ opt_check(result, tol = 1e-06)
 \value{
 An \code{opt_diagnostics} list with \code{max_row_violation},
 \code{max_bound_violation}, \code{max_integrality_violation}, \code{objective_error},
-\code{kkt} (or \code{NULL}), \code{feasible} and \code{rows}, a data frame of row residuals.
+\code{kkt} (or \code{NULL}), \code{feasible}, \code{rows}, a data frame of row residuals,
+and \code{special}, the violations of cone, indicator and SOS constraints
+(cones pass at \code{sqrt(tol)}). KKT conditions are not checked for conic
+models, whose multipliers live in the dual cones.
 }
 \description{
 Recomputes, from the original model expressions and not from the solver

@@ -13,7 +13,8 @@ register_solver <- function(name, package, description, classes,
     classes = classes, convex_only = convex_only, global = global,
     features = utils::modifyList(list(
       duals = FALSE, ranging = FALSE, warm_start = FALSE,
-      time_limit = FALSE, mip_gap = FALSE, iteration_limit = FALSE),
+      time_limit = FALSE, mip_gap = FALSE, iteration_limit = FALSE,
+      cones = character(), special = character()),
       features),
     solve = solve, version = version, priority = priority)
 }
@@ -84,6 +85,12 @@ solver_entry <- function(solver) {
 solver_refusal <- function(e, cls) {
   if (!cls$class %in% e$classes) {
     return(sprintf("%s does not support %s problems", e$name, cls$class))
+  }
+  bad_cone <- setdiff(cls$cone_types %||% character(),
+                      e$features$cones %||% character())
+  if (length(bad_cone)) {
+    return(sprintf("%s does not support %s cone constraints", e$name,
+                   paste(bad_cone, collapse = ", ")))
   }
   if (cls$class %in% e$convex_only && cls$convexity == "nonconvex") {
     return(sprintf("%s requires a convex %s, and this model is nonconvex",

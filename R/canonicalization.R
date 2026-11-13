@@ -137,6 +137,8 @@ build_standard_form <- function(model) {
     element_labels(blk$name, blk$expr$len, blk$expr$dim)
   }), use.names = FALSE) %||% character()
 
+  special <- lower_special(model, is_par, pval, col, n)
+
   structure(list(
     sense = model$sense, c = cvec, Q = Q, offset = offset,
     objective_kind = obj_kind,
@@ -148,6 +150,7 @@ build_standard_form <- function(model) {
     col_names = model$sym_name[vs], var_sym = vs, col_of_sym = col,
     n_sym = ns, objective_lowered = obj_low, cons_lowered = cons_low,
     parameter_values = pval,
+    cones = special$cones, indicators = special$indicators, sos = special$sos,
     key = paste(model$structure_version, model$parameter_version, sep = ":")
   ), class = "opt_standard_form")
 }
@@ -161,5 +164,9 @@ print.opt_standard_form <- function(x, ...) {
   tab <- table(x$row_kind)
   if (length(tab)) cat("  rows:", paste(names(tab), tab, sep = " = ",
                                         collapse = ", "), "\n")
+  sk <- special_kinds(x)
+  if (length(sk)) cat(sprintf("  cones: %d, indicators: %d, SOS: %d\n",
+                              length(x$cones), length(x$indicators),
+                              length(x$sos)))
   invisible(x)
 }

@@ -79,6 +79,7 @@ scip_solve_sf <- function(sf, cls, control) {
                                  lhs = sf$row_lower[r], rhs = sf$row_upper[r])
     }
   }
+  scip_add_special(m, sf, n + quad_obj)
   scip::scip_set_objective_sense(m, if (sf$sense == "max") "maximize" else
     "minimize")
   if (isTRUE(control$warm_start) && any(!is.na(sf$start))) {
@@ -109,6 +110,54 @@ scip_solve_sf <- function(sf, cls, control) {
          "The scip R package has no start solution interface; start values were not used."
        else character(),
        extra = list(), raw = list(status = st, info = info, solution = sol))
+}
+
+# Cones, indicators and SOS constraints for SCIP. `nvars` counts the
+# variables already in the SCIP model.
+scip_add_special <- function(m, sf, nvars) {
+  for (cn in sf$cones) {
+    # ||X x + b|| <= t'x + c  as  ||X x + b||^2 - (t'x + c)^2 <= 0 with
+    # t'x + c >= 0, which is the same set
+    M <- methods::as(cn$M, "generalMatrix")
+    tr <- M[1L, , drop = FALSE]
+    X <- M[-1L, , drop = FALSE]
+    b <- cn$const[-1L]
+    c0 <- cn$const[1L]
+    H <- Matrix::crossprod(X) - Matrix::crossprod(tr)
+    lin <- 2 * as.vector(Matrix::crossprod(X, b)) - 2 * c0 * as.vector(tr)
+    T <- methods::as(Matrix::triu(methods::as(H, "generalMatrix")),
+                     "TsparseMatrix")
+    i <- T@i + 1L
+    j <- T@j + 1L
+    v <- ifelse(i == j, T@x, 2 * T@x)
+    keep <- v != 0
+    nz <- which(lin != 0)
+    scip::scip_add_quadratic_cons(m, linvars = nz, lincoefs = lin[nz],
+                                  quadvars1 = i[keep], quadvars2 = j[keep],
+                                  quadcoefs = v[keep], lhs = -Inf,
+                                  rhs = c0^2 - sum(b^2))
+    tn <- which(as.vector(tr) != 0)
+    scip::scip_add_linear_cons(m, vars = tn, coefs = as.vector(tr)[tn],
+                               lhs = -c0, rhs = Inf)
+  }
+  for (it in sf$indicators) {
+    z <- it$z
+    if (it$active == 0) {
+      # indicator on the complement w = 1 - z
+      scip::scip_add_var(m, obj = 0, lb = 0, ub = 1, vtype = "B")
+      nvars <- nvars + 1L
+      scip::scip_add_linear_cons(m, vars = c(z, nvars), coefs = c(1, 1),
+                                 lhs = 1, rhs = 1)
+      z <- nvars
+    }
+    scip::scip_add_indicator_cons(m, binvar = z, vars = it$j, coefs = it$v,
+                                  rhs = it$rhs)
+  }
+  for (s in sf$sos) {
+    if (s$type == 1L) scip::scip_add_sos1_cons(m, vars = s$cols, weights = s$weights)
+    else scip::scip_add_sos2_cons(m, vars = s$cols, weights = s$weights)
+  }
+  invisible(nvars)
 }
 
 # ------------------------------------------------------------------- OSQP
@@ -313,9 +362,10 @@ register_builtin_backends <- function() {
   register_solver(
     "scip", "scip",
     "SCIP: branch and bound with spatial branching, global for nonconvex quadratic models",
-    classes = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP"),
-    global = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP"),
-    features = list(time_limit = TRUE, mip_gap = TRUE),
+    classes = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP"),
+    global = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP"),
+    features = list(time_limit = TRUE, mip_gap = TRUE, cones = "soc",
+                    special = c("indicator", "sos")),
     solve = scip_solve_sf, version = pkg_version("scip"), priority = 20L)
   register_solver(
     "osqp", "osqp",

@@ -27,6 +27,7 @@ Imports:
     stats,
     utils
 Suggests:
+    clarabel,
     jaxR,
     knitr,
     nloptr,

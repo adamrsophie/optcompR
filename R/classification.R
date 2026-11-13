@@ -77,8 +77,13 @@ opt_classify <- function(model, tol = 1e-9) {
   rk <- sf$row_kind
   has_nl <- sf$objective_kind == "nonlinear" || any(rk == "nonlinear")
   has_qrow <- any(rk == "quadratic")
+  ctypes <- cone_types(sf)
+  conic <- length(ctypes) > 0L && !has_nl && !has_qrow
   base <- if (has_nl) "NLP" else if (has_qrow) "QCQP" else
+    if (conic) (if (identical(ctypes, "soc")) "SOCP" else "CONIC") else
     if (sf$objective_kind == "quadratic") "QP" else "LP"
+  # indicator and SOS constraints are discrete even without integer columns
+  integer <- integer || length(sf$indicators) > 0L || length(sf$sos) > 0L
   cls <- if (integer) paste0("MI", base) else base
   evidence <- sprintf("syntactic: objective is %s; constraint rows: %s",
                       sf$objective_kind,
@@ -88,6 +93,16 @@ opt_classify <- function(model, tol = 1e-9) {
   if (integer) {
     evidence <- c(evidence, sprintf("syntactic: %d integer or binary variables",
                                     sum(sf$type %in% c("integer", "binary"))))
+  }
+  if (length(ctypes)) {
+    evidence <- c(evidence, sprintf(
+      "structural: %d cone constraint(s) of type %s; cones are convex sets",
+      length(sf$cones), paste(ctypes, collapse = ", ")))
+  }
+  if (length(sf$indicators) || length(sf$sos)) {
+    evidence <- c(evidence, sprintf(
+      "syntactic: %d indicator and %d SOS constraint(s), which are discrete",
+      length(sf$indicators), length(sf$sos)))
   }
   convex <- "convex"
   obj_curv <- NULL
@@ -143,7 +158,7 @@ opt_classify <- function(model, tol = 1e-9) {
                                         chk$method, lab, chk$detail))
       }
     }
-    if (!has_qrow && sf$objective_kind != "quadratic") {
+    if (!has_qrow && sf$objective_kind != "quadratic" && !length(ctypes)) {
       evidence <- c(evidence, "structural: all rows linear, feasible set is a polyhedron")
     }
   }
@@ -151,7 +166,8 @@ opt_classify <- function(model, tol = 1e-9) {
     evidence <- c(evidence,
                   "the continuous relaxation is convex; the integer problem is not")
   }
-  structure(list(class = cls, integer = integer,
+  structure(list(class = cls, integer = integer, special = special_kinds(sf),
+                 cone_types = ctypes,
                  objective = sf$objective_kind,
                  constraints = if (length(rk)) as.list(table(rk)) else list(),
                  convexity = convex, objective_curvature = obj_curv,

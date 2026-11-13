@@ -25,7 +25,10 @@
 #' @param tol Feasibility and optimality tolerance.
 #' @return An `opt_diagnostics` list with `max_row_violation`,
 #'   `max_bound_violation`, `max_integrality_violation`, `objective_error`,
-#'   `kkt` (or `NULL`), `feasible` and `rows`, a data frame of row residuals.
+#'   `kkt` (or `NULL`), `feasible`, `rows`, a data frame of row residuals,
+#'   and `special`, the violations of cone, indicator and SOS constraints
+#'   (cones pass at `sqrt(tol)`). KKT conditions are not checked for conic
+#'   models, whose multipliers live in the dual cones.
 #' @examples
 #' m <- opt_model()
 #' x <- opt_variable(m, "x")
@@ -62,8 +65,10 @@ opt_check <- function(result, tol = 1e-6) {
       max(1, abs(result$objective_value))
   rows <- data.frame(row = sf$row_names, value = v, lower = lo, upper = up,
                      violation = viol, stringsAsFactors = FALSE)
+  special <- special_violations(sf, x, tol)
   kkt <- NULL
-  if (!result$classification$integer) {
+  # conic KKT conditions involve cone multipliers and are not checked here
+  if (!result$classification$integer && !length(sf$cones)) {
     if (!is.null(result$row_dual) && !is.null(result$col_dual)) {
       kkt <- kkt_check(result, v, lo, up, tol)
       kkt$estimated <- FALSE
@@ -73,12 +78,14 @@ opt_check <- function(result, tol = 1e-6) {
       kkt$estimated <- TRUE
     }
   }
+  sviol <- max(c(special$violation, 0))
   feasible <- max(c(rel, 0)) <= tol && max(c(bviol, 0)) <= tol &&
-    max(c(iviol, 0)) <= tol
+    max(c(iviol, 0)) <= tol && sviol <= sqrt(tol)
   structure(list(
     max_row_violation = max(c(rel, 0)),
     max_bound_violation = max(c(bviol, 0)),
     max_integrality_violation = max(c(iviol, 0)),
+    max_special_violation = sviol, special = special,
     objective_error = obj_err, kkt = kkt, feasible = feasible,
     tol = tol, rows = rows, status = result$termination,
     convexity = result$classification$convexity
@@ -177,6 +184,10 @@ print.opt_diagnostics <- function(x, ...) {
   cat(sprintf("  max bound violation (scaled): %s\n", fmt_num(x$max_bound_violation)))
   cat(sprintf("  max integrality violation:    %s\n",
               fmt_num(x$max_integrality_violation)))
+  if (nrow(x$special)) {
+    cat(sprintf("  max cone/indicator/SOS violation: %s\n",
+                fmt_num(x$max_special_violation)))
+  }
   cat(sprintf("  objective recomputation error: %s\n", fmt_num(x$objective_error)))
   if (!is.null(x$kkt)) {
     cat(sprintf("  KKT: stationarity %s, dual feasibility %s, complementarity %s (%s)\n",

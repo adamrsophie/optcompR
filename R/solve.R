@@ -52,8 +52,15 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
                   verbose = verbose, warm_start = warm_start,
                   options = options)
   warnings <- character()
+  sf_solver <- reformulate_special(sf, entry)
+  if (!is.null(sf_solver$reformulated)) {
+    warnings <- c(warnings, sprintf(paste(
+      "Indicator/SOS constraints were reformulated exactly for %s with %d",
+      "binary column(s) and %d row(s)."), entry$name,
+      sf_solver$reformulated$added_columns, sf_solver$reformulated$added_rows))
+  }
   res <- withCallingHandlers(
-    entry$solve(sf, cls, control),
+    trim_result(entry$solve(sf_solver, cls, control), sf),
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
       invokeRestart("muffleWarning")
