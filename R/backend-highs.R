@@ -41,21 +41,17 @@ highs_solve_sf <- function(sf, cls, control) {
                            types = types, maximum = FALSE,
                            offset = s * sf$offset)
   opts <- control$options
-  ctrl_args <- c(list(threads = 1L, log_to_console = isTRUE(control$verbose)),
-                 opts)
+  ctrl_args <- utils::modifyList(
+    list(threads = 1L, log_to_console = isTRUE(control$verbose)), opts)
   if (is.finite(control$time_limit)) ctrl_args$time_limit <- control$time_limit
   if (!is.null(control$mip_gap)) ctrl_args$mip_rel_gap <- control$mip_gap
   ctrl <- do.call(highs::highs_control, ctrl_args)
   solver <- highs::highs_solver(hm, control = ctrl)
   start_used <- FALSE
   if (isTRUE(control$warm_start) && any(!is.na(sf$start))) {
-    st <- sf$start
-    st[is.na(st)] <- pmin(pmax(0, sf$lower[is.na(st)]), sf$upper[is.na(st)])
-    ok <- tryCatch({
-      highs::hi_solver_set_start(solver$solver, list(col_value = st))
-      TRUE
-    }, error = function(e) FALSE)
-    start_used <- ok
+    # partial starts are allowed: NA entries are left to HiGHS
+    highs::hi_solver_set_start(solver$solver, sf$start)
+    start_used <- TRUE
   }
   solver$solve()
   code <- solver$status()

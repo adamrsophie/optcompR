@@ -16,7 +16,8 @@ opt_hessian(model, at, multipliers = NULL)
 \item{model}{An \code{\link[=opt_model]{opt_model()}}.}
 
 \item{at}{Point: a numeric vector with one value per variable (named by
-variable names, or in model order), or an \code{opt_result}.}
+variable names, or in model order), or an \code{opt_result}, in which case
+the parameter values stored in the result are used too.}
 
 \item{multipliers}{Optional row multipliers for the Lagrangian Hessian.}
 }

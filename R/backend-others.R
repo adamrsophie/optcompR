@@ -137,7 +137,8 @@ osqp_solve_sf <- function(sf, cls, control) {
   term <- switch(st,
     "solved" = "optimal", "solved inaccurate" = "almost_optimal",
     "primal infeasible" = , "primal infeasible inaccurate" = "infeasible",
-    "dual infeasible" = , "dual infeasible inaccurate" = "unbounded",
+    # a dual infeasibility certificate does not establish primal feasibility
+    "dual infeasible" = , "dual infeasible inaccurate" = "infeasible_or_unbounded",
     "maximum iterations reached" = "iteration_limit",
     "run time limit reached" = "time_limit", "unknown")
   has <- term %in% c("optimal", "almost_optimal", "iteration_limit",

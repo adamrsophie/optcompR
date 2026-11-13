@@ -3,8 +3,9 @@
 
 new_model_id <- function() {
   .optcompR_state$counter <- .optcompR_state$counter + 1L
-  sprintf("m%s-%d", format(as.hexmode(sample.int(.Machine$integer.max, 1L)),
-                           width = 8L), .optcompR_state$counter)
+  # a counter only: drawing random numbers would change the user's RNG
+  # stream; identity is the environment itself
+  sprintf("m%d", .optcompR_state$counter)
 }
 
 #' Create an optimization model

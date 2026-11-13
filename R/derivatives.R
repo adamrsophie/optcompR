@@ -5,7 +5,9 @@ point_vector <- function(model, at) {
   if (inherits(at, "opt_result")) {
     if (!identical(at$model, model)) stop("`at` is a result of another model.",
                                           call. = FALSE)
-    at <- at$z[vs]
+    z <- at$z
+    z[is.na(z)] <- 0
+    return(list(z = z, vs = vs))
   }
   check_numeric(at, "at")
   if (!is.null(names(at)) && all(nzchar(names(at)))) {
@@ -43,7 +45,8 @@ point_vector <- function(model, at) {
 #'
 #' @param model An [opt_model()].
 #' @param at Point: a numeric vector with one value per variable (named by
-#'   variable names, or in model order), or an `opt_result`.
+#'   variable names, or in model order), or an `opt_result`, in which case
+#'   the parameter values stored in the result are used too.
 #' @param multipliers Optional row multipliers for the Lagrangian Hessian.
 #' @return A named numeric vector (gradient) or a sparse `Matrix` (Jacobian,
 #'   Hessian) with dimnames.

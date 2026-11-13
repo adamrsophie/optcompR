@@ -3,6 +3,7 @@
 \name{opt_expr_shape}
 \alias{opt_expr_shape}
 \alias{[.opt_expr}
+\alias{[[.opt_expr}
 \alias{length.opt_expr}
 \alias{dim.opt_expr}
 \alias{dim<-.opt_expr}
@@ -11,6 +12,8 @@
 \title{Shape and indexing of expressions}
 \usage{
 \method{[}{opt_expr}(x, i, j, ..., drop = TRUE)
+
+\method{[[}{opt_expr}(x, i, ...)
 
 \method{length}{opt_expr}(x)
 

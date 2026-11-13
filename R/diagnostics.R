@@ -13,7 +13,11 @@
 #' * complementary slackness: \eqn{y_i} times the row slack is zero.
 #'
 #' Violations are scaled by `max(1, |bound|)` for rows and by
-#' `max(1, |gradient|)` for stationarity. KKT conditions certify global
+#' `max(1, |gradient|)` for stationarity. Feasibility passes at `tol`; the
+#' KKT test passes at `sqrt(tol)`, because duals and active sets carry the
+#' square root of solver tolerances, and rows within `sqrt(tol)` of a bound
+#' count as active. When a solver returns no multipliers, they are estimated
+#' by least squares on the active set and the report says so. KKT conditions certify global
 #' optimality only for convex problems; for nonconvex problems they describe
 #' a stationary point.
 #'

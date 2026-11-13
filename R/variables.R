@@ -339,6 +339,7 @@ opt_set_start <- function(model, x, value) {
   check_model(model)
   sym <- resolve_symbols(model, x, "var")
   model$start[sym] <- recycle_to(as.numeric(value), length(sym), "value")
+  touch_parameters(model)
   invisible(model)
 }
 

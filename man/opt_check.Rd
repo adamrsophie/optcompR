@@ -33,7 +33,11 @@ gradients;
 }
 
 Violations are scaled by \verb{max(1, |bound|)} for rows and by
-\verb{max(1, |gradient|)} for stationarity. KKT conditions certify global
+\verb{max(1, |gradient|)} for stationarity. Feasibility passes at \code{tol}; the
+KKT test passes at \code{sqrt(tol)}, because duals and active sets carry the
+square root of solver tolerances, and rows within \code{sqrt(tol)} of a bound
+count as active. When a solver returns no multipliers, they are estimated
+by least squares on the active set and the report says so. KKT conditions certify global
 optimality only for convex problems; for nonconvex problems they describe
 a stationary point.
 }

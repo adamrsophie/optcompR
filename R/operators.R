@@ -198,6 +198,15 @@ NULL
 
 #' @rdname opt_expr_shape
 #' @export
+`[[.opt_expr` <- function(x, i, ...) {
+  if (!is.character(i)) {
+    stop("Use `[` to select elements of an expression.", call. = FALSE)
+  }
+  .subset2(x, i)
+}
+
+#' @rdname opt_expr_shape
+#' @export
 length.opt_expr <- function(x) x$len
 
 #' @rdname opt_expr_shape
