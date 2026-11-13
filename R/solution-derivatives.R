@@ -48,6 +48,12 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   if (!opt_has_solution(result)) {
     stop("The result has no primal solution to differentiate.", call. = FALSE)
   }
+  if (!result$termination %in% c("optimal", "locally_optimal",
+                                 "almost_optimal")) {
+    stop(sprintf(paste("The result terminated with `%s`, not at an optimum,",
+                       "so its point is not differentiated."),
+                 result$termination), call. = FALSE)
+  }
   cls <- result$classification
   if (isTRUE(cls$integer)) {
     stop(paste("Solutions of mixed-integer models are not differentiable;",
@@ -81,6 +87,17 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   } else {
     y <- unname(result$row_dual)
     zc <- unname(result$col_dual)
+  }
+  chk <- result
+  chk$row_dual <- y
+  chk$col_dual <- zc
+  kkt <- kkt_check(chk, v, lo, up, tol)
+  if (!isTRUE(kkt$pass)) {
+    stop(sprintf(paste("The point does not satisfy the KKT conditions",
+                       "(stationarity %s, dual feasibility %s), so it is not a",
+                       "differentiable optimum."),
+                 fmt_num(kkt$stationarity), fmt_num(kkt$dual_feasibility)),
+         call. = FALSE)
   }
   rs <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(up), up, 0)))
   act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs) |
@@ -122,7 +139,31 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   K <- rbind(cbind(H[free, free, drop = FALSE], -t(JA[, free, drop = FALSE])),
              cbind(JA[, free, drop = FALSE], matrix(0, na, na)))
   rhs <- -rbind(H[free, ps, drop = FALSE], JA[, ps, drop = FALSE])
-  sol <- tryCatch(solve(K, rhs), error = function(e) NULL)
+  # second-order sufficiency: the Lagrangian Hessian (negated for a
+  # maximum) is positive definite on the null space of the active rows
+  if (nf) {
+    Hff <- H[free, free, drop = FALSE]
+    A <- JA[, free, drop = FALSE]
+    rk <- if (na) qr(t(A))$rank else 0L
+    if (rk < nf) {
+      Z <- if (rk) qr.Q(qr(t(A)), complete = TRUE)[, (rk + 1L):nf, drop = FALSE]
+        else diag(nf)
+      s2 <- if (result$sense == "max") -1 else 1
+      R <- s2 * crossprod(Z, Hff %*% Z)
+      ev <- eigen((R + t(R)) / 2, symmetric = TRUE, only.values = TRUE)$values
+      if (min(ev) <= sqrt(tol) * max(1, abs(ev))) {
+        stop(paste(
+          "The second-order sufficient condition fails: the Hessian of the",
+          "Lagrangian is not positive definite on the null space of the",
+          "active constraints, so the solution is not a strict local optimum",
+          "and is not differentiable here."), call. = FALSE)
+      }
+    }
+  }
+  # every variable at a bound and no active row: the solution is locally
+  # constant in the parameter
+  sol <- if (!nrow(K)) matrix(0, 0, length(ps)) else
+    tryCatch(solve(K, rhs), error = function(e) NULL)
   if (is.null(sol) || (length(K) && rcond(K) < 1e-12)) {
     stop(paste(
       "The KKT matrix on the active set is singular: the active constraint",

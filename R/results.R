@@ -148,6 +148,10 @@ opt_gap <- function(result) {
 }
 
 block_rows <- function(result, constraint) {
+  if (inherits(constraint, "opt_constraint") &&
+      !identical(constraint$model, result$model)) {
+    stop("The constraint belongs to a different model.", call. = FALSE)
+  }
   name <- if (inherits(constraint, "opt_constraint")) constraint$name else
     constraint
   check_scalar_string(name, "constraint")

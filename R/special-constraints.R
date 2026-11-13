@@ -41,7 +41,12 @@ model_expr <- function(model, x, what) {
 }
 
 check_affine <- function(x, what) {
-  if (x$type != "poly" || length(x$qv)) {
+  # a product with a parameter is affine once the parameter is fixed;
+  # affine_matrix() checks again after substitution
+  kind <- x$model$sym_kind
+  par_q <- x$type == "poly" && length(x$qv) &&
+    all(kind[x$qj] == "par" | kind[x$qk] == "par")
+  if (x$type != "poly" || (length(x$qv) && !par_q)) {
     stop(sprintf("`%s` must be affine (linear plus a constant).", what),
          call. = FALSE)
   }
@@ -585,8 +590,12 @@ special_violations <- function(sf, x, tol) {
     ok <- if (s$type == 1L) length(nz) <= 1L else
       length(nz) <= 2L && (length(nz) < 2L || diff(nz) == 1L)
     v <- if (ok) 0 else {
-      a <- sort(abs(x[s$cols]), decreasing = TRUE)
-      sum(a[-seq_len(min(length(a), s$type))])
+      a <- abs(x[s$cols])
+      # mass outside the best allowed support: one element for SOS1, two
+      # adjacent elements for SOS2
+      keep <- if (s$type == 1L || length(a) < 2L) max(a) else
+        max(a[-1L] + a[-length(a)])
+      sum(a) - keep
     }
     add(s$name, paste0("sos", s$type), v)
   }

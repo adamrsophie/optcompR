@@ -19,12 +19,19 @@ psd_check <- function(Q, tol = 1e-9) {
     ev <- eigen(as.matrix(Qs), symmetric = TRUE, only.values = TRUE)$values
     scale <- max(1, max(abs(ev)))
     lo <- min(ev)
-    status <- if (lo >= -tol * scale) TRUE else FALSE
-    detail <- sprintf("smallest eigenvalue %s (tolerance %s)", fmt_num(lo),
-                      fmt_num(tol * scale))
-    if (status && lo < tol * scale) {
-      detail <- paste(detail, "; at the tolerance boundary, so curvature is",
-                      "zero up to rounding")
+    # eigenvalue rounding error is about n * eps * ||Q||; a negative
+    # eigenvalue beyond it but inside `tol` cannot be told from real
+    # negative curvature, so convexity is left undetermined
+    round_tol <- 100 * n * .Machine$double.eps * scale
+    status <- if (lo >= -round_tol) TRUE else if (lo >= -tol * scale) NA else
+      FALSE
+    detail <- sprintf("smallest eigenvalue %s (rounding level %s, tolerance %s)",
+                      fmt_num(lo), fmt_num(round_tol), fmt_num(tol * scale))
+    if (isTRUE(status) && lo < round_tol) {
+      detail <- paste0(detail, "; zero up to rounding")
+    }
+    if (is.na(status)) {
+      detail <- paste0(detail, "; slightly negative, so curvature is undetermined")
     }
     return(list(psd = status, method = "numerical eigenvalues",
                 min_eigen = lo, detail = detail))

@@ -14,5 +14,7 @@ if [ -z "$OPTCOMPR_NO_IPOPT" ] && command -v pkg-config >/dev/null 2>&1 &&
 else
   echo "optcompR: IPOPT not found by pkg-config; building without it"
 fi
-sed -e "s|@PKG_CPPFLAGS@|$PKG_CPPFLAGS|" -e "s|@PKG_LIBS@|$PKG_LIBS|" \
-  src/Makevars.in > src/Makevars
+# escape the characters that are special in a sed replacement
+esc() { printf '%s\n' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+sed -e "s|@PKG_CPPFLAGS@|$(esc "$PKG_CPPFLAGS")|" \
+  -e "s|@PKG_LIBS@|$(esc "$PKG_LIBS")|" src/Makevars.in > src/Makevars

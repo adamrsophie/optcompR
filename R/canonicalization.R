@@ -145,7 +145,11 @@ build_standard_form <- function(model) {
     A = A, row_lower = rlo, row_upper = rhi, row_block = rblock,
     row_element = relem, row_kind = rkind, row_Q = row_Q,
     row_names = row_names, expr_lower = raw_lo, expr_upper = raw_hi,
-    lower = model$lower[vs], upper = model$upper[vs], type = model$type[vs],
+    lower = ifelse(model$type[vs] == "binary", pmax(model$lower[vs], 0),
+                  model$lower[vs]),
+    upper = ifelse(model$type[vs] == "binary", pmin(model$upper[vs], 1),
+                   model$upper[vs]),
+    type = model$type[vs],
     start = model$start[vs],
     col_names = model$sym_name[vs], var_sym = vs, col_of_sym = col,
     n_sym = ns, objective_lowered = obj_low, cons_lowered = cons_low,
@@ -169,4 +173,16 @@ print.opt_standard_form <- function(x, ...) {
                               length(x$cones), length(x$indicators),
                               length(x$sos)))
   invisible(x)
+}
+
+# Is `x` within the linear rows and column bounds of `sf` up to `tol`
+# (scaled by the magnitude of each bound)?
+sf_point_feasible <- function(sf, x, tol = 1e-6) {
+  if (anyNA(x)) return(FALSE)
+  ok_b <- all(x >= sf$lower - tol * pmax(1, abs(sf$lower))) &&
+    all(x <= sf$upper + tol * pmax(1, abs(sf$upper)))
+  if (!ok_b || !nrow(sf$A)) return(ok_b)
+  ax <- as.numeric(sf$A %*% x)
+  all(ax >= sf$row_lower - tol * pmax(1, abs(sf$row_lower))) &&
+    all(ax <= sf$row_upper + tol * pmax(1, abs(sf$row_upper)))
 }

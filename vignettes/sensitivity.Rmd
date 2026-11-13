@@ -97,4 +97,5 @@ opt_hessian(q, c(1, 0.5))
 ```
 
 Derivatives of the optimal solution with respect to parameters
-(differentiable optimization) are not implemented in this version.
+(differentiable optimization) are computed by `opt_solution_jacobian()`; see
+`vignette("solution-derivatives")`.

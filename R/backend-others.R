@@ -193,6 +193,9 @@ osqp_solve_sf <- function(sf, cls, control) {
   has <- term %in% c("optimal", "almost_optimal", "iteration_limit",
                      "time_limit") && !anyNA(res$x)
   x <- if (has) res$x else rep(NA_real_, n)
+  # an iterate at a limit is a solution only if it is feasible
+  feas <- has && term %in% c("optimal", "almost_optimal") ||
+    has && sf_point_feasible(sf, x)
   y <- -s * res$y # OSQP multipliers have the opposite sign
   rd <- if (term %in% c("optimal", "almost_optimal")) y[seq_len(k)] else NULL
   cd <- NULL
@@ -202,7 +205,8 @@ osqp_solve_sf <- function(sf, cls, control) {
   }
   obj <- if (has) s * res$info$obj_val + sf$offset else NA_real_
   list(termination = term,
-       primal_status = if (has) "feasible_point" else "no_solution",
+       primal_status = if (feas) "feasible_point" else if (has)
+         "infeasible_point" else "no_solution",
        dual_status = if (!is.null(rd)) "feasible_point" else "no_solution",
        x = x, objective = obj, row_dual = rd, col_dual = cd,
        iterations = c(admm = res$info$iter), gap = NA_real_,
@@ -213,7 +217,10 @@ osqp_solve_sf <- function(sf, cls, control) {
 # ----------------------------------------------------------------- NLopt
 
 nloptr_termination <- function(status) {
-  if (status %in% 1:4) return("optimal")
+  # 2 is NLOPT_STOPVAL_REACHED: the objective target was met, which says
+  # nothing about optimality
+  if (status == 2L) return("objective_limit")
+  if (status %in% c(1L, 3L, 4L)) return("optimal")
   if (status == 5L) return("iteration_limit")
   if (status == 6L) return("time_limit")
   if (status == -4L) return("numerical_error")
@@ -271,7 +278,8 @@ nloptr_solve_sf <- function(sf, cls, control) {
     list(constraints = g$val[eq] - lo[eq],
          jacobian = as.matrix(g$J)[eq, , drop = FALSE])
   } else NULL
-  x0 <- sf$start
+  x0 <- if (isFALSE(control$warm_start)) rep(NA_real_, length(sf$start)) else
+    sf$start
   miss <- is.na(x0)
   x0[miss] <- pmin(pmax(0, sf$lower[miss]), sf$upper[miss])
   x0 <- pmin(pmax(x0, sf$lower), sf$upper)

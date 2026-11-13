@@ -35,3 +35,25 @@
   through z3r (`opt_z3_check()`, `opt_z3_certify()`).
 * Conversion to and from symcompR expressions; MPS and LP export.
 * Twenty vignettes and a pkgdown site.
+* Correctness safeguards: binary variables keep 0/1 bounds whatever
+  `opt_set_bounds()` sets; a smallest Hessian eigenvalue that is negative
+  beyond rounding but inside the curvature tolerance makes convexity
+  "unknown", and convex-only solvers now require proven convexity; NLopt's
+  objective-target stop is `"objective_limit"`; OSQP and IPOPT points at a
+  limit are reported feasible only after a feasibility check; IPOPT
+  diverging iterates are no longer called unbounded; `nlpbb` no longer fails
+  on its first node for convex models; SOS2 checks catch two nonadjacent
+  nonzeros; constraints with a lower bound of `Inf` or an upper bound of
+  `-Inf` are rejected.
+* `log(x, base)` honors `base`; powers with exponents 0 and 1 have exact
+  derivatives at zero; `t(x) %*% (A %*% x)` works.
+* `opt_solution_jacobian()` requires an optimal termination, the KKT
+  conditions and the second-order sufficient condition, and handles
+  solutions where every variable sits at a bound. Estimated multipliers
+  respect sign restrictions.
+* `opt_fixed_relaxation()` resolves indicator and SOS constraints at the
+  incumbent. Cone and indicator constructors accept products with
+  parameters. Constraint references from another model are refused.
+  `opt_scenarios()` validates values. `warm_start = FALSE` is honored by
+  NLopt and IPOPT. IPOPT options are type checked and rejected options are
+  errors. Exact Z3 coefficients cover subnormal numbers.

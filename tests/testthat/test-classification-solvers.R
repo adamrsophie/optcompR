@@ -52,7 +52,7 @@ test_that("singular and nearly singular quadratic forms", {
   opt_objective(m, (x + y)^2 + x)
   cl <- opt_classify(m)
   expect_identical(cl$convexity, "convex")
-  expect_match(cl$evidence[2], "tolerance boundary")
+  expect_match(cl$evidence[2], "zero up to rounding")
   opt_constraint(m, x >= -1)
   opt_constraint(m, y <= 3)
   r <- opt_solve(m)

@@ -63,9 +63,17 @@ Ops.opt_expr <- function(e1, e2) {
 
 #' @rdname opt_operators
 #' @param x An expression.
-#' @param ... Unused.
+#' @param ... For `log()`, an optional `base`; otherwise unused.
 #' @export
 Math.opt_expr <- function(x, ...) {
+  if (.Generic == "log" && length(list(...))) {
+    base <- list(...)[[1L]]
+    if (!is.numeric(base) || length(base) != 1L || !is.finite(base) ||
+        base <= 0 || base == 1) {
+      stop("`base` must be a positive number other than 1.", call. = FALSE)
+    }
+    return(expr_scale(expr_unary("log", x), 1 / log(base)))
+  }
   if (.Generic %in% unary_ops) return(expr_unary(.Generic, x))
   if (.Generic == "cumsum") {
     n <- x$len
@@ -115,7 +123,11 @@ expr_matmul <- function(x, y) {
     dy <- as_matrix_shape(y, FALSE)
     if (dx[2L] != dy[1L]) stop("Non-conformable arguments in %*%.",
                                call. = FALSE)
-    if (dx[1L] == 1L && dy[2L] == 1L) return(expr_sum(expr_mul(x, y)))
+    if (dx[1L] == 1L && dy[2L] == 1L) {
+      # row times column: flatten both so elementwise shapes agree
+      return(expr_sum(expr_mul(expr_subset(x, seq_len(x$len)),
+                                      expr_subset(y, seq_len(y$len)))))
+    }
     # general product: element (r, c) = sum_k x[r, k] * y[k, c]
     r <- rep(seq_len(dx[1L]), times = dy[2L])
     cc <- rep(seq_len(dy[2L]), each = dx[1L])

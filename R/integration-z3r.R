@@ -23,7 +23,25 @@ z3_number_text <- function(v, coefficients) {
     v <- v * 2
     k <- k + 1L
   }
-  if (k == 0L) sprintf("%.0f", v) else sprintf("%.0f/%.0f", v, 2^k)
+  if (k == 0L) sprintf("%.0f", v) else sprintf("%.0f/%s", v, pow2_text(k))
+}
+
+# Exact decimal text of 2^k; 2^k overflows a double for k > 1023, which
+# subnormal coefficients need.
+pow2_text <- function(k) {
+  if (k <= 1023L) return(sprintf("%.0f", 2^k))
+  d <- 1L # little-endian decimal digits
+  for (i in seq_len(k)) {
+    d <- d * 2L
+    carry <- 0L
+    for (j in seq_along(d)) {
+      t <- d[j] + carry
+      d[j] <- t %% 10L
+      carry <- t %/% 10L
+    }
+    if (carry) d <- c(d, carry)
+  }
+  paste(rev(d), collapse = "")
 }
 
 z3_translate <- function(sf, coefficients) {

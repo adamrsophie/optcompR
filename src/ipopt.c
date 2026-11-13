@@ -6,6 +6,7 @@
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef HAVE_IPOPT
 #include <IpStdCInterface.h>
@@ -127,9 +128,11 @@ static oc_bool cb_hess(oc_index n, oc_number *x, oc_bool new_x, oc_number obj_fa
   }
   SEXP lam = PROTECT(allocVector(REALSXP, m));
   if (m) memcpy(REAL(lam), lambda, sizeof(double) * m);
-  SEXP a = PROTECT(list3(xvec(n, x), ScalarReal(obj_factor), lam));
+  SEXP xv = PROTECT(xvec(n, x));
+  SEXP of = PROTECT(ScalarReal(obj_factor));
+  SEXP a = PROTECT(list3(xv, of, lam));
   oc_bool ok = take(d, call_r(d, d->hess, a), values, nele);
-  UNPROTECT(2);
+  UNPROTECT(4);
   return ok;
 }
 
@@ -151,9 +154,23 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
   for (R_xlen_t k = 0; k < XLENGTH(opts); k++) {
     char *key = (char *) CHAR(STRING_ELT(nm, k));
     SEXP v = VECTOR_ELT(opts, k);
-    if (isString(v)) AddIpoptStrOption(p, key, (char *) CHAR(STRING_ELT(v, 0)));
-    else if (isInteger(v)) AddIpoptIntOption(p, key, INTEGER(v)[0]);
-    else AddIpoptNumOption(p, key, asReal(v));
+    oc_bool ok = 0;
+    if (XLENGTH(v) != 1) {
+      ok = 0;
+    } else if (isString(v)) {
+      ok = AddIpoptStrOption(p, key, (char *) CHAR(STRING_ELT(v, 0)));
+    } else if (isInteger(v) || isReal(v)) {
+      double val = asReal(v);
+      /* IPOPT options are typed; a whole number may name an integer
+         option (max_iter) or a numeric one (tol) */
+      if (R_FINITE(val) && fabs(val) < 2e9 && val == (double) (int) val)
+        ok = AddIpoptIntOption(p, key, (oc_index) val);
+      if (!ok) ok = AddIpoptNumOption(p, key, val);
+    }
+    if (!ok) {
+      FreeIpoptProblem(p);
+      error("IPOPT rejected option `%s`.", key);
+    }
   }
   SEXP x = PROTECT(duplicate(x0));
   SEXP gv = PROTECT(allocVector(REALSXP, m));

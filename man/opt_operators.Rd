@@ -27,7 +27,7 @@
 
 \item{x}{An expression.}
 
-\item{...}{Unused.}
+\item{...}{For \code{log()}, an optional \code{base}; otherwise unused.}
 
 \item{na.rm}{Ignored; expressions have no missing values.}
 

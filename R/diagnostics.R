@@ -118,6 +118,27 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
     M <- cbind(t(J[act, , drop = FALSE]), diag(n)[, bact, drop = FALSE])
     sol <- qr.coef(qr(M), g)
     sol[is.na(sol)] <- 0
+    # multiplier signs: s * y >= 0 at a lower bound, <= 0 at an upper bound,
+    # free when both bounds hold (equality). A rank deficient system can
+    # give an unrestricted solution with wrong signs although valid
+    # multipliers exist, so refit with the signs enforced.
+    s <- if (result$sense == "max") -1 else 1
+    r_lo <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs)[act]
+    r_up <- (is.finite(up) & abs(v - up) <= sqrt(tol) * rs)[act]
+    b_lo <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs)[bact]
+    b_up <- (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs)[bact]
+    sg <- s * c(ifelse(r_lo & r_up, 0, ifelse(r_lo, 1, -1)),
+                ifelse(b_lo & b_up, 0, ifelse(b_lo, 1, -1)))
+    if (any(sg * sol < -1e-10 * max(1, abs(sol)))) {
+      lb <- ifelse(sg > 0, 0, -Inf)
+      ub <- ifelse(sg < 0, 0, Inf)
+      fit <- stats::optim(pmin(pmax(sol, lb), ub),
+        fn = function(u) sum((M %*% u - g)^2),
+        gr = function(u) as.vector(2 * crossprod(M, M %*% u - g)),
+        method = "L-BFGS-B", lower = lb, upper = ub,
+        control = list(factr = 10, pgtol = 0, maxit = 1000L))
+      sol <- fit$par
+    }
     y[act] <- sol[seq_len(sum(act))]
     zc[bact] <- sol[sum(act) + seq_len(sum(bact))]
   }

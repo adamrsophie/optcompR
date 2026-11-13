@@ -54,6 +54,10 @@ opt_constraint <- function(model, relation, name = NULL, lower = NULL,
     if (anyNA(lo) || anyNA(up) || any(lo > up)) {
       stop("Constraint bounds must satisfy lower <= upper.", call. = FALSE)
     }
+    if (any(lo == Inf) || any(up == -Inf)) {
+      stop("A constraint lower bound of Inf or upper bound of -Inf can never hold.",
+           call. = FALSE)
+    }
     sense <- "range"
   } else if (is.logical(relation)) {
     stop("The constraint evaluated to TRUE/FALSE; it contains no optimization expression.",
@@ -122,6 +126,10 @@ constraint_block <- function(model, name) {
 #' @export
 opt_delete_constraint <- function(model, constraint) {
   check_model(model)
+  if (inherits(constraint, "opt_constraint") &&
+      !identical(constraint$model, model)) {
+    stop("The constraint belongs to a different model.", call. = FALSE)
+  }
   name <- if (inherits(constraint, "opt_constraint")) constraint$name else
     constraint
   check_scalar_string(name, "constraint")

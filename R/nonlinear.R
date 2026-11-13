@@ -110,7 +110,7 @@ jac_expr <- function(e, z, ns) {
     p <- e$data$p
     g <- rep_len(a$val, n)
     p <- rep_len(p, n)
-    return(list(val = g^p, J = diag_mul(p * g^(p - 1), rep_rows(a$J, n))))
+    return(list(val = g^p, J = diag_mul(pow_d1(g, p), rep_rows(a$J, n))))
   }
   a <- jac_expr(e$args[[1L]], z, ns)
   b <- jac_expr(e$args[[2L]], z, ns)
@@ -167,8 +167,8 @@ hess_expr <- function(e, z, ns, w) {
     g <- rep_len(a$val, n)
     if (e$op == "^") {
       p <- rep_len(e$data$p, n)
-      d1 <- p * g^(p - 1)
-      d2 <- p * (p - 1) * g^(p - 2)
+      d1 <- pow_d1(g, p)
+      d2 <- pow_d2(g, p)
     } else {
       d1 <- unary_d1(e$op, g)
       d2 <- unary_d2(e$op, g)
@@ -251,3 +251,12 @@ expr_symbols <- function(e) {
 }
 
 expr_has_nl <- function(e) e$type == "nl"
+
+# Derivatives of g^p, elementwise in p, exact for p in {0, 1, 2} even at
+# g = 0 where the general formula would evaluate 0 * 0^-1.
+pow_d1 <- function(g, p) {
+  ifelse(p == 0, 0, ifelse(p == 1, 1, p * g^(p - 1)))
+}
+pow_d2 <- function(g, p) {
+  ifelse(p == 0 | p == 1, 0, ifelse(p == 2, 2, p * (p - 1) * g^(p - 2)))
+}

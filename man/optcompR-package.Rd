@@ -6,6 +6,8 @@
 \alias{optcompR-package}
 \title{optcompR: Unified Mathematical Optimization and Computational Modeling in R}
 \description{
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
 A solver independent modeling layer for mathematical optimization. Decision variables, parameters, expressions, constraints and objectives are written with ordinary R operators; models are classified (linear, quadratic, mixed integer, nonlinear) with recorded evidence, lowered to sparse standard forms, and solved by installed backends such as 'HiGHS' through the 'highs' package, 'OSQP', 'NLopt', 'SCIP', and 'ROI' plugins. Results carry standardized termination statuses, duals with a documented sign convention, independent feasibility and Karush Kuhn Tucker diagnostics, exact derivatives, sensitivity reports and reproducibility metadata. The design follows 'JuMP' and 'MathOptInterface' \url{https://jump.dev}.
 }
 \seealso{

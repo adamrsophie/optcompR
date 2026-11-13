@@ -21,7 +21,9 @@ opt_ipopt_available <- function() {
 ipopt_termination <- function(status) {
   switch(as.character(status),
     "0" = "optimal", "1" = "almost_optimal",
-    "2" = "locally_infeasible", "4" = "unbounded",
+    "2" = "locally_infeasible",
+    # diverging iterates also occur on bounded problems
+    "4" = "unknown",
     "-1" = "iteration_limit", "-4" = "time_limit", "-5" = "time_limit",
     "3" = , "-2" = , "-3" = , "-13" = "numerical_error",
     "-10" = , "-11" = , "-12" = "invalid_model",
@@ -64,7 +66,8 @@ ipopt_solve_sf <- function(sf, cls, control) {
     H <- as.matrix(H[vs, vs, drop = FALSE])
     H[low]
   }
-  x0 <- sf$start
+  x0 <- if (isFALSE(control$warm_start)) rep(NA_real_, length(sf$start)) else
+    sf$start
   miss <- is.na(x0)
   x0[miss] <- pmin(pmax(0, sf$lower[miss]), sf$upper[miss])
   x0 <- pmin(pmax(x0, sf$lower), sf$upper)
@@ -88,9 +91,19 @@ ipopt_solve_sf <- function(sf, cls, control) {
   }
   term <- ipopt_termination(res$status)
   ok <- term %in% c("optimal", "almost_optimal")
+  # at a limit, the returned point is a solution only if it is feasible
+  tol <- 1e-6
+  feas <- ok || (all(is.finite(res$x)) &&
+    all(res$x >= sf$lower - tol * pmax(1, abs(sf$lower))) &&
+    all(res$x <= sf$upper + tol * pmax(1, abs(sf$upper))) &&
+    tryCatch({
+      gx <- if (length(sf$expr_lower)) g(res$x) else numeric()
+      all(gx >= sf$expr_lower - tol * pmax(1, abs(sf$expr_lower))) &&
+        all(gx <= sf$expr_upper + tol * pmax(1, abs(sf$expr_upper)))
+    }, error = function(e) FALSE))
   # IPOPT: grad(s f) + J' lambda - zL + zU = 0; optcompR: grad f = J'y + z
   list(termination = term,
-       primal_status = if (ok) "feasible_point" else "infeasible_point",
+       primal_status = if (feas) "feasible_point" else "infeasible_point",
        dual_status = if (ok) "feasible_point" else "not_available",
        x = res$x, objective = s * res$objective,
        row_dual = if (ok) -s * res$mult_g else NULL,

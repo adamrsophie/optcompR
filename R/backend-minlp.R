@@ -46,7 +46,7 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     k <- which.min(vapply(open, `[[`, 0, "bound"))
     node <- open[[k]]
     open[[k]] <- NULL
-    if (convex && node$bound >= incumbent - gap_tol * max(1, abs(incumbent))) next
+    if (convex && is.finite(incumbent) && node$bound >= incumbent - gap_tol * max(1, abs(incumbent))) next
     nodes <- nodes + 1L
     sub <- sf
     sub$lower <- node$lower
@@ -64,7 +64,7 @@ nlpbb_solve_sf <- function(sf, cls, control) {
       next
     }
     val <- s * res$objective
-    if (convex && val >= incumbent - gap_tol * max(1, abs(incumbent))) next
+    if (convex && is.finite(incumbent) && val >= incumbent - gap_tol * max(1, abs(incumbent))) next
     x <- res$x
     frac <- int[abs(x[int] - round(x[int])) > int_tol]
     if (!length(frac)) {

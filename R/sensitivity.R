@@ -112,6 +112,43 @@ opt_fixed_relaxation <- function(result, ...) {
   model$lower[int] <- vals
   model$upper[int] <- vals
   model$type[int] <- "continuous"
+  # discrete structure is resolved at the incumbent: an active indicator
+  # becomes an ordinary row, an inactive one is dropped, and members of a
+  # special ordered set that are zero stay at zero
+  sp <- model$special
+  ncons <- length(model$cons)
+  sos_cols <- integer()
+  on.exit({
+    model$special <- sp
+    while (length(model$cons) > ncons) {
+      opt_delete_constraint(model, model$cons[[length(model$cons)]]$name)
+    }
+  }, add = TRUE, after = FALSE)
+  if (!is.null(sp)) {
+    for (it in sp$indicator %||% list()) {
+      on <- abs(result$z[it$z] - it$active) <= 0.5
+      if (any(on)) {
+        e <- expr_subset(it$expr, which(on))
+        lo <- if (it$sense %in% c(">=", "==")) 0 else -Inf
+        up <- if (it$sense %in% c("<=", "==")) 0 else Inf
+        opt_constraint(model, e, lower = lo, upper = up,
+                       name = paste0(".fixed_", it$name))
+      }
+    }
+    for (s in sp$sos %||% list()) {
+      sos_cols <- c(sos_cols, s$sym[abs(result$z[s$sym]) <= 1e-9])
+    }
+    sos_cols <- setdiff(unique(sos_cols), int)
+    saved_sos <- list(lower = model$lower[sos_cols],
+                      upper = model$upper[sos_cols])
+    on.exit({
+      model$lower[sos_cols] <- saved_sos$lower
+      model$upper[sos_cols] <- saved_sos$upper
+    }, add = TRUE, after = FALSE)
+    model$lower[sos_cols] <- 0
+    model$upper[sos_cols] <- 0
+    model$special <- NULL
+  }
   touch_structure(model)
   out <- opt_solve(model, ...)
   out$fixed_relaxation <- TRUE
@@ -151,9 +188,7 @@ opt_scenarios <- function(model, parameter, values, ..., keep = FALSE) {
   if (!is.list(values)) values <- as.list(values)
   results <- vector("list", length(values))
   for (k in seq_along(values)) {
-    model$value[sym] <- recycle_to(as.numeric(values[[k]]), length(sym),
-                                   "value")
-    touch_parameters(model)
+    opt_set_parameter(model, sym_expr_for(model, sym), values[[k]])
     results[[k]] <- opt_solve(model, ...)
   }
   out <- data.frame(

@@ -92,9 +92,11 @@ solver_refusal <- function(e, cls) {
     return(sprintf("%s does not support %s cone constraints", e$name,
                    paste(bad_cone, collapse = ", ")))
   }
-  if (cls$class %in% e$convex_only && cls$convexity == "nonconvex") {
-    return(sprintf("%s requires a convex %s, and this model is nonconvex",
-                   e$name, cls$class))
+  if (cls$class %in% e$convex_only && cls$convexity != "convex") {
+    return(sprintf("%s requires a convex %s, and this model is %s",
+                   e$name, cls$class,
+                   if (cls$convexity == "nonconvex") "nonconvex" else
+                     "not proven convex"))
   }
   NULL
 }
