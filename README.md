@@ -1,4 +1,4 @@
-# optcompR
+# optcompR <img src="man/figures/logo.png" align="right" height="139" alt="optcompR logo" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml)
