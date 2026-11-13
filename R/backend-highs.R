@@ -40,6 +40,8 @@ highs_solve_sf <- function(sf, cls, control) {
                            upper = sf$upper, A = A, lhs = lhs, rhs = rhs,
                            types = types, maximum = FALSE,
                            offset = s * sf$offset)
+  # HiGHS starts one global thread scheduler per process, so `threads`
+  # must stay the same within an R session.
   opts <- control$options
   ctrl_args <- utils::modifyList(
     list(threads = 1L, log_to_console = isTRUE(control$verbose)), opts)

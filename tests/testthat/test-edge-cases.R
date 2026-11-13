@@ -27,7 +27,9 @@ test_that("user options override defaults without duplicates", {
   m <- opt_model()
   x <- opt_variable(m, "x", lower = 1)
   opt_objective(m, x)
-  r <- opt_solve(m, options = list(threads = 2L, presolve = "off"))
+  # log_to_console is one of the defaults; changing threads instead would
+  # ask HiGHS to resize its global scheduler, which it cannot do
+  r <- opt_solve(m, options = list(log_to_console = FALSE, presolve = "off"))
   expect_identical(opt_status(r), "optimal")
 })
 
