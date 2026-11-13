@@ -10,6 +10,18 @@
 #ifdef HAVE_IPOPT
 #include <IpStdCInterface.h>
 
+/* IPOPT 3.14 deprecates Index, Number and Bool in favor of ipindex,
+ * ipnumber and bool. */
+#ifdef HAVE_IPOPT_314
+typedef ipindex oc_index;
+typedef ipnumber oc_number;
+typedef bool oc_bool;
+#else
+typedef Index oc_index;
+typedef Number oc_number;
+typedef Bool oc_bool;
+#endif
+
 /* R closures and scratch data passed to the callbacks. */
 typedef struct {
   SEXP f, grad, g, jac, hess, env;
@@ -29,7 +41,7 @@ static SEXP call_r(ipopt_data *d, SEXP fun, SEXP args) {
   return val;
 }
 
-static SEXP xvec(Index n, Number *x) {
+static SEXP xvec(oc_index n, oc_number *x) {
   SEXP v = PROTECT(allocVector(REALSXP, n));
   memcpy(REAL(v), x, sizeof(double) * n);
   UNPROTECT(1);
@@ -37,7 +49,7 @@ static SEXP xvec(Index n, Number *x) {
 }
 
 /* Copy an R numeric result of length k into out. */
-static Bool take(ipopt_data *d, SEXP val, Number *out, Index k) {
+static oc_bool take(ipopt_data *d, SEXP val, oc_number *out, oc_index k) {
   if (val == NULL) return 0;
   PROTECT(val);
   if (TYPEOF(val) != REALSXP || XLENGTH(val) != k) {
@@ -50,42 +62,42 @@ static Bool take(ipopt_data *d, SEXP val, Number *out, Index k) {
   return 1;
 }
 
-static Bool cb_f(Index n, Number *x, Bool new_x, Number *obj, UserDataPtr ud) {
+static oc_bool cb_f(oc_index n, oc_number *x, oc_bool new_x, oc_number *obj, UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   SEXP a = PROTECT(list1(xvec(n, x)));
-  Bool ok = take(d, call_r(d, d->f, a), obj, 1);
+  oc_bool ok = take(d, call_r(d, d->f, a), obj, 1);
   UNPROTECT(1);
   return ok;
 }
 
-static Bool cb_grad(Index n, Number *x, Bool new_x, Number *grad,
+static oc_bool cb_grad(oc_index n, oc_number *x, oc_bool new_x, oc_number *grad,
                     UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   SEXP a = PROTECT(list1(xvec(n, x)));
-  Bool ok = take(d, call_r(d, d->grad, a), grad, n);
+  oc_bool ok = take(d, call_r(d, d->grad, a), grad, n);
   UNPROTECT(1);
   return ok;
 }
 
-static Bool cb_g(Index n, Number *x, Bool new_x, Index m, Number *g,
+static oc_bool cb_g(oc_index n, oc_number *x, oc_bool new_x, oc_index m, oc_number *g,
                  UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   if (m == 0) return 1;
   SEXP a = PROTECT(list1(xvec(n, x)));
-  Bool ok = take(d, call_r(d, d->g, a), g, m);
+  oc_bool ok = take(d, call_r(d, d->g, a), g, m);
   UNPROTECT(1);
   return ok;
 }
 
 /* Structures are dense: rows by columns for the Jacobian (column major)
  * and the lower triangle by columns for the Hessian. */
-static Bool cb_jac(Index n, Number *x, Bool new_x, Index m, Index nele,
-                   Index *iRow, Index *jCol, Number *values, UserDataPtr ud) {
+static oc_bool cb_jac(oc_index n, oc_number *x, oc_bool new_x, oc_index m, oc_index nele,
+                   oc_index *iRow, oc_index *jCol, oc_number *values, UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   if (values == NULL) {
-    Index k = 0;
-    for (Index j = 0; j < n; j++)
-      for (Index i = 0; i < m; i++) {
+    oc_index k = 0;
+    for (oc_index j = 0; j < n; j++)
+      for (oc_index i = 0; i < m; i++) {
         iRow[k] = i;
         jCol[k] = j;
         k++;
@@ -93,20 +105,20 @@ static Bool cb_jac(Index n, Number *x, Bool new_x, Index m, Index nele,
     return 1;
   }
   SEXP a = PROTECT(list1(xvec(n, x)));
-  Bool ok = take(d, call_r(d, d->jac, a), values, nele);
+  oc_bool ok = take(d, call_r(d, d->jac, a), values, nele);
   UNPROTECT(1);
   return ok;
 }
 
-static Bool cb_hess(Index n, Number *x, Bool new_x, Number obj_factor,
-                    Index m, Number *lambda, Bool new_lambda, Index nele,
-                    Index *iRow, Index *jCol, Number *values, UserDataPtr ud) {
+static oc_bool cb_hess(oc_index n, oc_number *x, oc_bool new_x, oc_number obj_factor,
+                    oc_index m, oc_number *lambda, oc_bool new_lambda, oc_index nele,
+                    oc_index *iRow, oc_index *jCol, oc_number *values, UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   if (isNull(d->hess)) return 0;
   if (values == NULL) {
-    Index k = 0;
-    for (Index j = 0; j < n; j++)
-      for (Index i = j; i < n; i++) {
+    oc_index k = 0;
+    for (oc_index j = 0; j < n; j++)
+      for (oc_index i = j; i < n; i++) {
         iRow[k] = i;
         jCol[k] = j;
         k++;
@@ -116,7 +128,7 @@ static Bool cb_hess(Index n, Number *x, Bool new_x, Number obj_factor,
   SEXP lam = PROTECT(allocVector(REALSXP, m));
   if (m) memcpy(REAL(lam), lambda, sizeof(double) * m);
   SEXP a = PROTECT(list3(xvec(n, x), ScalarReal(obj_factor), lam));
-  Bool ok = take(d, call_r(d, d->hess, a), values, nele);
+  oc_bool ok = take(d, call_r(d, d->hess, a), values, nele);
   UNPROTECT(2);
   return ok;
 }
@@ -124,7 +136,7 @@ static Bool cb_hess(Index n, Number *x, Bool new_x, Number obj_factor,
 SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
                           SEXP f, SEXP grad, SEXP g, SEXP jac, SEXP hess,
                           SEXP opts, SEXP env) {
-  Index n = (Index) XLENGTH(x0), m = (Index) XLENGTH(gl);
+  oc_index n = (oc_index) XLENGTH(x0), m = (oc_index) XLENGTH(gl);
   ipopt_data d = {f, grad, g, jac, hess, env, 0};
   int exact = !isNull(hess);
   IpoptProblem p = CreateIpoptProblem(
