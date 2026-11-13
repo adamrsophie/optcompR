@@ -14,18 +14,22 @@ features it supports.
 ``` r
 
 opt_solvers()
-#>   solver   package available                     classes duals
-#> 1  highs     highs      TRUE                  LP MILP QP  TRUE
-#> 2   scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP FALSE
-#> 3   osqp      osqp      TRUE                       LP QP  TRUE
-#> 4 nloptr    nloptr      TRUE              NLP QCQP QP LP FALSE
-#> 5    roi ROI, slam      TRUE                  LP MILP QP FALSE
-#>                                                                            description
-#> 1       HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
-#> 2 SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
-#> 3       OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
-#> 4                    NLopt SLSQP (default): local gradient-based nonlinear programming
-#> 5       ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
+#>     solver   package available                                 classes duals
+#> 1    highs     highs      TRUE                              LP MILP QP  TRUE
+#> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE
+#> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE
+#> 4     osqp      osqp      TRUE                                   LP QP  TRUE
+#> 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE
+#> 6      roi ROI, slam      TRUE                              LP MILP QP FALSE
+#> 7    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE
+#>                                                                                    description
+#> 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
+#> 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs
+#> 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
+#> 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
+#> 5                            NLopt SLSQP (default): local gradient-based nonlinear programming
+#> 6               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
+#> 7   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)
 opt_solver_capabilities("highs")
 #> $name
 #> [1] "highs"
@@ -67,6 +71,12 @@ opt_solver_capabilities("highs")
 #> $features$iteration_limit
 #> [1] TRUE
 #> 
+#> $features$cones
+#> character(0)
+#> 
+#> $features$special
+#> character(0)
+#> 
 #> 
 #> $description
 #> [1] "HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)"
@@ -77,13 +87,17 @@ opt_solver_capabilities("highs")
 | Backend | Classes | Global for | Duals | Ranging | Warm start |
 |----|----|----|----|----|----|
 | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
-| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP | all, including nonconvex | no | no | no |
+| clarabel | LP, convex QP, SOCP, CONIC | all of these | yes | no | no |
+| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md) | no | start point |
+| nlpbb | MINLP, MIQCQP, MIQP | convex relaxations | no | no | no |
 | roi | whatever the chosen ROI plugin solves | plugin | plugin | no | no |
 
-Not supported in this version: conic programs (SOCP, SDP), general
-MINLP, indicator and SOS constraints, IPOPT.
+Indicator and SOS constraints are native in SCIP and are reformulated
+exactly (big-M rows from finite bounds, auxiliary binaries) for other
+mixed-integer backends. IPOPT is not available because it has no
+interface on CRAN; nonlinear models use NLopt.
 
 ## Automatic choice
 
@@ -94,12 +108,15 @@ rejected:
 
 ``` r
 
+# an integer variable inside an exponential cone: no installed backend
 m <- opt_model()
 x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
-opt_objective(m, exp(x))
+t <- opt_variable(m, "t")
+opt_exp_cone(m, x, 0 * x + 1, t)
+opt_objective(m, t)
 opt_solve(m)
 #> Error:
-#> ! No installed solver supports this MINLP (unknown). highs does not support MINLP problems; scip does not support MINLP problems; osqp does not support MINLP problems; nloptr does not support MINLP problems; roi does not support MINLP problems.
+#> ! No installed solver supports this MICONIC (convex). highs does not support MICONIC problems; clarabel does not support MICONIC problems; scip does not support MICONIC problems; osqp does not support MICONIC problems; nloptr does not support MICONIC problems; roi does not support MICONIC problems; nlpbb does not support MICONIC problems.
 ```
 
 ## Comparing backends on one model

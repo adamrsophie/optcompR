@@ -56,6 +56,37 @@
 - [`opt_objective()`](https://adamrsophie.github.io/optcompR/reference/opt_objective.md)
   : Set the objective of a model
 
+## Cones, discrete structure and logic
+
+- [`opt_soc_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md)
+  [`opt_exp_cone()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md)
+  [`opt_pow_cone()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md)
+  [`opt_psd_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_soc_constraint.md)
+  : Conic constraints
+- [`opt_sym_variable()`](https://adamrsophie.github.io/optcompR/reference/opt_sym_variable.md)
+  : Symmetric matrix variables
+- [`opt_indicator()`](https://adamrsophie.github.io/optcompR/reference/opt_indicator.md)
+  : Indicator constraints
+- [`opt_sos1()`](https://adamrsophie.github.io/optcompR/reference/opt_sos1.md)
+  [`opt_sos2()`](https://adamrsophie.github.io/optcompR/reference/opt_sos1.md)
+  [`opt_complementarity()`](https://adamrsophie.github.io/optcompR/reference/opt_sos1.md)
+  : Special ordered sets and complementarity
+- [`opt_implies()`](https://adamrsophie.github.io/optcompR/reference/opt_implies.md)
+  [`opt_and()`](https://adamrsophie.github.io/optcompR/reference/opt_implies.md)
+  [`opt_or()`](https://adamrsophie.github.io/optcompR/reference/opt_implies.md)
+  : Logical constraints on binary variables
+
+## Robust and stochastic optimization
+
+- [`opt_robust_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_robust_constraint.md)
+  : Robust linear constraints
+- [`opt_chance_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_chance_constraint.md)
+  : Chance constraints
+- [`opt_cvar()`](https://adamrsophie.github.io/optcompR/reference/opt_cvar.md)
+  [`opt_expectation()`](https://adamrsophie.github.io/optcompR/reference/opt_cvar.md)
+  [`opt_worst_expectation()`](https://adamrsophie.github.io/optcompR/reference/opt_cvar.md)
+  : Risk measures and expectations over scenarios
+
 ## Solving
 
 - [`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)
@@ -100,6 +131,8 @@
   [`opt_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
   [`opt_hessian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
   : Exact derivatives of the objective and constraints
+- [`opt_solution_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_solution_jacobian.md)
+  : Derivatives of the optimal solution with respect to parameters
 - [`opt_sensitivity()`](https://adamrsophie.github.io/optcompR/reference/opt_sensitivity.md)
   : Linear programming sensitivity report
 - [`opt_fixed_relaxation()`](https://adamrsophie.github.io/optcompR/reference/opt_fixed_relaxation.md)
@@ -126,6 +159,8 @@
   : Convert a symcompR expression to an optimization expression
 - [`opt_to_sym()`](https://adamrsophie.github.io/optcompR/reference/opt_to_sym.md)
   : Convert an optimization expression to a symcompR expression
+- [`opt_ode_loss()`](https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.md)
+  : Least squares loss of an ODE model from modelcompR
 
 ## Package
 

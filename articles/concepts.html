@@ -41,7 +41,10 @@
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -52,11 +55,13 @@
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -124,7 +129,11 @@ polynomial models of degree two and records how:</p>
 <span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">convexity</span></span>
 <span><span class="co">#&gt; [1] "nonconvex"</span></span></code></pre></div>
 <p>For general nonlinear expressions convexity is reported as
-<code>unknown</code>; it is not guessed.</p>
+<code>unknown</code>; it is not guessed. Cone constraints are convex
+sets by construction, so a model whose only nonlinear structure is cones
+(with a linear or convex quadratic objective) is classified as convex
+<code>"SOCP"</code> or <code>"CONIC"</code>; see
+<code><a href="../articles/conic.html">vignette("conic")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="continuous-and-mixed-integer">Continuous and mixed-integer<a class="anchor" aria-label="anchor" href="#continuous-and-mixed-integer"></a>
@@ -200,7 +209,11 @@ primal status is a usable incumbent.</p>
 f(x)</span>, describes the model function. The sensitivity of the
 optimum, <span class="math inline">\partial f^* / \partial b</span>,
 describes the optimization problem as a whole; by the envelope theorem
-it equals the dual. See <code><a href="../articles/sensitivity.html">vignette("sensitivity")</a></code>.</p>
+it equals the dual. See <code><a href="../articles/sensitivity.html">vignette("sensitivity")</a></code>. The
+derivative of the optimal point itself, <span class="math inline">\partial x^* / \partial p</span>, follows from
+differentiating the KKT conditions and is computed by
+<code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code>; see
+<code><a href="../articles/solution-derivatives.html">vignette("solution-derivatives")</a></code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

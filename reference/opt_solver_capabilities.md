@@ -66,6 +66,12 @@ opt_solver_capabilities("highs")
 #> $features$iteration_limit
 #> [1] TRUE
 #> 
+#> $features$cones
+#> character(0)
+#> 
+#> $features$special
+#> character(0)
+#> 
 #> 
 #> $description
 #> [1] "HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)"

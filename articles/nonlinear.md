@@ -120,12 +120,21 @@ of `fn`.
 
 A model from modelcompR (for example the sum of squared errors of an ODE
 solution against data, as a function of its parameters) can be optimized
-the same way: wrap the loss in
-[`opt_function()`](https://adamrsophie.github.io/optcompR/reference/opt_function.md)
-and supply its gradient from modelcompR’s sensitivity tools.
+the same way.
+[`opt_ode_loss()`](https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.md)
+builds that loss with gradients from modelcompR’s forward sensitivities;
+see
+[`vignette("ode-fitting")`](https://adamrsophie.github.io/optcompR/articles/ode-fitting.md).
 
 ## Limits
 
 - NLopt SLSQP finds local solutions.
-- Mixed-integer nonlinear problems (MINLP) with general functions are
-  not supported in this version.
+- Mixed-integer nonlinear problems (MINLP) are solved by NLP branch and
+  bound (`solver = "nlpbb"`); results are global only when the
+  continuous relaxation is known to be convex, and labeled local
+  otherwise. See
+  [`vignette("discrete-structure")`](https://adamrsophie.github.io/optcompR/articles/discrete-structure.md).
+- Convex problems with norms, logarithms, exponentials or matrix
+  eigenvalues are often better written as conic programs, which Clarabel
+  solves to global optimality; see
+  [`vignette("conic")`](https://adamrsophie.github.io/optcompR/articles/conic.md).

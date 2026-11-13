@@ -29,7 +29,10 @@ R binding exposes, which can be less than the native solver supports."></head><b
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -40,11 +43,13 @@ R binding exposes, which can be less than the native solver supports."></head><b
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -88,18 +93,22 @@ R binding exposes, which can be less than the native solver supports.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">opt_solvers</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   solver   package available                     classes duals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  highs     highs      TRUE                  LP MILP QP  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   osqp      osqp      TRUE                       LP QP  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 nloptr    nloptr      TRUE              NLP QCQP QP LP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5    roi ROI, slam      TRUE                  LP MILP QP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                            description</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1       HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4                    NLopt SLSQP (default): local gradient-based nonlinear programming</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5       ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     solver   package available                                 classes duals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    highs     highs      TRUE                              LP MILP QP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     osqp      osqp      TRUE                                   LP QP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      roi ROI, slam      TRUE                              LP MILP QP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                    description</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                            NLopt SLSQP (default): local gradient-based nonlinear programming</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

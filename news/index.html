@@ -25,7 +25,10 @@
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -36,11 +39,13 @@
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -68,15 +73,20 @@
 <h2 class="pkg-version" data-toc-text="0.1.0" id="optcompr-010">optcompR 0.1.0<a class="anchor" aria-label="anchor" href="#optcompr-010"></a></h2>
 <ul><li>First release.</li>
 <li>Modeling: continuous, integer and binary variables, parameters, vectorized linear, quadratic and nonlinear expressions with sparse <code>Matrix</code> support, ranged constraints and named blocks.</li>
-<li>Classification into LP, MILP, QP, MIQP, QCQP, MIQCQP, NLP and MINLP with recorded convexity evidence, and capability-aware solver selection.</li>
-<li>Backends: HiGHS (LP, MILP, convex QP, ranging, warm starts), SCIP (global MIQCQP), OSQP (convex QP), NLopt SLSQP (local NLP) and ROI plugins.</li>
+<li>Classification into LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP, CONIC, NLP and MINLP with recorded convexity evidence, and capability-aware solver selection.</li>
+<li>Backends: HiGHS (LP, MILP, convex QP, ranging, warm starts), SCIP (global MIQCQP and MISOCP, native indicator and SOS constraints), Clarabel (LP, convex QP and conic programs), OSQP (convex QP), NLopt SLSQP (local NLP), NLP branch and bound for MINLP, and ROI plugins.</li>
+<li>Cone constraints (<code><a href="../reference/opt_soc_constraint.html">opt_soc_constraint()</a></code>, <code><a href="../reference/opt_soc_constraint.html">opt_exp_cone()</a></code>, <code><a href="../reference/opt_soc_constraint.html">opt_pow_cone()</a></code>, <code><a href="../reference/opt_soc_constraint.html">opt_psd_constraint()</a></code>) and symmetric matrix variables (<code><a href="../reference/opt_sym_variable.html">opt_sym_variable()</a></code>).</li>
+<li>Indicator, SOS1, SOS2, complementarity and logical constraints with exact reformulations for solvers without native support.</li>
+<li>Robust and stochastic optimization: <code><a href="../reference/opt_robust_constraint.html">opt_robust_constraint()</a></code>, <code><a href="../reference/opt_chance_constraint.html">opt_chance_constraint()</a></code>, <code><a href="../reference/opt_cvar.html">opt_cvar()</a></code>, <code><a href="../reference/opt_cvar.html">opt_expectation()</a></code>, <code><a href="../reference/opt_cvar.html">opt_worst_expectation()</a></code>.</li>
+<li>Derivatives of optimal solutions with respect to parameters (<code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code>).</li>
+<li>ODE least squares losses for modelcompR models (<code><a href="../reference/opt_ode_loss.html">opt_ode_loss()</a></code>).</li>
 <li>Results with standardized statuses, duals as derivatives of the optimal value, independent feasibility and KKT diagnostics (<code><a href="../reference/opt_check.html">opt_check()</a></code>).</li>
 <li>Exact gradients, Jacobians and Lagrangian Hessians; external R functions with supplied, jaxR or labeled finite difference gradients (<code><a href="../reference/opt_function.html">opt_function()</a></code>).</li>
 <li>Sensitivity ranging, fixed relaxations of MILPs and scenario sweeps.</li>
 <li>Multiobjective scalarizations: <code><a href="../reference/opt_weighted.html">opt_weighted()</a></code>, <code><a href="../reference/opt_lexicographic.html">opt_lexicographic()</a></code>, <code><a href="../reference/opt_epsilon_constraint.html">opt_epsilon_constraint()</a></code>.</li>
 <li>Exact feasibility checks and optimality certificates for LP and MILP through z3r (<code><a href="../reference/opt_z3_check.html">opt_z3_check()</a></code>, <code><a href="../reference/opt_z3_certify.html">opt_z3_certify()</a></code>).</li>
 <li>Conversion to and from symcompR expressions; MPS and LP export.</li>
-<li>Fifteen vignettes and a pkgdown site.</li>
+<li>Twenty vignettes and a pkgdown site.</li>
 </ul></div>
   </main></div>
 

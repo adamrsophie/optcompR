@@ -3,21 +3,26 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   concepts: concepts.html
+  conic: conic.html
   diagnostics: diagnostics.html
+  discrete-structure: discrete-structure.html
   exact-certificates: exact-certificates.html
   infeasible-models: infeasible-models.html
   linear-programming: linear-programming.html
   mixed-integer: mixed-integer.html
   multiobjective: multiobjective.html
   nonlinear: nonlinear.html
+  ode-fitting: ode-fitting.html
   optcompR: optcompR.html
   parameterized-models: parameterized-models.html
   quadratic-programming: quadratic-programming.html
+  robust-stochastic: robust-stochastic.html
   sensitivity: sensitivity.html
+  solution-derivatives: solution-derivatives.html
   solver-comparison: solver-comparison.html
   sparse-optimization: sparse-optimization.html
   symbolic-integration: symbolic-integration.html
-last_built: 2026-11-13T06:07Z
+last_built: 2026-11-13T06:51Z
 urls:
   reference: https://adamrsophie.github.io/optcompR/reference
   article: https://adamrsophie.github.io/optcompR/articles

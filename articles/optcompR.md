@@ -50,18 +50,22 @@ opt_classify(m)
 #>   - structural: linear objective
 #>   - structural: all rows linear, feasible set is a polyhedron
 opt_solvers()
-#>   solver   package available                     classes duals
-#> 1  highs     highs      TRUE                  LP MILP QP  TRUE
-#> 2   scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP FALSE
-#> 3   osqp      osqp      TRUE                       LP QP  TRUE
-#> 4 nloptr    nloptr      TRUE              NLP QCQP QP LP FALSE
-#> 5    roi ROI, slam      TRUE                  LP MILP QP FALSE
-#>                                                                            description
-#> 1       HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
-#> 2 SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
-#> 3       OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
-#> 4                    NLopt SLSQP (default): local gradient-based nonlinear programming
-#> 5       ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
+#>     solver   package available                                 classes duals
+#> 1    highs     highs      TRUE                              LP MILP QP  TRUE
+#> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE
+#> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE
+#> 4     osqp      osqp      TRUE                                   LP QP  TRUE
+#> 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE
+#> 6      roi ROI, slam      TRUE                              LP MILP QP FALSE
+#> 7    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE
+#>                                                                                    description
+#> 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
+#> 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs
+#> 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
+#> 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
+#> 5                            NLopt SLSQP (default): local gradient-based nonlinear programming
+#> 6               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
+#> 7   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)
 ```
 
 [`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)
@@ -77,7 +81,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   410
-#>   time:        0.009s (build 0.000s)
+#>   time:        0.010s (build 0.001s)
 opt_value(r, c(tables, chairs))
 #> [1] 30 40
 opt_objective_value(r)

@@ -41,7 +41,10 @@
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -52,11 +55,13 @@
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -206,16 +211,22 @@ list the function in <code>r$metadata$finite_difference</code>. With
 from reverse-mode automatic differentiation of <code>fn</code>.</p>
 <p>A model from modelcompR (for example the sum of squared errors of an
 ODE solution against data, as a function of its parameters) can be
-optimized the same way: wrap the loss in <code><a href="../reference/opt_function.html">opt_function()</a></code> and
-supply its gradient from modelcompR’s sensitivity tools.</p>
+optimized the same way. <code><a href="../reference/opt_ode_loss.html">opt_ode_loss()</a></code> builds that loss
+with gradients from modelcompR’s forward sensitivities; see
+<code><a href="../articles/ode-fitting.html">vignette("ode-fitting")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="limits">Limits<a class="anchor" aria-label="anchor" href="#limits"></a>
 </h2>
 <ul>
 <li>NLopt SLSQP finds local solutions.</li>
-<li>Mixed-integer nonlinear problems (MINLP) with general functions are
-not supported in this version.</li>
+<li>Mixed-integer nonlinear problems (MINLP) are solved by NLP branch
+and bound (<code>solver = "nlpbb"</code>); results are global only when
+the continuous relaxation is known to be convex, and labeled local
+otherwise. See <code><a href="../articles/discrete-structure.html">vignette("discrete-structure")</a></code>.</li>
+<li>Convex problems with norms, logarithms, exponentials or matrix
+eigenvalues are often better written as conic programs, which Clarabel
+solves to global optimality; see <code><a href="../articles/conic.html">vignette("conic")</a></code>.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

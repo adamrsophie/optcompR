@@ -35,7 +35,10 @@ opt_standard_form()."></head><body>
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -46,11 +49,13 @@ opt_standard_form()."></head><body>
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -116,7 +121,7 @@ row names are not transferred; columns and rows keep the order of
 <span class="r-in"><span><span class="fu">opt_write_model</span><span class="op">(</span><span class="va">m</span>, <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Writing the model to /tmp/Rtmpa1y2EO/file1a1536a5e98e.mps</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Writing the model to /tmp/Rtmp61mJ2N/file1c9747ef830a.mps</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "NAME        " "OBJSENSE"     "  MAX"        "ROWS"         " N  Obj     "</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [6] " L  r0      "</span>

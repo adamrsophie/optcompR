@@ -43,7 +43,10 @@
     <li><a class="dropdown-item" href="articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -54,11 +57,13 @@
     <li><a class="dropdown-item" href="articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -89,7 +94,7 @@
 <!-- badges: start -->
 
 <p>Unified mathematical optimization and computational modeling in R.</p>
-<p>optcompR is a solver independent modeling layer. Variables, parameters, constraints and objectives are written with ordinary R operators; models are classified (LP, MILP, QP, MIQP, QCQP, MIQCQP, NLP) with recorded convexity evidence, lowered to sparse standard forms and solved by installed backends. Results carry standardized statuses, duals with one documented sign convention, and diagnostics recomputed independently from the model.</p>
+<p>optcompR is a solver independent modeling layer. Variables, parameters, constraints and objectives are written with ordinary R operators; models are classified (LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, CONIC, NLP, MINLP) with recorded convexity evidence, lowered to sparse standard forms and solved by installed backends. Results carry standardized statuses, duals with one documented sign convention, and diagnostics recomputed independently from the model.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/adamrsophie/optcompR" class="external-link">optcompR</a></span><span class="op">)</span></span>
 <span></span>
@@ -117,6 +122,12 @@
 <li>Sensitivity: duals as derivatives of the optimal value, HiGHS ranging, fixed relaxations of MILPs.</li>
 <li>Multiobjective scalarizations: weighted sums, lexicographic order and epsilon constraints.</li>
 <li>Exact feasibility and optimality certificates for LP and MILP through Z3 (z3r).</li>
+<li>Second-order, semidefinite, exponential and power cone constraints.</li>
+<li>Indicator constraints, SOS1 and SOS2 sets, complementarity and logical constraints, native in SCIP and exactly reformulated elsewhere.</li>
+<li>Mixed-integer nonlinear programming by NLP branch and bound.</li>
+<li>Robust constraints (box, budget, ellipsoid), Gaussian and scenario chance constraints, CVaR, sample average and distributionally robust expectations.</li>
+<li>Derivatives of optimal solutions with respect to parameters by implicit differentiation of the KKT conditions.</li>
+<li>Least squares fitting of modelcompR ODE models with exact sensitivities.</li>
 <li>Conversion to and from symcompR expressions.</li>
 </ul>
 </div>
@@ -153,9 +164,18 @@
 <td>yes</td>
 </tr>
 <tr>
+<td>clarabel</td>
+<td>clarabel</td>
+<td>LP, convex QP, SOCP, CONIC (SOC, PSD, exp, power)</td>
+<td>all of these</td>
+<td>yes</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
 <td>scip</td>
 <td>scip</td>
-<td>LP, MILP, QP, MIQP, QCQP, MIQCQP</td>
+<td>LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP</td>
 <td>all, including nonconvex</td>
 <td>no</td>
 <td>no</td>
@@ -180,6 +200,15 @@
 <td>start point</td>
 </tr>
 <tr>
+<td>nlpbb</td>
+<td>nloptr</td>
+<td>MINLP, MIQCQP, MIQP</td>
+<td>convex relaxations</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
 <td>roi</td>
 <td>ROI + plugin</td>
 <td>plugin classes</td>
@@ -190,7 +219,7 @@
 </tr>
 </tbody>
 </table>
-<p>HiGHS is required; the others are optional. Not supported in this version: conic programs, general MINLP, indicator and SOS constraints, IPOPT, and differentiation of optimal solutions.</p>
+<p>HiGHS is required; the others are optional. IPOPT is not supported because it has no interface on CRAN; nonlinear models use NLopt.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -198,12 +227,12 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"adamrsophie/optcompR"</span><span class="op">)</span></span></code></pre></div>
-<p>Optional integrations: <code>remotes::install_github("adamrsophie/z3r")</code> (needs the Z3 library), <code>remotes::install_github("adamrsophie/symcompR")</code>, <code>remotes::install_github("adamrsophie/jaxR")</code>.</p>
+<p>Optional integrations: <code>remotes::install_github("adamrsophie/z3r")</code> (needs the Z3 library), <code>remotes::install_github("adamrsophie/symcompR")</code>, <code>remotes::install_github("adamrsophie/jaxR")</code>, <code>remotes::install_github("adamrsophie/modelcompR")</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>Articles at <a href="https://adamrsophie.github.io/optcompR/" class="uri">https://adamrsophie.github.io/optcompR/</a> cover linear, quadratic, mixed-integer, nonlinear and multiobjective optimization, parameterized and sparse models, solver comparison, diagnostics, infeasible models, sensitivity, exact certificates and the underlying concepts.</p>
+<p>Articles at <a href="https://adamrsophie.github.io/optcompR/" class="uri">https://adamrsophie.github.io/optcompR/</a> cover linear, quadratic, mixed-integer, nonlinear, conic, robust, stochastic and multiobjective optimization, indicator and SOS constraints, parameterized and sparse models, solver comparison, diagnostics, infeasible models, sensitivity, derivatives of optimal solutions, exact certificates, ODE fitting and the underlying concepts.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>

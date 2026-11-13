@@ -1,0 +1,231 @@
+# Derivatives of optimal solutions
+
+``` r
+
+library(optcompR)
+```
+
+How does the optimal solution move when a parameter changes? Duals
+answer this for the optimal value and right-hand sides.
+[`opt_solution_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_solution_jacobian.md)
+answers it for the solution itself and for any parameter, wherever it
+appears: in costs, matrix coefficients, right-hand sides or nonlinear
+terms. Such derivatives are used in bilevel optimization, in learning
+with optimization layers, and for sensitivity reports.
+
+## The method
+
+At a local optimum x^\*(p) with multipliers y^\*(p), the KKT conditions
+on the active set A are
+
+\nabla_x f(x, p) - J_A(x, p)^\top y_A = 0, \qquad g_A(x, p) = b_A ,
+
+where J_A is the Jacobian of the active rows and variables at a bound
+are held fixed. Differentiating with respect to p gives the linear
+system
+
+\begin{pmatrix} H & -J_A^\top \\ J_A & 0 \end{pmatrix} \begin{pmatrix}
+\partial x / \partial p \\ \partial y_A / \partial p \end{pmatrix} =
+-\begin{pmatrix} \nabla^2\_{xp} L \\ \partial g_A / \partial p
+\end{pmatrix},
+
+with H = \nabla^2\_{xx} L the Hessian of the Lagrangian L = f - y^\top g
+over the free variables. The optimal value changes by
+\mathrm{d}f^\*/\mathrm{d}p = \partial L / \partial p (the envelope
+theorem). Every second derivative is exact.
+
+The implicit function theorem applies when three conditions hold at the
+solution:
+
+1.  **LICQ**: the gradients of the active rows (and active bounds) are
+    linearly independent;
+2.  **second-order sufficiency**: H is positive definite on the null
+    space of J_A;
+3.  **strict complementarity**: every active inequality has a nonzero
+    multiplier.
+
+When the first or second fails the KKT matrix is singular and the
+function stops. When the third fails it warns, because the solution map
+then has a kink and only one-sided derivatives. The active set is held
+fixed, so the derivatives describe small parameter changes; a large
+change can switch the active set.
+
+## A quadratic program
+
+Project the point (2, 1) onto the half plane x_1 + x_2 \le p. For p \< 3
+the constraint is active and the solution moves along its normal:
+\partial x / \partial p = (1/2, 1/2).
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2)
+p <- opt_parameter(m, "p", value = 1)
+budget <- opt_constraint(m, sum(x) <= p, name = "budget")
+opt_objective(m, sum((x - c(2, 1))^2))
+r <- opt_solve(m)
+d <- opt_solution_jacobian(r, p)
+d$solution
+#>        p
+#> x[1] 0.5
+#> x[2] 0.5
+d$objective
+#>  p 
+#> -2
+opt_dual(r, budget)
+#> budget 
+#>     -2
+```
+
+For a right-hand side parameter the optimal value derivative equals the
+dual, as it must.
+
+Compare with central differences of re-solves:
+
+``` r
+
+resolve <- function(v) {
+  opt_set_parameter(m, p, v)
+  r <- opt_solve(m)
+  c(opt_value(r, x), opt_objective_value(r))
+}
+h <- 1e-5
+(resolve(1 + h) - resolve(1 - h)) / (2 * h)
+#> [1]  0.5  0.5 -2.0
+opt_set_parameter(m, p, 1)
+```
+
+## Parameters inside coefficients
+
+Parameters may multiply variables. Here p scales one cost and one
+constraint coefficient at once:
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 3, lower = c(-Inf, -Inf, 0))
+p <- opt_parameter(m, "p", value = 1)
+opt_constraint(m, sum(x) <= p, name = "budget")
+opt_constraint(m, x[1] - x[2] == 0.5 * p, name = "link")
+opt_objective(m, sum((x - c(2, 1, -1))^2) + p * x[1])
+r <- opt_solve(m)
+d <- opt_solution_jacobian(r, p)
+d$solution
+#>         p
+#> x[1] 0.75
+#> x[2] 0.25
+#> x[3] 0.00
+d$active
+#> [1] "budget"     "link"       "bound:x[3]"
+```
+
+The third variable is at its lower bound and stays there, so its
+derivative is zero.
+
+## Linear programs
+
+At a nondegenerate vertex of a linear program the solution is a fixed
+basis solution, a linear function of the right-hand side, and does not
+move when costs change slightly:
+
+``` r
+
+m <- opt_model("max")
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+b <- opt_parameter(m, "b", value = c(4, 6))
+cst <- opt_parameter(m, "cst", value = 3)
+opt_constraint(m, x[1] + x[2] <= b[1])
+opt_constraint(m, x[1] + 3 * x[2] <= b[2])
+opt_objective(m, cst * x[1] + 4 * x[2])
+r <- opt_solve(m)
+opt_solution_jacobian(r, b)
+#> $solution
+#>      b[1] b[2]
+#> x[1]  1.5 -0.5
+#> x[2] -0.5  0.5
+#> 
+#> $objective
+#> b[1] b[2] 
+#>  2.5  0.5 
+#> 
+#> $active
+#> [1] "c1" "c2"
+#> 
+#> $multipliers
+#> [1] "solver"
+opt_solution_jacobian(r, cst)$solution
+#>      cst
+#> x[1]   0
+#> x[2]   0
+```
+
+## Nonlinear programs
+
+With a local nonlinear solver the multipliers are estimated from the
+stationarity conditions on the active set; the result records it as
+`multipliers = "estimated"`.
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, start = c(0.5, 0.5))
+p <- opt_parameter(m, "p", value = 0.3)
+opt_constraint(m, x[1]^2 + x[2]^2 <= 1 + p, name = "disk")
+opt_objective(m, exp(x[1] - p) - 2 * x[1] - 3 * x[2])
+r <- opt_solve(m)
+d <- opt_solution_jacobian(r, p)
+d
+#> $solution
+#>              p
+#> x[1] 0.3549066
+#> x[2] 0.3473396
+#> 
+#> $objective
+#>         p 
+#> -2.426877 
+#> 
+#> $active
+#> [1] "disk"
+#> 
+#> $multipliers
+#> [1] "estimated"
+```
+
+## When derivatives do not exist
+
+Two copies of the same active constraint violate LICQ:
+
+``` r
+
+m <- opt_model()
+y <- opt_variable(m, "y", dim = 2)
+q <- opt_parameter(m, "q", value = 1)
+opt_constraint(m, y[1] + y[2] >= q)
+opt_constraint(m, 2 * y[1] + 2 * y[2] >= 2 * q)
+opt_objective(m, sum(y^2))
+opt_solution_jacobian(suppressWarnings(opt_solve(m)), q)
+#> Warning: Strict complementarity fails at c1 (active with a zero multiplier);
+#> the solution may only have one-sided derivatives.
+#> Error:
+#> ! The KKT matrix on the active set is singular: the active constraint gradients are linearly dependent (LICQ fails) or the second-order sufficient condition fails, so the solution is not differentiable here.
+```
+
+A constraint that is active with a zero multiplier sits exactly at a
+kink of the solution map:
+
+``` r
+
+m <- opt_model()
+w <- opt_variable(m, "w")
+s <- opt_parameter(m, "s", value = 1)
+opt_constraint(m, w <= s)
+opt_objective(m, (w - s)^2)
+d <- opt_solution_jacobian(opt_solve(m), s)
+#> Warning: Strict complementarity fails at c1 (active with a zero multiplier);
+#> the solution may only have one-sided derivatives.
+```
+
+Mixed-integer solutions are piecewise constant in the parameters and are
+refused. To differentiate within a fixed integer assignment,
+differentiate `opt_fixed_relaxation(result)`, the continuous model with
+the integers fixed at their optimal values.

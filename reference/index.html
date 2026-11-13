@@ -25,7 +25,10 @@
     <li><a class="dropdown-item" href="../articles/quadratic-programming.html">Quadratic programming</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-integer.html">Mixed-integer programming</a></li>
     <li><a class="dropdown-item" href="../articles/nonlinear.html">Nonlinear optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/conic.html">Conic optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/discrete-structure.html">Indicators, SOS, complementarity and logic</a></li>
     <li><a class="dropdown-item" href="../articles/multiobjective.html">Multiobjective optimization</a></li>
+    <li><a class="dropdown-item" href="../articles/robust-stochastic.html">Robust and stochastic optimization</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Working with models</h6></li>
     <li><a class="dropdown-item" href="../articles/parameterized-models.html">Reusable parameterized models</a></li>
@@ -36,11 +39,13 @@
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Constraint diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/infeasible-models.html">Infeasible and unbounded models</a></li>
     <li><a class="dropdown-item" href="../articles/sensitivity.html">Sensitivity and derivatives</a></li>
+    <li><a class="dropdown-item" href="../articles/solution-derivatives.html">Derivatives of optimal solutions</a></li>
     <li><a class="dropdown-item" href="../articles/exact-certificates.html">Exact certificates with Z3</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Background and integrations</h6></li>
     <li><a class="dropdown-item" href="../articles/concepts.html">Optimization concepts</a></li>
     <li><a class="dropdown-item" href="../articles/symbolic-integration.html">Symbolic expressions with symcompR</a></li>
+    <li><a class="dropdown-item" href="../articles/ode-fitting.html">Fitting ODE models with modelcompR</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -217,6 +222,80 @@
         </dt>
         <dd>Set the objective of a model</dd>
       </dl></div><div class="section level2">
+      <h2 id="cones-discrete-structure-and-logic">Cones, discrete structure and logic<a class="anchor" aria-label="anchor" href="#cones-discrete-structure-and-logic"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="opt_soc_constraint.html">opt_soc_constraint()</a></code> <code><a href="opt_soc_constraint.html">opt_exp_cone()</a></code> <code><a href="opt_soc_constraint.html">opt_pow_cone()</a></code> <code><a href="opt_soc_constraint.html">opt_psd_constraint()</a></code>
+
+        </dt>
+        <dd>Conic constraints</dd>
+
+        <dt>
+
+          <code><a href="opt_sym_variable.html">opt_sym_variable()</a></code>
+
+        </dt>
+        <dd>Symmetric matrix variables</dd>
+
+        <dt>
+
+          <code><a href="opt_indicator.html">opt_indicator()</a></code>
+
+        </dt>
+        <dd>Indicator constraints</dd>
+
+        <dt>
+
+          <code><a href="opt_sos1.html">opt_sos1()</a></code> <code><a href="opt_sos1.html">opt_sos2()</a></code> <code><a href="opt_sos1.html">opt_complementarity()</a></code>
+
+        </dt>
+        <dd>Special ordered sets and complementarity</dd>
+
+        <dt>
+
+          <code><a href="opt_implies.html">opt_implies()</a></code> <code><a href="opt_implies.html">opt_and()</a></code> <code><a href="opt_implies.html">opt_or()</a></code>
+
+        </dt>
+        <dd>Logical constraints on binary variables</dd>
+      </dl></div><div class="section level2">
+      <h2 id="robust-and-stochastic-optimization">Robust and stochastic optimization<a class="anchor" aria-label="anchor" href="#robust-and-stochastic-optimization"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="opt_robust_constraint.html">opt_robust_constraint()</a></code>
+
+        </dt>
+        <dd>Robust linear constraints</dd>
+
+        <dt>
+
+          <code><a href="opt_chance_constraint.html">opt_chance_constraint()</a></code>
+
+        </dt>
+        <dd>Chance constraints</dd>
+
+        <dt>
+
+          <code><a href="opt_cvar.html">opt_cvar()</a></code> <code><a href="opt_cvar.html">opt_expectation()</a></code> <code><a href="opt_cvar.html">opt_worst_expectation()</a></code>
+
+        </dt>
+        <dd>Risk measures and expectations over scenarios</dd>
+      </dl></div><div class="section level2">
       <h2 id="solving">Solving<a class="anchor" aria-label="anchor" href="#solving"></a></h2>
 
 
@@ -344,6 +423,13 @@
 
         <dt>
 
+          <code><a href="opt_solution_jacobian.html">opt_solution_jacobian()</a></code>
+
+        </dt>
+        <dd>Derivatives of the optimal solution with respect to parameters</dd>
+
+        <dt>
+
           <code><a href="opt_sensitivity.html">opt_sensitivity()</a></code>
 
         </dt>
@@ -429,6 +515,13 @@
 
         </dt>
         <dd>Convert an optimization expression to a symcompR expression</dd>
+
+        <dt>
+
+          <code><a href="opt_ode_loss.html">opt_ode_loss()</a></code>
+
+        </dt>
+        <dd>Least squares loss of an ODE model from modelcompR</dd>
       </dl></div><div class="section level2">
       <h2 id="package">Package<a class="anchor" aria-label="anchor" href="#package"></a></h2>
 

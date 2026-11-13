@@ -36,7 +36,10 @@ opt_classify(m)$convexity
 ```
 
 For general nonlinear expressions convexity is reported as `unknown`; it
-is not guessed.
+is not guessed. Cone constraints are convex sets by construction, so a
+model whose only nonlinear structure is cones (with a linear or convex
+quadratic objective) is classified as convex `"SOCP"` or `"CONIC"`; see
+[`vignette("conic")`](https://adamrsophie.github.io/optcompR/articles/conic.md).
 
 ## Continuous and mixed-integer
 
@@ -118,3 +121,8 @@ function. The sensitivity of the optimum, \partial f^\* / \partial b,
 describes the optimization problem as a whole; by the envelope theorem
 it equals the dual. See
 [`vignette("sensitivity")`](https://adamrsophie.github.io/optcompR/articles/sensitivity.md).
+The derivative of the optimal point itself, \partial x^\* / \partial p,
+follows from differentiating the KKT conditions and is computed by
+[`opt_solution_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_solution_jacobian.md);
+see
+[`vignette("solution-derivatives")`](https://adamrsophie.github.io/optcompR/articles/solution-derivatives.md).
