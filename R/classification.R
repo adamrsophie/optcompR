@@ -17,7 +17,9 @@ psd_check <- function(Q, tol = 1e-9) {
   }
   if (n <= 2000L) {
     ev <- eigen(as.matrix(Qs), symmetric = TRUE, only.values = TRUE)$values
-    scale <- max(1, max(abs(ev)))
+    # relative to the largest eigenvalue, so tiny matrices are not
+    # declared convex by an absolute tolerance
+    scale <- max(abs(ev))
     lo <- min(ev)
     # eigenvalue rounding error is about n * eps * ||Q||; a negative
     # eigenvalue beyond it but inside `tol` cannot be told from real
@@ -36,7 +38,9 @@ psd_check <- function(Q, tol = 1e-9) {
     return(list(psd = status, method = "numerical eigenvalues",
                 min_eigen = lo, detail = detail))
   }
-  shift <- tol * max(1, max(abs(Q@x)))
+  # a shift at rounding level only: a larger one would prove Q + shift I
+  # positive definite while Q itself has negative curvature
+  shift <- 100 * n * .Machine$double.eps * max(abs(Q@x))
   ok <- tryCatch({
     Matrix::Cholesky(Qs + Matrix::Diagonal(n, shift), LDL = FALSE)
     TRUE
@@ -144,6 +148,7 @@ opt_classify <- function(model, tol = 1e-9) {
       fin_up <- is.finite(sf$row_upper[ri])
       fin_lo <- is.finite(sf$row_lower[ri])
       lab <- sf$row_names[ri]
+      if (!fin_up && !fin_lo) next # no bound, so no restriction
       if (fin_up && fin_lo) {
         convex <- "nonconvex"
         evidence <- c(evidence, sprintf(

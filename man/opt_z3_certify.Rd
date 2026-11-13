@@ -14,8 +14,10 @@ opt_z3_certify(result, tol = 1e-09, coefficients = c("decimal", "binary"))
 \item{coefficients}{See \code{\link[=opt_z3_check]{opt_z3_check()}}.}
 }
 \value{
-A list with \code{certified} (\code{TRUE}, \code{FALSE} or \code{NA} when Z3 returns
-unknown), \code{status}, the \code{threshold} that was tested and, when a better
+A list with \code{certified} (\code{TRUE} when no feasible point beats the
+reported value by more than the margin and some feasible point attains
+it within the margin, \code{FALSE} otherwise, \code{NA} when Z3 returns unknown),
+\code{attained}, \code{status}, the \code{threshold} that was tested and, when a better
 point exists, \code{better_point}.
 }
 \description{

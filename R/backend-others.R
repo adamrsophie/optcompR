@@ -231,6 +231,16 @@ nloptr_termination <- function(status) {
 nloptr_solve_sf <- function(sf, cls, control) {
   s <- if (sf$sense == "max") -1 else 1
   n <- length(sf$c)
+  # SLSQP can cycle without end on an infeasible problem; with linear rows
+  # an LP proves infeasibility first
+  if (linear_infeasible(sf)) {
+    return(list(termination = "infeasible", primal_status = "no_solution",
+                dual_status = "not_available", x = rep(NA_real_, n),
+                objective = NA_real_, row_dual = NULL, col_dual = NULL,
+                iterations = NULL, gap = NA_real_, bound = NA_real_,
+                message = "linear rows and bounds are infeasible (HiGHS LP)",
+                local = FALSE, warm_start = FALSE, extra = list(), raw = NULL))
+  }
   vs <- sf$var_sym
   n0 <- length(vs)
   ns <- sf$n_sym
@@ -278,11 +288,15 @@ nloptr_solve_sf <- function(sf, cls, control) {
     list(constraints = g$val[eq] - lo[eq],
          jacobian = as.matrix(g$J)[eq, , drop = FALSE])
   } else NULL
-  x0 <- if (isFALSE(control$warm_start)) rep(NA_real_, length(sf$start)) else
-    sf$start
-  miss <- is.na(x0)
-  x0[miss] <- pmin(pmax(0, sf$lower[miss]), sf$upper[miss])
-  x0 <- pmin(pmax(x0, sf$lower), sf$upper)
+  st <- default_start(sf, control)
+  x0 <- st$x
+  miss <- st$miss
+  ok0 <- tryCatch({
+    f0 <- f(x0)
+    all(is.finite(c(f0$objective, f0$gradient))) &&
+      (!(length(cons) || length(extra)) || all(is.finite(gall(x0)$val)))
+  }, error = function(e) FALSE)
+  if (!ok0) stop_nonfinite_start()
   algo <- control$options$algorithm %||% "NLOPT_LD_SLSQP"
   opts <- utils::modifyList(list(algorithm = algo, xtol_rel = 1e-10,
                                  ftol_rel = 1e-12, maxeval = 5000L),
@@ -293,12 +307,13 @@ nloptr_solve_sf <- function(sf, cls, control) {
                         eval_g_ineq = g_in, eval_g_eq = g_eq, opts = opts)
   x <- res$solution
   term <- nloptr_termination(res$status)
-  primal <- "feasible_point"
+  primal <- if (anyNA(x) || any(!is.finite(x))) "no_solution" else
+    "feasible_point"
   # a local solver can stop at an infeasible point: check it here
-  if (length(cons) || length(extra)) {
+  if (primal == "feasible_point" && (length(cons) || length(extra))) {
     v <- gall(x)$val
-    sc <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(hi), hi, 0)))
-    viol <- max(c(pmax(lo - v, v - hi, 0) / sc, 0))
+    viol <- max(c(pmax((lo - v) / pmax(1, abs(lo)),
+                       (v - hi) / pmax(1, abs(hi)), 0), 0), na.rm = TRUE)
     if (viol > 1e-6) {
       primal <- "infeasible_point"
       if (term == "optimal") term <- "locally_infeasible"
@@ -330,7 +345,7 @@ roi_solve_sf <- function(sf, cls, control) {
   hi <- sf$row_upper
   A <- methods::as(sf$A, "generalMatrix")
   eq <- is.finite(lo) & is.finite(hi) & lo == hi
-  if (any(eq)) rows <- c(rows, list(ROI::L_constraint(A[eq, , drop = FALSE],
+  if (any(eq)) rows <- c(rows, list(ROI::L_constraint(stm(A[eq, , drop = FALSE]),
                                                       rep("==", sum(eq)),
                                                       lo[eq])))
   up <- is.finite(hi) & !eq
@@ -349,6 +364,13 @@ roi_solve_sf <- function(sf, cls, control) {
   op <- ROI::OP(objective, constraints = con, types = types, bounds = bounds,
                 maximum = sf$sense == "max")
   solver <- control$options$roi_solver %||% "auto"
+  # ROI registers its plugins when attached; load them explicitly here
+  plugins <- if (identical(solver, "auto")) {
+    unname(ROI::ROI_installed_solvers())
+  } else {
+    paste0("ROI.plugin.", solver)
+  }
+  for (p in plugins) requireNamespace(p, quietly = TRUE)
   ctrl <- control$options[setdiff(names(control$options), "roi_solver")]
   if (is.finite(control$time_limit)) ctrl$tm_limit <- control$time_limit * 1000
   res <- ROI::ROI_solve(op, solver = solver, control = ctrl)

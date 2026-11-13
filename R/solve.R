@@ -47,11 +47,11 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
   sf <- opt_standard_form(model)
   cls <- opt_classify(sf)
   t1 <- proc.time()[["elapsed"]]
-  entry <- select_solver(cls, solver)
+  entry <- select_solver(cls, solver, sf)
   control <- list(time_limit = time_limit, mip_gap = mip_gap,
                   verbose = verbose, warm_start = warm_start,
                   options = options)
-  warnings <- character()
+  warnings <- unsupported_controls(entry, control, sf)
   sf_solver <- reformulate_special(sf, entry)
   if (!is.null(sf_solver$reformulated)) {
     warnings <- c(warnings, sprintf(paste(
@@ -68,6 +68,19 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
   t2 <- proc.time()[["elapsed"]]
   build_result(model, sf, cls, entry, res, control, warnings,
                timing = c(build = t1 - t0, solve = t2 - t1))
+}
+
+# Controls the chosen backend does not declare are ignored by it; say so.
+unsupported_controls <- function(entry, control, sf) {
+  f <- entry$features
+  c(if (!is.null(control$mip_gap) && !isTRUE(f$mip_gap))
+      sprintf("%s does not take a MIP gap; `mip_gap` was ignored.", entry$name),
+    if (is.finite(control$time_limit) && !isTRUE(f$time_limit))
+      sprintf("%s does not take a time limit; `time_limit` was ignored.",
+              entry$name),
+    if (isTRUE(control$warm_start) && any(!is.na(sf$start)) &&
+        !isTRUE(f$warm_start))
+      sprintf("%s does not use start values; they were ignored.", entry$name))
 }
 
 build_result <- function(model, sf, cls, entry, res, control, warnings,
@@ -96,7 +109,9 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
       paste(sQuote(fd, FALSE), collapse = ", ")))
   }
   structure(list(
-    model = model, solver = entry$name, solver_version = entry$version(),
+    model = model, model_key = paste(model$structure_version,
+                                     model$parameter_version, sep = ":"),
+    solver = entry$name, solver_version = entry$version(),
     termination = term, primal_status = res$primal_status,
     dual_status = res$dual_status, objective_value = obj,
     solver_objective = res$objective, x = res$x, z = z,

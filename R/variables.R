@@ -25,6 +25,11 @@ register_block <- function(model, name, kind, labels, dims) {
     stop(sprintf("The model already has a variable or parameter named '%s'.",
                  name), call. = FALSE)
   }
+  clash <- labels[labels %in% model$sym_name | duplicated(labels)]
+  if (length(clash)) {
+    stop(sprintf("The element name '%s' is already used in this model.",
+                 clash[1L]), call. = FALSE)
+  }
   n0 <- n_symbols(model)
   sym <- n0 + seq_len(dims$len)
   bid <- length(model$blocks) + 1L
@@ -214,8 +219,9 @@ resolve_symbols <- function(model, x, kind) {
 #' Change parameter values
 #'
 #' Updates parameter values in place. Cached standard forms built for the old
-#' values are invalidated; the next [opt_solve()] rebuilds the numerical data
-#' while reusing the model structure.
+#' values are invalidated; the next [opt_solve()] rebuilds the numerical
+#' standard form from the unchanged expressions (the symbolic model is kept;
+#' the lowering and the backend model are built again).
 #'
 #' @param model An [opt_model()].
 #' @param x A parameter expression returned by [opt_parameter()] (or a slice

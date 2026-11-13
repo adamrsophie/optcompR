@@ -72,8 +72,7 @@ clarabel_solve_sf <- function(sf, cls, control) {
     methods::as(b, "generalMatrix"))), "generalMatrix"), "CsparseMatrix")
   b <- unlist(rhs)
   P <- if (is.null(sf$Q)) NULL else
-    methods::as(methods::as(Matrix::triu(s * sf$Q), "generalMatrix"),
-                "CsparseMatrix")
+    methods::as(Matrix::forceSymmetric(s * sf$Q, uplo = "U"), "CsparseMatrix")
   ctrl <- utils::modifyList(list(verbose = isTRUE(control$verbose)),
                             control$options)
   if (is.finite(control$time_limit)) ctrl$time_limit <- control$time_limit
@@ -112,7 +111,7 @@ clarabel_solve_sf <- function(sf, cls, control) {
        bound = if (ok) s * res$obj_val_dual + sf$offset else NA_real_,
        message = names(clarabel::solver_status_descriptions())[res$status],
        local = FALSE, warm_start = FALSE,
-       extra = list(cone_duals = if (ok) z[-seq_len(n_eq + n_lin)] else NULL),
+       extra = list(cone_duals = if (ok) z[seq_along(z) > n_eq + n_lin] else NULL),
        raw = res)
 }
 

@@ -104,6 +104,12 @@ Summary.opt_expr <- function(..., na.rm = FALSE) {
 }
 
 #' @rdname opt_operators
+#' @export
+mean.opt_expr <- function(x, ...) {
+  expr_scale(expr_sum(x), 1 / x$len)
+}
+
+#' @rdname opt_operators
 #' @param y An expression or numeric matrix.
 #' @export
 matrixOps.opt_expr <- function(x, y) {
@@ -186,7 +192,7 @@ NULL
 #' @export
 `[.opt_expr` <- function(x, i, j, ..., drop = TRUE) {
   nidx <- length(sys.call()) - 2L - !missing(drop)
-  if (nidx == 1L && is.numeric(i) && length(i) && !anyNA(i) &&
+  if (nidx == 1L && is.numeric(i) && !is.matrix(i) && length(i) && !anyNA(i) &&
       all(i >= 1) && all(i <= x$len)) {
     return(expr_subset(x, i))
   }

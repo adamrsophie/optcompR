@@ -186,3 +186,28 @@ sf_point_feasible <- function(sf, x, tol = 1e-6) {
   all(ax >= sf$row_lower - tol * pmax(1, abs(sf$row_lower))) &&
     all(ax <= sf$row_upper + tol * pmax(1, abs(sf$row_upper)))
 }
+
+# Start point for local solvers: the user's start values when warm starts
+# are on; elsewhere 0 when it lies strictly inside the bounds, otherwise a
+# point just inside them, because a start on a bound can sit where log(x)
+# or 1/x is not finite.
+default_start <- function(sf, control) {
+  n <- length(sf$lower)
+  x0 <- if (isFALSE(control$warm_start)) rep(NA_real_, n) else
+    rep_len(sf$start, n)
+  lo <- sf$lower
+  up <- sf$upper
+  step <- ifelse(is.finite(lo) & is.finite(up), pmin(1, (up - lo) / 2), 1)
+  inner <- ifelse(lo < 0 & up > 0, 0,
+                  ifelse(is.finite(lo) & lo >= 0, lo + step,
+                         ifelse(is.finite(up), up - step, 0)))
+  miss <- is.na(x0)
+  x0[miss] <- inner[miss]
+  list(x = pmin(pmax(x0, lo), up), miss = miss)
+}
+
+stop_nonfinite_start <- function() {
+  stop(paste("The objective or a constraint is not finite at the start",
+             "point; give a start where every function is defined with",
+             "opt_set_start()."), call. = FALSE)
+}

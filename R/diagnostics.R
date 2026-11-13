@@ -53,10 +53,11 @@ opt_check <- function(result, tol = 1e-6) {
     numeric()
   up <- unlist(lapply(result$cons, `[[`, "upper"), use.names = FALSE) %||%
     numeric()
+  # each side is scaled by its own bound, so a huge opposite bound cannot
+  # hide a violation
   viol <- pmax(lo - v, v - up, 0)
-  scale <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)),
-                abs(ifelse(is.finite(up), up, 0)))
-  rel <- viol / scale
+  rel <- pmax((lo - v) / pmax(1, abs(lo)), (v - up) / pmax(1, abs(up)), 0)
+  rel[is.na(rel)] <- 0
   bviol <- pmax(sf$lower - x, x - sf$upper, 0) / pmax(1, abs(x))
   int <- sf$type %in% c("integer", "binary")
   iviol <- if (any(int)) abs(x[int] - round(x[int])) else 0

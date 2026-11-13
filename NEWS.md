@@ -57,3 +57,31 @@
   `opt_scenarios()` validates values. `warm_start = FALSE` is honored by
   NLopt and IPOPT. IPOPT options are type checked and rejected options are
   errors. Exact Z3 coefficients cover subnormal numbers.
+* Local NLP solvers start strictly inside the bounds when no start is
+  given, and stop with a clear message when a function is not finite at the
+  start. NLopt points with NaN are reported as no solution.
+* `nlpbb` counts nodes without a certified verdict as lost, reports
+  `"unknown"` instead of infeasible when nodes were lost, catches node
+  errors, and re-solves with integers fixed before accepting a rounded
+  incumbent.
+* Clarabel accepts quadratic objectives with cross terms and returns cone
+  multipliers for models with cones only. ROI loads its plugins itself and
+  passes equality rows correctly.
+* IPOPT: single precision builds fall back to the stub, older IPOPT uses
+  `max_cpu_time` for time limits, options are tried in the type of the R
+  value first, and callback errors keep their message; a failed trial
+  evaluation is a warning when IPOPT recovers.
+* Curvature tests are relative to the largest eigenvalue and the large
+  matrix Cholesky test shifts only at rounding level. Quadratic rows
+  without finite bounds no longer make a model nonconvex.
+* Matrix indices `X[cbind(i, j)]` select coordinates. `mean()` works on
+  expressions. Element names must be unique across blocks.
+* `opt_solution_jacobian()` checks primal feasibility, refuses `abs()` at
+  a kink, and treats a point near a bound with a zero multiplier as
+  interior. Row and bound feasibility scale each side by its own bound.
+* Indicator switches must stay binary. `opt_fixed_relaxation()` refuses a
+  result whose model changed since the solve. Automatic selection skips
+  solvers that cannot reformulate indicator or SOS constraints, and
+  controls a backend ignores are reported in the result warnings.
+* `opt_z3_certify()` also proves that the reported value is attained, and
+  `opt_z3_check()` works with nonlinear objectives.

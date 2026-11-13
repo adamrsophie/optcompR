@@ -55,10 +55,17 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     ctrl <- control
     ctrl$time_limit <- left
     ctrl$options <- sub_opts
-    res <- nloptr_solve_sf(sub, relax, ctrl)
+    res <- tryCatch(nloptr_solve_sf(sub, relax, ctrl),
+                    error = function(e) list(termination = "error",
+                                             primal_status = "no_solution"))
     if (res$primal_status != "feasible_point" ||
         !res$termination %in% c("optimal", "locally_optimal")) {
-      if (!res$termination %in% c("infeasible", "locally_infeasible")) {
+      # a local NLP solver has no infeasibility certificate: a node that
+      # looks infeasible may still hold solutions, so it counts as lost
+      # unless the relaxation is convex and the solver says infeasible
+      # "infeasible" comes only from the LP certificate in the NLopt
+      # adapter; any other failure leaves the subtree unexplored
+      if (!identical(res$termination, "infeasible")) {
         lost <- lost + 1L
       }
       next
@@ -69,9 +76,25 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     frac <- int[abs(x[int] - round(x[int])) > int_tol]
     if (!length(frac)) {
       if (val < incumbent) {
-        incumbent <- val
-        x[int] <- round(x[int])
-        best <- x
+        # rounding within the tolerance can break other constraints, so
+        # solve again with the integers fixed at their rounded values
+        fix <- sub
+        fix$lower[int] <- fix$upper[int] <- round(x[int])
+        fix$start <- x
+        fix$start[int] <- round(x[int])
+        rf <- tryCatch(nloptr_solve_sf(fix, relax, ctrl),
+                       error = function(e) NULL)
+        if (!is.null(rf) && rf$primal_status == "feasible_point" &&
+            rf$termination %in% c("optimal", "locally_optimal")) {
+          fval <- s * rf$objective
+          if (fval < incumbent) {
+            incumbent <- fval
+            best <- rf$x
+            best[int] <- round(best[int])
+          }
+        } else {
+          lost <- lost + 1L
+        }
       }
       next
     }
@@ -89,8 +112,9 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   exact <- convex && lost == 0L
   bound <- if (!exact) -Inf else if (length(open))
     min(c(incumbent, vapply(open, `[[`, 0, "bound"))) else incumbent
+  # with no incumbent, every node was certified infeasible or lost
   term <- if (!is.null(limit)) limit else if (is.null(best))
-    (if (exact) "infeasible" else "locally_infeasible") else
+    (if (lost) "unknown" else "infeasible") else
     (if (exact) "optimal" else "locally_optimal")
   out <- nlpbb_result(term, best, incumbent, bound, nodes, convex, s, sf,
                       local = !exact)
@@ -124,6 +148,23 @@ register_nlpbb <- function() {
     "nlpbb", "nloptr",
     "NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)",
     classes = c("MINLP", "MIQCQP", "MIQP"), convex_only = character(),
-    features = list(time_limit = TRUE, mip_gap = TRUE),
+    features = list(time_limit = TRUE, mip_gap = TRUE, warm_start = TRUE),
     solve = nlpbb_solve_sf, version = pkg_version("nloptr"), priority = 80L)
+}
+
+# Certify infeasibility when all rows are linear: an LP feasibility problem
+# over the bounds, solved by HiGHS.
+linear_infeasible <- function(sf) {
+  if (!requireNamespace("highs", quietly = TRUE)) return(FALSE)
+  if (any(sf$row_kind != "linear")) return(FALSE)
+  if (any(sf$lower > sf$upper)) return(TRUE)
+  n <- length(sf$lower)
+  A <- sf$A
+  res <- tryCatch(highs::highs_solve(
+    L = numeric(n), lower = sf$lower, upper = sf$upper,
+    A = if (nrow(A)) A else NULL,
+    lhs = if (nrow(A)) sf$row_lower else NULL,
+    rhs = if (nrow(A)) sf$row_upper else NULL),
+    error = function(e) NULL)
+  !is.null(res) && identical(res$status_message, "Infeasible")
 }

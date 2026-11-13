@@ -10,6 +10,14 @@
 
 #ifdef HAVE_IPOPT
 #include <IpStdCInterface.h>
+/* the bindings below pass double buffers; a single precision IPOPT build
+   is not supported and falls back to the stub */
+#ifdef IPOPT_SINGLE
+#undef HAVE_IPOPT
+#endif
+#endif
+
+#ifdef HAVE_IPOPT
 
 /* IPOPT 3.14 deprecates Index, Number and Bool in favor of ipindex,
  * ipnumber and bool. */
@@ -27,15 +35,21 @@ typedef Bool oc_bool;
 typedef struct {
   SEXP f, grad, g, jac, hess, env;
   int error;
+  char msg[512]; /* first R error message from a callback */
 } ipopt_data;
 
 /* Call fun(x, ...) in R; NULL on error. */
 static SEXP call_r(ipopt_data *d, SEXP fun, SEXP args) {
   int err = 0;
   SEXP call = PROTECT(LCONS(fun, args));
-  SEXP val = R_tryEval(call, d->env, &err);
+  SEXP val = R_tryEvalSilent(call, d->env, &err);
   UNPROTECT(1);
   if (err) {
+    /* IPOPT may recover by backtracking; keep the message for the caller */
+    if (!d->error) {
+      strncpy(d->msg, R_curErrorBuf(), sizeof(d->msg) - 1);
+      d->msg[sizeof(d->msg) - 1] = '\0';
+    }
     d->error = 1;
     return NULL;
   }
@@ -140,7 +154,7 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
                           SEXP f, SEXP grad, SEXP g, SEXP jac, SEXP hess,
                           SEXP opts, SEXP env) {
   oc_index n = (oc_index) XLENGTH(x0), m = (oc_index) XLENGTH(gl);
-  ipopt_data d = {f, grad, g, jac, hess, env, 0};
+  ipopt_data d = {f, grad, g, jac, hess, env, 0, ""};
   int exact = !isNull(hess);
   IpoptProblem p = CreateIpoptProblem(
       n, REAL(xl), REAL(xu), m, REAL(gl), REAL(gu), n * m,
@@ -161,11 +175,16 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
       ok = AddIpoptStrOption(p, key, (char *) CHAR(STRING_ELT(v, 0)));
     } else if (isInteger(v) || isReal(v)) {
       double val = asReal(v);
-      /* IPOPT options are typed; a whole number may name an integer
-         option (max_iter) or a numeric one (tol) */
-      if (R_FINITE(val) && fabs(val) < 2e9 && val == (double) (int) val)
+      /* IPOPT options are typed; try the type of the R value first, then
+         the other one, since R numbers like 10 may name integer options */
+      int whole = R_FINITE(val) && fabs(val) < 2e9 && val == (double) (int) val;
+      if (isInteger(v)) {
         ok = AddIpoptIntOption(p, key, (oc_index) val);
-      if (!ok) ok = AddIpoptNumOption(p, key, val);
+        if (!ok) ok = AddIpoptNumOption(p, key, val);
+      } else {
+        ok = AddIpoptNumOption(p, key, val);
+        if (!ok && whole) ok = AddIpoptIntOption(p, key, (oc_index) val);
+      }
     }
     if (!ok) {
       FreeIpoptProblem(p);
@@ -182,7 +201,8 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
                           m ? REAL(mg) : NULL, REAL(ml), REAL(mu), &d);
   FreeIpoptProblem(p);
   const char *names[] = {"status", "x", "objective", "mult_g", "mult_x_L",
-                         "mult_x_U", "callback_error", ""};
+                         "mult_x_U", "callback_error", "callback_message",
+                         ""};
   SEXP out = PROTECT(mkNamed(VECSXP, names));
   SET_VECTOR_ELT(out, 0, ScalarInteger(status));
   SET_VECTOR_ELT(out, 1, x);
@@ -191,11 +211,19 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
   SET_VECTOR_ELT(out, 4, ml);
   SET_VECTOR_ELT(out, 5, mu);
   SET_VECTOR_ELT(out, 6, ScalarLogical(d.error));
+  SET_VECTOR_ELT(out, 7, mkString(d.msg));
   UNPROTECT(6);
   return out;
 }
 
-SEXP optcompR_ipopt_available(void) { return ScalarLogical(1); }
+/* 2: IPOPT 3.14 or later (max_wall_time exists), 1: older IPOPT */
+SEXP optcompR_ipopt_available(void) {
+#ifdef HAVE_IPOPT_314
+  return ScalarInteger(2);
+#else
+  return ScalarInteger(1);
+#endif
+}
 
 #else
 
@@ -206,7 +234,7 @@ SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
   return R_NilValue;
 }
 
-SEXP optcompR_ipopt_available(void) { return ScalarLogical(0); }
+SEXP optcompR_ipopt_available(void) { return ScalarInteger(0); }
 
 #endif
 

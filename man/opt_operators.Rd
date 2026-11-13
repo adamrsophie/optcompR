@@ -5,6 +5,7 @@
 \alias{Ops.opt_expr}
 \alias{Math.opt_expr}
 \alias{Summary.opt_expr}
+\alias{mean.opt_expr}
 \alias{matrixOps.opt_expr}
 \alias{\%*\%,Matrix,opt_expr-method}
 \alias{\%*\%,opt_expr,Matrix-method}
@@ -15,6 +16,8 @@
 \method{Math}{opt_expr}(x, ...)
 
 \method{Summary}{opt_expr}(..., na.rm = FALSE)
+
+\method{mean}{opt_expr}(x, ...)
 
 \method{matrixOps}{opt_expr}(x, y)
 

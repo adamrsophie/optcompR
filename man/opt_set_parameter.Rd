@@ -19,8 +19,9 @@ The model, invisibly.
 }
 \description{
 Updates parameter values in place. Cached standard forms built for the old
-values are invalidated; the next \code{\link[=opt_solve]{opt_solve()}} rebuilds the numerical data
-while reusing the model structure.
+values are invalidated; the next \code{\link[=opt_solve]{opt_solve()}} rebuilds the numerical
+standard form from the unchanged expressions (the symbolic model is kept;
+the lowering and the backend model are built again).
 }
 \examples{
 m <- opt_model()

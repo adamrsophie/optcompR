@@ -81,9 +81,11 @@ z3_translate <- function(sf, coefficients) {
       if (is.finite(hi)) facts <- c(facts, list(e <= num(hi)))
     }
   }
+  # feasibility checks need no objective, which may be nonlinear
   nz <- which(sf$c != 0)
   list(ctx = ctx, vars = vars, facts = facts,
-       objective = lin(nz, sf$c[nz], sf$offset))
+       objective = if (identical(sf$objective_kind, "linear"))
+         lin(nz, sf$c[nz], sf$offset) else NULL)
 }
 
 z3_run <- function(tr, extra = list()) {
@@ -160,8 +162,10 @@ opt_z3_check <- function(model, objective_bound = NULL,
 #' @param result An `opt_result` of an LP or MILP with a solution.
 #' @param tol Relative margin.
 #' @param coefficients See [opt_z3_check()].
-#' @return A list with `certified` (`TRUE`, `FALSE` or `NA` when Z3 returns
-#'   unknown), `status`, the `threshold` that was tested and, when a better
+#' @return A list with `certified` (`TRUE` when no feasible point beats the
+#'   reported value by more than the margin and some feasible point attains
+#'   it within the margin, `FALSE` otherwise, `NA` when Z3 returns unknown),
+#'   `attained`, `status`, the `threshold` that was tested and, when a better
 #'   point exists, `better_point`.
 #' @examplesIf requireNamespace("z3r", quietly = TRUE)
 #' m <- opt_model("max")
@@ -189,7 +193,18 @@ opt_z3_certify <- function(result, tol = 1e-9,
   b <- z3r::z3_real_val(tr$ctx, z3_number_text(thr, coefficients))
   better <- if (sf$sense == "min") tr$objective < b else tr$objective > b
   out <- z3_run(tr, list(better))
-  list(certified = switch(out$status, unsat = TRUE, sat = FALSE, NA),
+  # no better point is half of the claim; the reported value must also be
+  # attained by a feasible point (within the margin)
+  attained <- NA
+  if (identical(out$status, "unsat")) {
+    lo_b <- z3r::z3_real_val(tr$ctx, z3_number_text(v - margin, coefficients))
+    hi_b <- z3r::z3_real_val(tr$ctx, z3_number_text(v + margin, coefficients))
+    att <- z3_run(tr,
+                  list(tr$objective >= lo_b, tr$objective <= hi_b))
+    attained <- switch(att$status, sat = TRUE, unsat = FALSE, NA)
+  }
+  certified <- switch(out$status, unsat = attained, sat = FALSE, NA)
+  list(certified = certified, attained = attained,
        status = out$status, threshold = thr,
        better_point = if (!is.null(out$values))
          stats::setNames(out$values, sf$col_names))

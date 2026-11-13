@@ -98,6 +98,11 @@ opt_fixed_relaxation <- function(result, ...) {
     stop("The result has no integer solution to fix.", call. = FALSE)
   }
   model <- result$model
+  key <- paste(model$structure_version, model$parameter_version, sep = ":")
+  if (!is.null(result$model_key) && !identical(result$model_key, key)) {
+    stop(paste("The model changed after this result was computed; solve it",
+               "again before forming the fixed relaxation."), call. = FALSE)
+  }
   vs <- result$standard_form$var_sym
   int <- vs[model$type[vs] %in% c("integer", "binary")]
   saved <- list(lower = model$lower[int], upper = model$upper[int],
@@ -162,8 +167,9 @@ opt_fixed_relaxation <- function(result, ...) {
 #' Solve a model over parameter scenarios
 #'
 #' Sets a parameter to each value in turn, solves, and collects the status
-#' and objective. The parameter is restored afterwards. Each solve rebuilds
-#' the numerical data from the cached structure.
+#' and objective. The parameter is restored afterwards. Each solve lowers the
+#' unchanged expressions again with the new values and builds a new backend
+#' model.
 #'
 #' @param model An [opt_model()].
 #' @param parameter A parameter expression or name.

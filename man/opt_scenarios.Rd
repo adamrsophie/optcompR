@@ -24,8 +24,9 @@ objective value.
 }
 \description{
 Sets a parameter to each value in turn, solves, and collects the status
-and objective. The parameter is restored afterwards. Each solve rebuilds
-the numerical data from the cached structure.
+and objective. The parameter is restored afterwards. Each solve lowers the
+unchanged expressions again with the new values and builds a new backend
+model.
 }
 \examples{
 m <- opt_model()

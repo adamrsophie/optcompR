@@ -99,10 +99,24 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
                  fmt_num(kkt$stationarity), fmt_num(kkt$dual_feasibility)),
          call. = FALSE)
   }
-  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))) |
-    (is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up)))
-  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower))) |
-    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * pmax(1, abs(sf$upper)))
+  # primal feasibility, each side scaled by its own bound
+  rviol <- pmax((lo - v) / pmax(1, abs(lo)), (v - up) / pmax(1, abs(up)), 0)
+  bviol <- pmax((sf$lower - x) / pmax(1, abs(sf$lower)),
+                (x - sf$upper) / pmax(1, abs(sf$upper)), 0)
+  if (max(c(rviol, bviol, 0), na.rm = TRUE) > sqrt(tol)) {
+    stop("The point violates the constraints, so it is not a differentiable optimum.",
+         call. = FALSE)
+  }
+  nonsmooth_check(result, z, tol)
+  # activity: tight within tol, or near (within sqrt(tol)) with a nonzero
+  # multiplier; a near point with a zero multiplier is interior
+  near <- function(d, b, m) {
+    sc <- pmax(1, abs(b))
+    is.finite(b) & (d <= tol * sc | (d <= sqrt(tol) * sc & abs(m) > sqrt(tol)))
+  }
+  act <- near(abs(v - lo), lo, y) | near(abs(v - up), up, y)
+  bact <- near(abs(x - sf$lower), sf$lower, zc) |
+    near(abs(x - sf$upper), sf$upper, zc)
   # strict complementarity concerns inequalities only
   ineq <- !(is.finite(lo) & lo == up)
   bineq <- !(sf$lower == sf$upper)
@@ -178,4 +192,22 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
        active = c(sf$row_names[act],
                   if (any(bact)) paste0("bound:", sf$col_names[bact])),
        multipliers = multipliers)
+}
+
+# Smooth implicit differentiation is invalid at a kink: refuse when abs()
+# is evaluated at (or within sqrt(tol) of) zero anywhere in the model.
+nonsmooth_check <- function(result, z, tol) {
+  kink <- function(e) {
+    if (!is_expr(e) || e$type != "nl") return(FALSE)
+    if (identical(e$op, "abs") &&
+        any(abs(eval_expr(e$args[[1L]], z)) <= sqrt(tol))) return(TRUE)
+    any(vapply(e$args %||% list(), kink, NA))
+  }
+  exprs <- c(list(result$objective), lapply(result$cons, `[[`, "expr"))
+  if (any(vapply(exprs, kink, NA))) {
+    stop(paste("abs() is evaluated at zero at this solution, where the model",
+               "is not differentiable, so solution derivatives are not",
+               "defined."), call. = FALSE)
+  }
+  invisible()
 }

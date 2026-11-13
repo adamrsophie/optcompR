@@ -416,6 +416,10 @@ lower_special <- function(model, is_par, pval, col, n) {
   })
   ind <- list()
   for (it in sp$indicator %||% list()) {
+    if (any(model$type[it$z] != "binary")) {
+      stop(sprintf(paste("Indicator '%s' needs a binary switch variable;",
+                         "its type was changed."), it$name), call. = FALSE)
+    }
     a <- affine_matrix(it$expr, is_par, pval, col, n)
     for (r in seq_len(nrow(a$M))) {
       row <- a$M[r, ]

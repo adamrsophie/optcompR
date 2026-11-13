@@ -15,7 +15,7 @@
 #' opt_ipopt_available()
 #' @export
 opt_ipopt_available <- function() {
-  isTRUE(.Call(optcompR_ipopt_available))
+  isTRUE(.Call(optcompR_ipopt_available) > 0L)
 }
 
 ipopt_termination <- function(status) {
@@ -66,11 +66,12 @@ ipopt_solve_sf <- function(sf, cls, control) {
     H <- as.matrix(H[vs, vs, drop = FALSE])
     H[low]
   }
-  x0 <- if (isFALSE(control$warm_start)) rep(NA_real_, length(sf$start)) else
-    sf$start
-  miss <- is.na(x0)
-  x0[miss] <- pmin(pmax(0, sf$lower[miss]), sf$upper[miss])
-  x0 <- pmin(pmax(x0, sf$lower), sf$upper)
+  st <- default_start(sf, control)
+  x0 <- st$x
+  miss <- st$miss
+  ok0 <- tryCatch(all(is.finite(c(f(x0), grad(x0), g(x0)))),
+                  error = function(e) FALSE)
+  if (!ok0) stop_nonfinite_start()
   # external functions without a Hessian: quasi-Newton approximation
   exact_h <- tryCatch({
     hess(x0, 1, rep(1, sum(lens)))
@@ -79,18 +80,31 @@ ipopt_solve_sf <- function(sf, cls, control) {
   big <- function(v) pmin(pmax(v, -1e300), 1e300)
   opts <- list(print_level = if (isTRUE(control$verbose)) 5L else 0L,
                sb = "yes", tol = 1e-9)
-  if (is.finite(control$time_limit)) opts$max_wall_time <- control$time_limit
+  if (is.finite(control$time_limit)) {
+    # max_wall_time exists from IPOPT 3.14; older versions have CPU time only
+    if (.Call(optcompR_ipopt_available) >= 2L) {
+      opts$max_wall_time <- control$time_limit
+    } else {
+      opts$max_cpu_time <- control$time_limit
+    }
+  }
   opts <- utils::modifyList(opts, control$options %||% list())
   res <- .Call(optcompR_ipopt_solve, as.numeric(x0), big(sf$lower),
                big(sf$upper), big(as.numeric(sf$expr_lower)),
                big(as.numeric(sf$expr_upper)), f, grad, g, jac,
                if (exact_h) hess else NULL, opts, environment())
-  if (isTRUE(res$callback_error)) {
-    stop("An objective or constraint evaluation failed inside IPOPT.",
-         call. = FALSE)
-  }
   term <- ipopt_termination(res$status)
   ok <- term %in% c("optimal", "almost_optimal")
+  if (isTRUE(res$callback_error)) {
+    why <- trimws(sub("^Error[^:]*: ", "", res$callback_message %||% ""))
+    if (!ok) {
+      stop(sprintf("An objective or constraint evaluation failed inside IPOPT: %s",
+                   why), call. = FALSE)
+    }
+    warning(sprintf(paste("An evaluation failed at a trial point (%s);",
+                          "IPOPT backtracked and converged."), why),
+            call. = FALSE)
+  }
   # at a limit, the returned point is a solution only if it is feasible
   tol <- 1e-6
   feas <- ok || (all(is.finite(res$x)) &&

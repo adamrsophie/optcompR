@@ -101,7 +101,7 @@ solver_refusal <- function(e, cls) {
   NULL
 }
 
-select_solver <- function(cls, solver) {
+select_solver <- function(cls, solver, sf = NULL) {
   if (!identical(solver, "auto")) {
     e <- solver_entry(solver)
     if (!solver_available(e)) {
@@ -131,6 +131,17 @@ select_solver <- function(cls, solver) {
                                     e$name, cls$class,
                                     paste(e$package, collapse = ", ")))
       next
+    }
+    # indicator and SOS constraints must be native or reformulable
+    if (!is.null(sf) && (length(sf$indicators) || length(sf$sos))) {
+      why <- tryCatch({
+        reformulate_special(sf, e)
+        NULL
+      }, error = function(err) conditionMessage(err))
+      if (!is.null(why)) {
+        reasons <- c(reasons, why)
+        next
+      }
     }
     return(e)
   }
