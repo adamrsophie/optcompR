@@ -40,11 +40,18 @@ highs_solve_sf <- function(sf, cls, control) {
                            upper = sf$upper, A = A, lhs = lhs, rhs = rhs,
                            types = types, maximum = FALSE,
                            offset = s * sf$offset)
-  # HiGHS starts one global thread scheduler per process, so `threads`
-  # must stay the same within an R session.
   opts <- control$options
   ctrl_args <- utils::modifyList(
     list(threads = 1L, log_to_console = isTRUE(control$verbose)), opts)
+  # HiGHS keeps one global thread scheduler per process and cannot resize
+  # it; asking for another thread count without a reset can abort R.
+  threads <- as.integer(ctrl_args$threads)
+  if (!identical(.optcompR_state$highs_threads, threads)) {
+    if (!is.null(.optcompR_state$highs_threads)) {
+      highs::hi_reset_global_scheduler(TRUE)
+    }
+    .optcompR_state$highs_threads <- threads
+  }
   if (is.finite(control$time_limit)) ctrl_args$time_limit <- control$time_limit
   if (!is.null(control$mip_gap)) ctrl_args$mip_rel_gap <- control$mip_gap
   ctrl <- do.call(highs::highs_control, ctrl_args)
