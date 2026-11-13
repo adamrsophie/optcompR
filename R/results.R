@@ -14,10 +14,14 @@ check_result <- function(result) {
 #'   (globally, for the classes the backend solves globally);
 #' * `"locally_optimal"`: a local solver converged; nonconvex problems may
 #'   have better solutions elsewhere;
+#' * `"almost_optimal"`: the solver met relaxed tolerances only (OSQP's
+#'   "solved inaccurate");
+#' * `"locally_infeasible"`: a local solver stopped at a point that violates
+#'   constraints; this is not a proof of infeasibility;
 #' * `"infeasible"`, `"unbounded"`, `"infeasible_or_unbounded"`: as
 #'   certified by the solver; HiGHS may report infeasible or unbounded
 #'   without deciding which;
-#' * `"time_limit"`, `"iteration_limit"`, `"solution_limit"`,
+#' * `"time_limit"`, `"iteration_limit"`, `"node_limit"`, `"solution_limit"`,
 #'   `"objective_limit"`, `"memory_limit"`, `"interrupted"`: the solver
 #'   stopped early; a feasible point may still exist, see
 #'   `opt_primal_status()`;

@@ -30,10 +30,14 @@ A string.
 (globally, for the classes the backend solves globally);
 \item \code{"locally_optimal"}: a local solver converged; nonconvex problems may
 have better solutions elsewhere;
+\item \code{"almost_optimal"}: the solver met relaxed tolerances only (OSQP's
+"solved inaccurate");
+\item \code{"locally_infeasible"}: a local solver stopped at a point that violates
+constraints; this is not a proof of infeasibility;
 \item \code{"infeasible"}, \code{"unbounded"}, \code{"infeasible_or_unbounded"}: as
 certified by the solver; HiGHS may report infeasible or unbounded
 without deciding which;
-\item \code{"time_limit"}, \code{"iteration_limit"}, \code{"solution_limit"},
+\item \code{"time_limit"}, \code{"iteration_limit"}, \code{"node_limit"}, \code{"solution_limit"},
 \code{"objective_limit"}, \code{"memory_limit"}, \code{"interrupted"}: the solver
 stopped early; a feasible point may still exist, see
 \code{opt_primal_status()};

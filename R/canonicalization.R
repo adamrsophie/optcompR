@@ -116,6 +116,8 @@ build_standard_form <- function(model) {
       parts[[b]] <- list(i = integer(), j = integer(), v = numeric(),
                          lo = blk$lower, hi = blk$upper)
     }
+    parts[[b]]$raw_lo <- blk$lower
+    parts[[b]]$raw_hi <- blk$upper
     parts[[b]]$kind <- kind
     parts[[b]]$block <- rep.int(b, m)
     parts[[b]]$elem <- seq_len(m)
@@ -129,6 +131,7 @@ build_standard_form <- function(model) {
   rlo <- pull("lo", numeric()); rhi <- pull("hi", numeric())
   rkind <- pull("kind", character()); rblock <- pull("block", integer())
   relem <- pull("elem", integer())
+  raw_lo <- pull("raw_lo", numeric()); raw_hi <- pull("raw_hi", numeric())
   A <- Matrix::sparseMatrix(i = ri, j = rj, x = rv, dims = c(off, n))
   row_names <- unlist(lapply(model$cons, function(blk) {
     element_labels(blk$name, blk$expr$len, blk$expr$dim)
@@ -139,7 +142,7 @@ build_standard_form <- function(model) {
     objective_kind = obj_kind,
     A = A, row_lower = rlo, row_upper = rhi, row_block = rblock,
     row_element = relem, row_kind = rkind, row_Q = row_Q,
-    row_names = row_names,
+    row_names = row_names, expr_lower = raw_lo, expr_upper = raw_hi,
     lower = model$lower[vs], upper = model$upper[vs], type = model$type[vs],
     start = model$start[vs],
     col_names = model$sym_name[vs], var_sym = vs, col_of_sym = col,

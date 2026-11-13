@@ -3,7 +3,8 @@ test_that("variables validate bounds and types", {
   expect_error(opt_variable(m, "a", lower = 2, upper = 1), "Contradictory")
   expect_error(opt_variable(m, "b", type = "integer", lower = 0.2, upper = 0.8),
                "no integer")
-  expect_error(opt_variable(m, "c", type = "binary", lower = 2), "Binary")
+  expect_error(opt_variable(m, "c", type = "binary", lower = 2), "Contradictory")
+  expect_error(opt_variable(m, "c2", type = "binary", lower = 2, upper = 3), "Binary")
   expect_error(opt_variable(m, "d", type = "real"))
   expect_error(opt_variable(m, "e", dim = 2, lower = c(0, 1, 2)), "length")
   x <- opt_variable(m, "x", type = "binary")

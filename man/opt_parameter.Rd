@@ -4,7 +4,7 @@
 \alias{opt_parameter}
 \title{Add parameters to a model}
 \usage{
-opt_parameter(model, name, value, dim = 1L, dimnames = NULL)
+opt_parameter(model, name, value, dim = NULL, dimnames = NULL)
 }
 \arguments{
 \item{model}{An \code{\link[=opt_model]{opt_model()}}.}
@@ -15,8 +15,7 @@ parameters. Element names are \code{name[i]} or \code{name[i,j]}, or use
 
 \item{value}{Numeric values, recycled from length one.}
 
-\item{dim}{Integer dimensions: \code{1} for a scalar, \code{n} for a vector,
-\code{c(n, p)} for a matrix. Taken from \code{dimnames} when omitted.}
+\item{dim}{Dimensions; by default the length (or \code{dim()}) of \code{value}.}
 
 \item{dimnames}{Optional character labels, a vector for one dimension or a
 list with one entry per dimension.}

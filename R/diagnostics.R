@@ -59,9 +59,15 @@ opt_check <- function(result, tol = 1e-6) {
   rows <- data.frame(row = sf$row_names, value = v, lower = lo, upper = up,
                      violation = viol, stringsAsFactors = FALSE)
   kkt <- NULL
-  if (!result$classification$integer && !is.null(result$row_dual) &&
-      !is.null(result$col_dual)) {
-    kkt <- kkt_check(result, v, lo, up, tol)
+  if (!result$classification$integer) {
+    if (!is.null(result$row_dual) && !is.null(result$col_dual)) {
+      kkt <- kkt_check(result, v, lo, up, tol)
+      kkt$estimated <- FALSE
+    } else {
+      est <- estimate_multipliers(result, v, lo, up, tol)
+      kkt <- kkt_check(est, v, lo, up, tol)
+      kkt$estimated <- TRUE
+    }
   }
   feasible <- max(c(rel, 0)) <= tol && max(c(bviol, 0)) <= tol &&
     max(c(iviol, 0)) <= tol
@@ -73,6 +79,40 @@ opt_check <- function(result, tol = 1e-6) {
     tol = tol, rows = rows, status = result$termination,
     convexity = result$classification$convexity
   ), class = "opt_diagnostics")
+}
+
+# Least-squares multipliers on the active set for solvers that return none.
+estimate_multipliers <- function(result, v, lo, up, tol) {
+  sf <- result$standard_form
+  z <- result$z
+  ns <- length(z)
+  cols <- sf$var_sym
+  x <- z[cols]
+  n <- length(cols)
+  g <- if (is.null(result$objective)) numeric(n) else
+    as.vector(jac_expr(result$objective, z, ns)$J[, cols, drop = FALSE])
+  rs <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(up), up, 0)))
+  act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * rs) |
+    (is.finite(up) & abs(v - up) <= sqrt(tol) * rs)
+  bs <- pmax(1, abs(ifelse(is.finite(sf$lower), sf$lower, 0)),
+             abs(ifelse(is.finite(sf$upper), sf$upper, 0)))
+  bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * bs) |
+    (is.finite(sf$upper) & abs(x - sf$upper) <= sqrt(tol) * bs)
+  y <- numeric(length(v))
+  zc <- numeric(n)
+  if (any(act) || any(bact)) {
+    J <- if (length(result$cons)) as.matrix(do.call(rbind, lapply(result$cons,
+      function(b) jac_expr(b$expr, z, ns)$J[, cols, drop = FALSE]))) else
+      matrix(0, 0, n)
+    M <- cbind(t(J[act, , drop = FALSE]), diag(n)[, bact, drop = FALSE])
+    sol <- qr.coef(qr(M), g)
+    sol[is.na(sol)] <- 0
+    y[act] <- sol[seq_len(sum(act))]
+    zc[bact] <- sol[sum(act) + seq_len(sum(bact))]
+  }
+  result$row_dual <- y
+  result$col_dual <- zc
+  result
 }
 
 kkt_check <- function(result, v, lo, up, tol) {
@@ -139,6 +179,10 @@ print.opt_diagnostics <- function(x, ...) {
                 fmt_num(x$kkt$stationarity), fmt_num(x$kkt$dual_feasibility),
                 fmt_num(x$kkt$complementarity),
                 if (x$kkt$pass) "pass" else "FAIL"))
+    if (isTRUE(x$kkt$estimated)) {
+      cat("  (multipliers estimated by least squares on the active set;",
+          "the solver returned none)\n")
+    }
     if (x$kkt$pass && x$convexity != "convex") {
       cat("  KKT conditions hold, but the problem is not known to be convex:",
           "this is a stationary point, not a certificate of global optimality.\n")

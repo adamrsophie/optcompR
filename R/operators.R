@@ -69,9 +69,8 @@ Math.opt_expr <- function(x, ...) {
   if (.Generic %in% unary_ops) return(expr_unary(.Generic, x))
   if (.Generic == "cumsum") {
     n <- x$len
-    M <- Matrix::sparseMatrix(i = sequence(seq_len(n), from = seq_len(n)),
-                              j = rep.int(seq_len(n), rev(seq_len(n))),
-                              x = 1, dims = c(n, n))
+    M <- Matrix::sparseMatrix(i = rep.int(seq_len(n), seq_len(n)),
+                              j = sequence(seq_len(n)), x = 1, dims = c(n, n))
     return(expr_linmap(M, x))
   }
   if (.Generic %in% c("log2", "log10")) {
@@ -174,7 +173,8 @@ NULL
 #' @rdname opt_expr_shape
 #' @export
 `[.opt_expr` <- function(x, i, j, ..., drop = TRUE) {
-  if (nargs() == 2L && is.numeric(i) && length(i) && !anyNA(i) &&
+  nidx <- length(sys.call()) - 2L - !missing(drop)
+  if (nidx == 1L && is.numeric(i) && length(i) && !anyNA(i) &&
       all(i >= 1) && all(i <= x$len)) {
     return(expr_subset(x, i))
   }
@@ -182,7 +182,15 @@ NULL
   dn <- x$dimnames
   if (!is.null(dn) && length(dn) != length(d)) dn <- NULL
   pos <- array(seq_len(x$len), dim = d, dimnames = dn)
-  idx <- if (nargs() - !missing(drop) <= 2L) pos[i] else pos[i, j, ..., drop = drop]
+  if (nidx <= 1L) {
+    idx <- if (missing(i)) pos[] else pos[i]
+  } else {
+    if (length(d) != 2L) stop("Use one index for vector expressions.",
+                              call. = FALSE)
+    if (missing(i)) i <- TRUE
+    if (missing(j)) j <- TRUE
+    idx <- pos[i, j, drop = drop]
+  }
   nd <- dim(idx)
   if (!is.null(nd) && length(nd) < 2L) nd <- NULL
   expr_subset(x, as.vector(idx), dim = nd)

@@ -1,0 +1,156 @@
+qp_model <- function() {
+  m <- opt_model()
+  x <- opt_variable(m, "x")
+  y <- opt_variable(m, "y")
+  cn <- opt_constraint(m, x + y >= 4, name = "sum")
+  opt_objective(m, (x - 1)^2 + (y - 2)^2)
+  list(m = m, x = x, y = y, cn = cn)
+}
+
+test_that("OSQP solves the convex QP with shadow-price duals", {
+  skip_if_not_installed("osqp")
+  q <- qp_model()
+  r <- opt_solve(q$m, solver = "osqp")
+  expect_identical(opt_status(r), "optimal")
+  expect_equal(opt_value(r, q$x), 1.5, tolerance = 1e-5)
+  expect_equal(opt_objective_value(r), 0.5, tolerance = 1e-5)
+  # d f*/d b for x + y >= b at b = 4: f*(b) = (b - 3)^2 / 2, slope 1
+  expect_equal(unname(opt_dual(r, q$cn)), 1, tolerance = 1e-4)
+  expect_true(opt_check(r, tol = 1e-5)$kkt$pass)
+})
+
+test_that("OSQP handles bounds, maximization and infeasibility", {
+  skip_if_not_installed("osqp")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", lower = 0, upper = 2)
+  opt_objective(m, -(x - 3)^2)
+  r <- opt_solve(m, solver = "osqp")
+  expect_equal(opt_value(r, x), 2, tolerance = 1e-5)
+  expect_equal(unname(opt_reduced_cost(r, x)), 2, tolerance = 1e-4)
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0)
+  opt_constraint(m, x <= -1)
+  opt_objective(m, x^2)
+  expect_identical(opt_status(opt_solve(m, solver = "osqp")), "infeasible")
+})
+
+test_that("SCIP solves MILP, MIQP and nonconvex QP globally", {
+  skip_if_not_installed("scip")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", type = "binary")
+  y <- opt_variable(m, "y", type = "integer", lower = 0, upper = 3)
+  opt_constraint(m, x + y <= 4)
+  opt_objective(m, 3 * x + 2 * y)
+  r <- opt_solve(m, solver = "scip")
+  expect_identical(opt_status(r), "optimal")
+  expect_equal(opt_objective_value(r), 9)
+
+  # MIQP: min (x - 2.4)^2 + (y - 1.6)^2, integers
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 5)
+  y <- opt_variable(m, "y", type = "integer", lower = 0, upper = 5)
+  opt_objective(m, (x - 2.4)^2 + (y - 1.6)^2 + 1)
+  r <- opt_solve(m)
+  expect_identical(r$solver, "scip")
+  expect_equal(c(opt_value(r, x), opt_value(r, y)), c(2, 2))
+  expect_equal(opt_objective_value(r), 0.16 + 0.16 + 1, tolerance = 1e-8)
+  expect_equal(opt_objective_value(r, solver = TRUE), opt_objective_value(r),
+               tolerance = 1e-6)
+
+  # nonconvex QP: auto selection prefers the global solver
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 1)
+  y <- opt_variable(m, "y", lower = 0, upper = 1)
+  opt_constraint(m, x + y <= 1.5)
+  opt_objective(m, -x^2 - y^2 + x * y)
+  r <- opt_solve(m)
+  expect_identical(r$solver, "scip")
+  expect_identical(opt_status(r), "optimal")
+  expect_equal(opt_objective_value(r), -1, tolerance = 1e-6)
+})
+
+test_that("SCIP solves convex and nonconvex QCQP", {
+  skip_if_not_installed("scip")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x")
+  y <- opt_variable(m, "y")
+  opt_constraint(m, x^2 + y^2 <= 2)
+  opt_objective(m, x + y)
+  r <- opt_solve(m)
+  expect_equal(opt_objective_value(r), 2, tolerance = 1e-5)
+  expect_true(opt_check(r, tol = 1e-5)$feasible)
+  # annulus: x^2 + y^2 >= 1, minimize x + 2y over a box
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 2)
+  y <- opt_variable(m, "y", lower = 0, upper = 2)
+  opt_constraint(m, x^2 + y^2 >= 1)
+  opt_objective(m, x + 2 * y)
+  r <- opt_solve(m)
+  expect_identical(opt_classify(m)$convexity, "nonconvex")
+  expect_equal(c(opt_value(r, x), opt_value(r, y)), c(1, 0), tolerance = 1e-5)
+})
+
+test_that("NLopt solves smooth NLPs and labels local optima", {
+  skip_if_not_installed("nloptr")
+  # Rosenbrock with a disk constraint: x^2 + y^2 <= 1.5 is inactive at (1, 1)?
+  m <- opt_model()
+  x <- opt_variable(m, "x", start = -1)
+  y <- opt_variable(m, "y", start = 1)
+  opt_objective(m, (1 - x)^2 + 100 * (y - x^2)^2)
+  r <- opt_solve(m)
+  expect_identical(r$solver, "nloptr")
+  expect_identical(opt_status(r), "locally_optimal")
+  expect_equal(c(opt_value(r, x), opt_value(r, y)), c(1, 1), tolerance = 1e-4)
+  # HS071-like: min x1 x4 (x1 + x2 + x3) + x3
+  m <- opt_model()
+  v <- opt_variable(m, "v", dim = 4, lower = 1, upper = 5,
+                    start = c(1, 5, 5, 1))
+  opt_constraint(m, v[1] * v[2] * v[3] * v[4] >= 25)
+  opt_constraint(m, sum(v^2) == 40)
+  opt_objective(m, v[1] * v[4] * (v[1] + v[2] + v[3]) + v[3])
+  r <- opt_solve(m)
+  expect_equal(opt_objective_value(r), 17.0140173, tolerance = 1e-5)
+  expect_equal(opt_value(r, v), c(1, 4.7429994, 3.8211503, 1.3794082),
+               tolerance = 1e-4)
+  d <- opt_check(r, tol = 1e-6)
+  expect_true(d$feasible)
+  expect_true(d$kkt$pass)
+  expect_true(d$kkt$estimated)
+})
+
+test_that("NLopt on a convex model reports optimal, nonlinear exponent forms work", {
+  skip_if_not_installed("nloptr")
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0.1, upper = 10)
+  opt_objective(m, x - log(x))
+  r <- opt_solve(m)
+  expect_equal(opt_value(r, x), 1, tolerance = 1e-5)
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0.5, upper = 3, start = 1)
+  opt_objective(m, x^x)
+  r <- opt_solve(m)
+  # d/dx x^x = x^x (log x + 1) > 0 on [0.5, 3], so the minimum is at 0.5
+  expect_equal(opt_value(r, x), 0.5, tolerance = 1e-6)
+})
+
+test_that("ROI backend solves LP and MILP through plugins", {
+  skip_if_not_installed("ROI")
+  skip_if_not_installed("ROI.plugin.glpk")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", lower = 0)
+  y <- opt_variable(m, "y", type = "integer", lower = 0, upper = 3)
+  opt_constraint(m, x + y <= 4.5)
+  opt_constraint(m, x <= 2)
+  opt_objective(m, 3 * x + 2 * y + 1)
+  r <- opt_solve(m, solver = "roi", options = list(roi_solver = "glpk"))
+  expect_identical(opt_status(r), "optimal")
+  expect_equal(opt_objective_value(r), 3 * 1.5 + 2 * 3 + 1)
+  expect_equal(opt_objective_value(r, solver = TRUE), opt_objective_value(r))
+})
+
+test_that("no installed solver for MINLP gives a clear error", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
+  opt_objective(m, exp(x))
+  expect_error(opt_solve(m), "No installed solver supports this MINLP")
+})

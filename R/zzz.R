@@ -9,7 +9,3 @@ NULL
   register_builtin_backends()
   invisible()
 }
-
-register_builtin_backends <- function() {
-  invisible()
-}

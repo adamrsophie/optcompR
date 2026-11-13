@@ -144,6 +144,7 @@ opt_variable <- function(model, name, dim = 1L,
 #'
 #' @inheritParams opt_variable
 #' @param value Numeric values, recycled from length one.
+#' @param dim Dimensions; by default the length (or `dim()`) of `value`.
 #' @return An `opt_expr` referring to the parameters.
 #' @examples
 #' m <- opt_model()
@@ -154,10 +155,11 @@ opt_variable <- function(model, name, dim = 1L,
 #' opt_set_parameter(m, p, 5)
 #' opt_value(opt_solve(m), x)
 #' @export
-opt_parameter <- function(model, name, value, dim = 1L, dimnames = NULL) {
+opt_parameter <- function(model, name, value, dim = NULL, dimnames = NULL) {
   check_model(model)
-  dims <- normalize_dim(if (missing(dim) && !is.null(dimnames)) NULL else dim,
-                        dimnames)
+  if (is.null(dim) && is.null(dimnames)) dim <- if (is.null(base::dim(value)))
+    length(value) else base::dim(value)
+  dims <- normalize_dim(dim, dimnames)
   n <- dims$len
   value <- recycle_to(as.numeric(value), n, "value")
   check_numeric(value, "value")
