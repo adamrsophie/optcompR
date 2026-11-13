@@ -58,7 +58,9 @@ opt_solve(
 
   Named list of backend options passed through unchanged (for HiGHS, any
   option of
-  [`highs::highs_control()`](https://rdrr.io/pkg/highs/man/highs_control.html)).
+  [`highs::highs_control()`](https://rdrr.io/pkg/highs/man/highs_control.html);
+  HiGHS defaults to one thread, and a solve with a different `threads`
+  value than the previous one resets the HiGHS global scheduler first).
 
 ## Value
 
@@ -85,7 +87,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.004s (build 0.001s)
+#>   time:        0.005s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```

@@ -127,7 +127,8 @@ vector).</p></dd>
 <code><a href="https://adamrsophie.github.io/jaxR/reference/grad.html" class="external-link">jaxR::grad()</a></code>. <code>fn</code> must be traceable by jaxR and receives a jaxR
 array, whose indexing is 0-based as in JAX (<code>v[0]</code> is the first
 element), so the same <code>fn</code> is evaluated by jaxR for values too. It
-runs with 64-bit types enabled (<code>jax_enable_x64</code>);</p></li>
+runs with 64-bit types enabled (<code>jax_enable_x64</code>). jaxR has no
+prebuilt XLA runtime for Windows;</p></li>
 <li><p><code>"finite_difference"</code>: central differences with relative step <code>step</code>.
 This is an approximation with error of order <code>step^2</code> (plus rounding
 of order <code>eps / step</code>); results record it, and it is never chosen

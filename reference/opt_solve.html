@@ -132,7 +132,9 @@ keeps the solver default.</p></dd>
 
 <dt id="arg-options">options<a class="anchor" aria-label="anchor" href="#arg-options"></a></dt>
 <dd><p>Named list of backend options passed through unchanged
-(for HiGHS, any option of <code><a href="https://rdrr.io/pkg/highs/man/highs_control.html" class="external-link">highs::highs_control()</a></code>).</p></dd>
+(for HiGHS, any option of <code><a href="https://rdrr.io/pkg/highs/man/highs_control.html" class="external-link">highs::highs_control()</a></code>; HiGHS defaults to
+one thread, and a solve with a different <code>threads</code> value than the
+previous one resets the HiGHS global scheduler first).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -155,7 +157,7 @@ keeps the solver default.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   problem:     LP (convex)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status:      optimal (primal: feasible_point, dual: feasible_point)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective:   10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.004s (build 0.001s)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.005s (build 0.001s)</span>
 <span class="r-in"><span><span class="fu"><a href="opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 </code></pre></div>

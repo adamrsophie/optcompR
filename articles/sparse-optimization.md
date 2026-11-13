@@ -33,7 +33,7 @@ build <- system.time({
   opt_objective(m, sum(cost * x))
 })
 build[["elapsed"]]
-#> [1] 0.009
+#> [1] 0.012
 sf <- opt_standard_form(m)
 dim(sf$A)
 #> [1]  2000 20000
@@ -46,7 +46,7 @@ opt_status(r)
 #> [1] "optimal"
 r$timing
 #> build solve 
-#> 0.002 0.049
+#> 0.001 0.066
 ```
 
 One vector constraint gives `k` rows; there is one constraint block, so

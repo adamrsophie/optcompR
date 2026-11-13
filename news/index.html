@@ -66,7 +66,17 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="optcompr-010">optcompR 0.1.0<a class="anchor" aria-label="anchor" href="#optcompr-010"></a></h2>
-<ul><li>First release: modeling layer for linear, quadratic and mixed-integer programs with HiGHS, exact derivatives, classification with evidence, standardized results and independent diagnostics.</li>
+<ul><li>First release.</li>
+<li>Modeling: continuous, integer and binary variables, parameters, vectorized linear, quadratic and nonlinear expressions with sparse <code>Matrix</code> support, ranged constraints and named blocks.</li>
+<li>Classification into LP, MILP, QP, MIQP, QCQP, MIQCQP, NLP and MINLP with recorded convexity evidence, and capability-aware solver selection.</li>
+<li>Backends: HiGHS (LP, MILP, convex QP, ranging, warm starts), SCIP (global MIQCQP), OSQP (convex QP), NLopt SLSQP (local NLP) and ROI plugins.</li>
+<li>Results with standardized statuses, duals as derivatives of the optimal value, independent feasibility and KKT diagnostics (<code><a href="../reference/opt_check.html">opt_check()</a></code>).</li>
+<li>Exact gradients, Jacobians and Lagrangian Hessians; external R functions with supplied, jaxR or labeled finite difference gradients (<code><a href="../reference/opt_function.html">opt_function()</a></code>).</li>
+<li>Sensitivity ranging, fixed relaxations of MILPs and scenario sweeps.</li>
+<li>Multiobjective scalarizations: <code><a href="../reference/opt_weighted.html">opt_weighted()</a></code>, <code><a href="../reference/opt_lexicographic.html">opt_lexicographic()</a></code>, <code><a href="../reference/opt_epsilon_constraint.html">opt_epsilon_constraint()</a></code>.</li>
+<li>Exact feasibility checks and optimality certificates for LP and MILP through z3r (<code><a href="../reference/opt_z3_check.html">opt_z3_check()</a></code>, <code><a href="../reference/opt_z3_certify.html">opt_z3_certify()</a></code>).</li>
+<li>Conversion to and from symcompR expressions; MPS and LP export.</li>
+<li>Fifteen vignettes and a pkgdown site.</li>
 </ul></div>
   </main></div>
 
