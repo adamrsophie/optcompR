@@ -49,8 +49,10 @@ test_that("jaxR gradients match the analytic gradient", {
           "no XLA runtime for jaxR")
   m <- opt_model()
   x <- opt_variable(m, "x", dim = 2)
-  jf <- function(v) (1 - v[1])^2 + 100 * (v[2] - v[1]^2)^2
+  # jaxR indexing is 0-based, as in JAX: v[0] is the first element
+  jf <- function(v) (1 - v[0])^2 + 100 * (v[1] - v[0]^2)^2
   opt_objective(m, opt_function(jf, x, gradient = "jaxR"))
   at <- c(0.3, -0.2)
   expect_equal(unname(opt_gradient(m, at)), rosen_grad(at), tolerance = 1e-6)
+  expect_equal(optcompR:::eval_expr(m$objective, at), rosen(at), tolerance = 1e-12)
 })

@@ -34,7 +34,9 @@ source is explicit:
 \itemize{
 \item a function returning the gradient vector (exact, as supplied);
 \item \code{"jaxR"}: reverse-mode automatic differentiation with
-\code{jaxR::grad()}; \code{fn} must be traceable by jaxR;
+\code{jaxR::grad()}. \code{fn} must be traceable by jaxR and receives a jaxR
+array, whose indexing is 0-based as in JAX (\code{v[0]} is the first
+element), so the same \code{fn} is evaluated by jaxR for values too;
 \item \code{"finite_difference"}: central differences with relative step \code{step}.
 This is an approximation with error of order \code{step^2} (plus rounding
 of order \code{eps / step}); results record it, and it is never chosen

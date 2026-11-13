@@ -18,7 +18,9 @@ fd_gradient <- function(f, v, h) {
 #'
 #' * a function returning the gradient vector (exact, as supplied);
 #' * `"jaxR"`: reverse-mode automatic differentiation with
-#'   `jaxR::grad()`; `fn` must be traceable by jaxR;
+#'   `jaxR::grad()`. `fn` must be traceable by jaxR and receives a jaxR
+#'   array, whose indexing is 0-based as in JAX (`v[0]` is the first
+#'   element), so the same `fn` is evaluated by jaxR for values too;
 #' * `"finite_difference"`: central differences with relative step `step`.
 #'   This is an approximation with error of order `step^2` (plus rounding
 #'   of order `eps / step`); results record it, and it is never chosen
@@ -64,11 +66,9 @@ opt_function <- function(fn, x, gradient, hessian = NULL, name = "f",
   if (!is.null(hessian) && !is.function(hessian)) {
     stop("`hessian` must be a function or NULL.", call. = FALSE)
   }
+  raw <- if (source == "jaxR") function(v) as.numeric(fn(jaxR::as_jax(v))) else fn
   value <- function(v) {
-    out <- fn(v)
-    if (!is.numeric(out) && requireNamespace("jaxR", quietly = TRUE)) {
-      out <- as.numeric(out)
-    }
+    out <- raw(v)
     if (length(out) != 1L || !is.finite(out)) {
       stop(sprintf("External function '%s' must return one finite number.",
                    name), call. = FALSE)
