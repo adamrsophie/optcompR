@@ -1,0 +1,70 @@
+---
+title: "Symbolic expressions with symcompR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Symbolic expressions with symcompR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables, expressions,
+constraints and an objective, and then classifies it, chooses a capable solver
+```{r, include = FALSE}
+knitr::opts_chunk$set(eval = requireNamespace("symcompR", quietly = TRUE))
+```
+
+symcompR is a computer algebra system for R. optcompR converts expressions in
+both directions, so a model can be derived symbolically and solved
+numerically, or a model expression can be simplified and differentiated
+symbolically.
+
+## From symcompR to optcompR
+
+Symbols map to variables with the same name (or through `map`).
+
+```{r}
+library(symcompR)
+m <- opt_model()
+x <- opt_variable(m, "x")
+y <- opt_variable(m, "y")
+s <- (Symbol("x") - 1)^2 + Symbol("x") * Symbol("y") + exp(Symbol("y"))
+e <- opt_from_sym(m, s)
+e
+opt_objective(m, e)
+opt_classify(m)$class
+```
+
+## From optcompR to symcompR
+
+```{r}
+m2 <- opt_model()
+z <- opt_variable(m2, "z")
+f <- 3 * z^2 + exp(z)
+sf <- opt_to_sym(f)
+sf
+diff(sf, Symbol("z"))
+```
+
+## Checking derivatives symbolically
+
+The symbolic derivative and optcompR's exact gradient agree:
+
+```{r}
+opt_objective(m2, f)
+opt_gradient(m2, c(z = 0.7))
+6 * 0.7 + exp(0.7)
+```
+
+External functions created with `opt_function()` have no symbolic form and
+cannot be converted.

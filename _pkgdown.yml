@@ -1,0 +1,106 @@
+url: https://adamrsophie.github.io/optcompR/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  math-rendering: katex
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, lightswitch, github]
+
+home:
+  sidebar:
+    structure: [links, license, citation, authors, dev]
+
+articles:
+- title: Problem classes
+  navbar: Problem classes
+  contents:
+  - linear-programming
+  - quadratic-programming
+  - mixed-integer
+  - nonlinear
+  - multiobjective
+- title: Working with models
+  navbar: Working with models
+  contents:
+  - parameterized-models
+  - sparse-optimization
+  - solver-comparison
+- title: Results and analysis
+  navbar: Results and analysis
+  contents:
+  - diagnostics
+  - infeasible-models
+  - sensitivity
+  - exact-certificates
+- title: Background and integrations
+  navbar: Background and integrations
+  contents:
+  - concepts
+  - symbolic-integration
+
+reference:
+- title: Models and variables
+  contents:
+  - opt_model
+  - opt_variable
+  - opt_parameter
+  - opt_get
+  - opt_variables
+  - opt_set_bounds
+  - opt_set_type
+  - opt_fix
+  - opt_set_start
+  - opt_set_parameter
+- title: Expressions
+  contents:
+  - opt_operators
+  - opt_expr_shape
+  - is_opt_expr
+  - opt_function
+- title: Constraints and objectives
+  contents:
+  - opt_constraint
+  - opt_constraints
+  - opt_delete_constraint
+  - opt_objective
+- title: Solving
+  contents:
+  - opt_solve
+  - opt_solvers
+  - opt_solver_capabilities
+  - opt_classify
+  - opt_standard_form
+  - opt_write_model
+- title: Results
+  contents:
+  - opt_status
+  - opt_value
+  - opt_objective_value
+  - opt_dual
+  - opt_slack
+  - opt_solution
+- title: Diagnostics, derivatives and sensitivity
+  contents:
+  - opt_check
+  - opt_gradient
+  - opt_sensitivity
+  - opt_fixed_relaxation
+  - opt_scenarios
+- title: Multiobjective optimization
+  contents:
+  - opt_weighted
+  - opt_lexicographic
+  - opt_epsilon_constraint
+- title: Integrations
+  contents:
+  - opt_z3_check
+  - opt_z3_certify
+  - opt_from_sym
+  - opt_to_sym
+- title: Package
+  contents:
+  - optcompR-package

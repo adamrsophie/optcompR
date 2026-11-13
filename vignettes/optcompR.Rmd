@@ -1,0 +1,90 @@
+---
+title: "Getting started with optcompR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with optcompR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables, expressions,
+constraints and an objective, and then classifies it, chooses a capable solver
+and returns results with a uniform meaning. This article walks through the
+whole cycle on a small production problem.
+
+## A first model
+
+A workshop makes tables and chairs. A table earns 7 and a chair 5. Tables use
+4 hours of carpentry and 2 of painting; chairs use 3 and 1. There are 240
+carpentry hours and 100 painting hours.
+
+```{r}
+m <- opt_model("max", name = "workshop")
+tables <- opt_variable(m, "tables", lower = 0)
+chairs <- opt_variable(m, "chairs", lower = 0)
+carpentry <- opt_constraint(m, 4 * tables + 3 * chairs <= 240, name = "carpentry")
+painting <- opt_constraint(m, 2 * tables + chairs <= 100, name = "painting")
+opt_objective(m, 7 * tables + 5 * chairs)
+m
+```
+
+Models have reference semantics: `opt_variable()`, `opt_constraint()` and
+`opt_objective()` change `m` in place, so there is no need to reassign it.
+
+## Classification and solver choice
+
+```{r}
+opt_classify(m)
+opt_solvers()
+```
+
+`opt_solve()` with `solver = "auto"` picks the highest priority backend that
+supports the problem class (here HiGHS for an LP).
+
+```{r}
+r <- opt_solve(m)
+r
+opt_value(r, c(tables, chairs))
+opt_objective_value(r)
+```
+
+## Duals, slacks and the solution table
+
+```{r}
+opt_dual(r, carpentry)
+opt_dual(r, painting)
+opt_slack(r, carpentry)
+opt_solution(r)
+```
+
+A dual is the derivative of the optimal objective with respect to the bound
+of the row: one more carpentry hour raises profit by `opt_dual(r, carpentry)`.
+This holds in both minimization and maximization.
+
+## Independent checks
+
+`opt_check()` recomputes row activities, bound and integrality violations and
+the KKT residuals from the model itself, without trusting the solver.
+
+```{r}
+opt_check(r)
+```
+
+## Where to go next
+
+* `vignette("linear-programming")`, `vignette("quadratic-programming")` and
+  `vignette("mixed-integer")` for the main problem classes.
+* `vignette("parameterized-models")` for repeated solves.
+* `vignette("nonlinear")` for nonlinear programming with exact derivatives.
+* `vignette("concepts")` for the mathematical background.

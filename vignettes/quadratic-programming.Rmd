@@ -1,0 +1,88 @@
+---
+title: "Quadratic programming"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quadratic programming}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+A quadratic program has a quadratic objective and linear constraints:
+
+$$\min_x\ \tfrac12 x^\top Q x + c^\top x \quad \text{subject to}\quad l \le Ax \le u.$$
+
+It is convex when $Q$ is positive semidefinite. optcompR stores $Q$ in this
+one-half convention and checks convexity before choosing a solver.
+
+## Portfolio selection
+
+```{r}
+mu <- c(0.08, 0.12, 0.10)
+Sigma <- matrix(c(0.10, 0.02, 0.04,
+                  0.02, 0.15, 0.03,
+                  0.04, 0.03, 0.12), 3)
+m <- opt_model()
+w <- opt_variable(m, "w", dim = 3, lower = 0)
+opt_constraint(m, sum(w) == 1, name = "budget")
+ret <- opt_constraint(m, sum(mu * w) >= 0.10, name = "return")
+opt_objective(m, t(w) %*% Sigma %*% w)
+opt_classify(m)
+r <- opt_solve(m)
+round(opt_value(r, w), 4)
+opt_objective_value(r)
+opt_dual(r, ret)
+```
+
+The dual of the return constraint is the marginal variance of asking for more
+return.
+
+## Convexity evidence
+
+```{r}
+opt_classify(m)$evidence
+```
+
+## A nonconvex QP
+
+If $Q$ is indefinite, local solvers can stop at a local minimum. optcompR
+then prefers a global solver (SCIP) and refuses solvers that only accept
+convex QPs.
+
+```{r, eval = has_scip}
+m2 <- opt_model()
+x <- opt_variable(m2, "x", dim = 2, lower = -1, upper = 1)
+opt_objective(m2, x[1]^2 - x[2]^2 + 0.5 * x[1] * x[2])
+opt_classify(m2)$convexity
+r2 <- opt_solve(m2)
+r2$solver
+opt_value(r2, x)
+```
+
+## Solver agreement
+
+```{r, eval = has_osqp}
+r_highs <- opt_solve(m, solver = "highs")
+r_osqp <- opt_solve(m, solver = "osqp")
+rbind(highs = opt_value(r_highs, w), osqp = opt_value(r_osqp, w))
+```
+
+## Exact derivatives
+
+```{r}
+opt_gradient(m, r)
+opt_hessian(m, r)
+```
+
+The Hessian equals $Q$ (here $2\Sigma$, because the objective is
+$w^\top \Sigma w$).

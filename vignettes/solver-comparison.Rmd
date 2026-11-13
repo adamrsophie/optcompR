@@ -1,0 +1,94 @@
+---
+title: "Solver comparison"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Solver comparison}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables, expressions,
+constraints and an objective, and then classifies it, chooses a capable solver
+Every backend is registered with the problem classes it accepts, the classes
+it solves to global optimality and the features it supports.
+
+```{r}
+opt_solvers()
+opt_solver_capabilities("highs")
+```
+
+## Support matrix
+
+| Backend | Classes | Global for | Duals | Ranging | Warm start |
+|---|---|---|---|---|---|
+| highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
+| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP | all, including nonconvex | no | no | no |
+| osqp | convex QP, LP | convex problems | yes | no | no |
+| nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by `opt_check()` | no | start point |
+| roi | whatever the chosen ROI plugin solves | plugin | plugin | no | no |
+
+Not supported in this version: conic programs (SOCP, SDP), general MINLP,
+indicator and SOS constraints, IPOPT.
+
+## Automatic choice
+
+`solver = "auto"` picks the highest priority backend that accepts the class
+and convexity of the model. For nonconvex problems global solvers come first.
+When nothing fits, the error explains why each backend was rejected:
+
+```{r, error = TRUE}
+m <- opt_model()
+x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
+opt_objective(m, exp(x))
+opt_solve(m)
+```
+
+## Comparing backends on one model
+
+```{r}
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 3, lower = 0)
+opt_constraint(m, sum(x) >= 1)
+opt_objective(m, sum((x - c(0.2, 0.5, 0.1))^2) + x[1] * x[2])
+solvers <- intersect(c("highs", "osqp", "scip", "nloptr"), with(opt_solvers(), solver[available]))
+res <- lapply(solvers, function(s) opt_solve(m, solver = s))
+data.frame(solver = solvers,
+           status = vapply(res, opt_status, ""),
+           objective = vapply(res, opt_objective_value, 0),
+           max_row_violation = vapply(res, function(r) opt_check(r)$max_row_violation, 0))
+```
+
+The objective in every result is evaluated from the model, not copied from
+the solver, so the numbers are comparable. `opt_objective_value(r, solver =
+TRUE)` returns the solver's own value.
+
+## ROI plugins
+
+```{r, eval = requireNamespace("ROI.plugin.glpk", quietly = TRUE)}
+m <- opt_model("max")
+x <- opt_variable(m, "x", dim = 2, type = "integer", lower = 0)
+opt_constraint(m, 2 * x[1] + 3 * x[2] <= 12)
+opt_objective(m, 3 * x[1] + 4 * x[2])
+r <- opt_solve(m, solver = "roi", options = list(roi_solver = "glpk"))
+opt_value(r, x)
+```
+
+## Solver options
+
+Options are passed through to the backend; for HiGHS they override defaults:
+
+```{r}
+r <- opt_solve(m, solver = "highs", options = list(presolve = "off"))
+opt_status(r)
+```

@@ -1,0 +1,100 @@
+---
+title: "Sensitivity and derivatives"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sensitivity and derivatives}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables, expressions,
+constraints and an objective, and then classifies it, chooses a capable solver
+Two different questions are often both called sensitivity:
+
+1. How do the model functions change with the decision variables? This is
+   answered by derivatives of $f$ and $g$ (`opt_gradient()`,
+   `opt_jacobian()`, `opt_hessian()`).
+2. How does the optimal value or solution change with the data? This is
+   answered by duals, ranging and re-solving.
+
+## Duals as derivatives of the optimal value
+
+```{r}
+m <- opt_model("max")
+x <- opt_variable(m, "x", lower = 0)
+y <- opt_variable(m, "y", lower = 0)
+cap <- opt_constraint(m, x + y <= 4, name = "cap")
+lim <- opt_constraint(m, x <= 2, name = "lim")
+opt_objective(m, 3 * x + 2 * y)
+r <- opt_solve(m)
+opt_dual(r, cap)
+```
+
+The dual equals the finite difference of the optimal value:
+
+```{r}
+b <- opt_parameter(m, "b", value = 4)
+opt_delete_constraint(m, "cap")
+opt_constraint(m, x + y <= b, name = "cap")
+f <- opt_scenarios(m, b, c(4, 4.01))
+diff(f$objective) / 0.01
+```
+
+## Ranging
+
+For LPs solved by HiGHS, ranging gives the interval over which each cost
+coefficient or row bound can move with the same optimal basis.
+
+```{r}
+s <- opt_sensitivity(opt_solve(m))
+s$costs
+s$rows
+```
+
+## Scenarios beyond the ranging interval
+
+Outside those intervals the optimal value is still piecewise linear in a
+right hand side, but with a different slope:
+
+```{r}
+opt_scenarios(m, b, seq(1, 7, by = 1))
+```
+
+## Mixed-integer models
+
+```{r}
+mi <- opt_model("max")
+z <- opt_variable(mi, "z", type = "integer", lower = 0, upper = 3)
+w <- opt_variable(mi, "w", lower = 0)
+cp <- opt_constraint(mi, z + w <= 4.5, name = "cap")
+opt_objective(mi, 3 * z + 2 * w)
+ri <- opt_solve(mi)
+opt_dual(opt_fixed_relaxation(ri), cp)
+```
+
+The duals of the fixed relaxation are valid for small changes that keep the
+integer part of the solution optimal.
+
+## Derivatives of model functions
+
+```{r}
+q <- opt_model()
+u <- opt_variable(q, "u", dim = 2)
+opt_objective(q, u[1]^2 * u[2] + sin(u[2]))
+opt_gradient(q, c(1, 0.5))
+opt_hessian(q, c(1, 0.5))
+```
+
+Derivatives of the optimal solution with respect to parameters
+(differentiable optimization) are not implemented in this version.

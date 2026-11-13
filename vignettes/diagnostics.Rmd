@@ -1,0 +1,75 @@
+---
+title: "Constraint diagnostics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Constraint diagnostics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_scip <- requireNamespace("scip", quietly = TRUE)
+has_osqp <- requireNamespace("osqp", quietly = TRUE)
+has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+```
+
+```{r setup}
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables, expressions,
+constraints and an objective, and then classifies it, chooses a capable solver
+Solvers work to tolerances, and their reported status is a claim about the
+problem they received. `opt_check()` verifies a result against the original
+model.
+
+## What is checked
+
+* Row activities against their bounds, scaled by `max(1, |bound|)`.
+* Variable bounds and integrality.
+* The objective recomputed from the expression.
+* KKT conditions for continuous problems: stationarity
+  $\nabla f - J^\top y - z = 0$, sign conditions and complementarity.
+
+Feasibility passes at `tol`; KKT conditions at `sqrt(tol)`.
+
+```{r}
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+opt_constraint(m, x[1] + 2 * x[2] >= 4, name = "cover")
+opt_constraint(m, 3 * x[1] + x[2] >= 3, name = "mix")
+opt_objective(m, x[1]^2 + x[2]^2)
+r <- opt_solve(m)
+d <- opt_check(r)
+d
+d$rows
+d$kkt
+```
+
+## Results without multipliers
+
+When a backend returns no duals (SCIP, NLopt), `opt_check()` estimates them by
+least squares on the active rows and bounds, and says so:
+
+```{r, eval = has_nloptr}
+r2 <- opt_solve(m, solver = "nloptr")
+opt_check(r2)$kkt$estimated
+```
+
+## Slack and activity
+
+```{r}
+opt_slack(r, "cover")
+opt_slack(r, "mix")
+```
+
+## Derivatives at a point
+
+The Jacobian of the constraint rows and the Hessian of the Lagrangian are
+exact, so KKT residuals do not depend on finite differences:
+
+```{r}
+opt_jacobian(m, r)
+opt_hessian(m, r, multipliers = r$row_dual)
+```

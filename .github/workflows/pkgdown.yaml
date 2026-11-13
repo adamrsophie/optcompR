@@ -1,0 +1,74 @@
+# Builds the pkgdown site and deploys it to the gh-pages branch. Z3 and the
+# XLA runtime are installed so the z3r and jaxR articles run.
+name: pkgdown
+
+on:
+  push:
+    branches: [main, master]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-pkgdown
+  cancel-in-progress: true
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-24.04
+    # write access only for this job, which pushes the built site to gh-pages
+    permissions:
+      contents: write
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Download pinned Z3 release
+        shell: bash
+        run: |
+          if command -v sha256sum > /dev/null; then sum="sha256sum"; else sum="shasum -a 256"; fi
+          (
+            cd "$RUNNER_TEMP"
+            curl -sSL -o z3.zip "https://github.com/Z3Prover/z3/releases/download/z3-5.4.1/z3-5.4.1-x64-glibc-2.39.zip"
+            echo "b548bac48ef2452b4e09ea2945cf4b011d5f43fcf39e4799df268ee7e0769d85  z3.zip" | $sum -c -
+            unzip -q z3.zip
+          )
+          Z3_DIR="$RUNNER_TEMP/z3-5.4.1-x64-glibc-2.39.zip"
+          Z3_DIR="${Z3_DIR%.zip}"
+          if command -v cygpath > /dev/null; then Z3_DIR=$(cygpath -m "$Z3_DIR"); fi
+          echo "Z3_DIR=$Z3_DIR" >> "$GITHUB_ENV"
+          echo "Z3_INCLUDE_DIR=$Z3_DIR/include" >> "$GITHUB_ENV"
+          echo "Z3_LIB_DIR=$Z3_DIR/bin" >> "$GITHUB_ENV"
+          echo "$Z3_DIR/bin" >> "$GITHUB_PATH"
+
+      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
+
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      - name: Install the XLA runtime for jaxR
+        shell: Rscript {0}
+        run: |
+          lib <- jaxR::install_pjrt()
+          cat("JAXR_PJRT_PLUGIN=", lib, "\n", sep = "", file = Sys.getenv("GITHUB_ENV"), append = TRUE)
+
+      - name: Build site
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        shell: Rscript {0}
+
+      - name: Deploy to GitHub pages
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
+        with:
+          clean: true
+          branch: gh-pages
+          folder: docs
