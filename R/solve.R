@@ -17,9 +17,10 @@
 #' @param warm_start Pass start values set with [opt_set_start()] or
 #'   `opt_variable(start = )` to solvers that accept them.
 #' @param options Named list of backend options passed through unchanged
-#'   (for HiGHS, any option of [highs::highs_control()]; HiGHS defaults to
-#'   one thread, and a solve with a different `threads` value than the
-#'   previous one resets the HiGHS global scheduler first).
+#'   (for HiGHS, any option of [highs::highs_control()]). HiGHS uses one
+#'   thread by default; its thread scheduler is global to the process, so
+#'   the `threads` value of the first HiGHS solve holds for the whole R
+#'   session and a different value is an error.
 #' @return An `opt_result`. See [opt_status()], [opt_value()],
 #'   [opt_objective_value()], [opt_dual()] and [opt_check()].
 #' @examples

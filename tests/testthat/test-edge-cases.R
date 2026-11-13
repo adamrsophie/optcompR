@@ -31,11 +31,11 @@ test_that("user options override defaults without duplicates", {
   # ask HiGHS to resize its global scheduler, which it cannot do
   r <- opt_solve(m, options = list(log_to_console = FALSE, presolve = "off"))
   expect_identical(opt_status(r), "optimal")
-  # changing the thread count resets the HiGHS scheduler instead of aborting
-  for (t in c(2L, 1L, 3L)) {
-    expect_identical(opt_status(opt_solve(m, options = list(threads = t))),
-                     "optimal")
-  }
+  # a different thread count is refused before HiGHS sees it
+  expect_error(opt_solve(m, options = list(threads = 3L)),
+               "cannot change its thread count")
+  expect_identical(opt_status(opt_solve(m, options = list(threads = 1L))),
+                   "optimal")
 })
 
 test_that("MILP bounds include the objective constant", {

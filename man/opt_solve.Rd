@@ -30,9 +30,10 @@ keeps the solver default.}
 \code{opt_variable(start = )} to solvers that accept them.}
 
 \item{options}{Named list of backend options passed through unchanged
-(for HiGHS, any option of \code{\link[highs:highs_control]{highs::highs_control()}}; HiGHS defaults to
-one thread, and a solve with a different \code{threads} value than the
-previous one resets the HiGHS global scheduler first).}
+(for HiGHS, any option of \code{\link[highs:highs_control]{highs::highs_control()}}). HiGHS uses one
+thread by default; its thread scheduler is global to the process, so
+the \code{threads} value of the first HiGHS solve holds for the whole R
+session and a different value is an error.}
 }
 \value{
 An \code{opt_result}. See \code{\link[=opt_status]{opt_status()}}, \code{\link[=opt_value]{opt_value()}},
