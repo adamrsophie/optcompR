@@ -132,9 +132,10 @@ keeps the solver default.</p></dd>
 
 <dt id="arg-options">options<a class="anchor" aria-label="anchor" href="#arg-options"></a></dt>
 <dd><p>Named list of backend options passed through unchanged
-(for HiGHS, any option of <code><a href="https://rdrr.io/pkg/highs/man/highs_control.html" class="external-link">highs::highs_control()</a></code>; HiGHS defaults to
-one thread, and a solve with a different <code>threads</code> value than the
-previous one resets the HiGHS global scheduler first).</p></dd>
+(for HiGHS, any option of <code><a href="https://rdrr.io/pkg/highs/man/highs_control.html" class="external-link">highs::highs_control()</a></code>). HiGHS uses one
+thread by default; its thread scheduler is global to the process, so
+the <code>threads</code> value of the first HiGHS solve holds for the whole R
+session and a different value is an error.</p></dd>
 
 </dl></div>
     <div class="section level2">

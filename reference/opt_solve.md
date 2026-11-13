@@ -58,9 +58,10 @@ opt_solve(
 
   Named list of backend options passed through unchanged (for HiGHS, any
   option of
-  [`highs::highs_control()`](https://rdrr.io/pkg/highs/man/highs_control.html);
-  HiGHS defaults to one thread, and a solve with a different `threads`
-  value than the previous one resets the HiGHS global scheduler first).
+  [`highs::highs_control()`](https://rdrr.io/pkg/highs/man/highs_control.html)).
+  HiGHS uses one thread by default; its thread scheduler is global to
+  the process, so the `threads` value of the first HiGHS solve holds for
+  the whole R session and a different value is an error.
 
 ## Value
 
