@@ -8,5 +8,6 @@ NULL
   register_highs()
   register_builtin_backends()
   register_clarabel()
+  register_nlpbb()
   invisible()
 }

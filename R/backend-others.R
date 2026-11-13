@@ -265,6 +265,7 @@ nloptr_solve_sf <- function(sf, cls, control) {
   x0 <- sf$start
   miss <- is.na(x0)
   x0[miss] <- pmin(pmax(0, sf$lower[miss]), sf$upper[miss])
+  x0 <- pmin(pmax(x0, sf$lower), sf$upper)
   algo <- control$options$algorithm %||% "NLOPT_LD_SLSQP"
   opts <- utils::modifyList(list(algorithm = algo, xtol_rel = 1e-10,
                                  ftol_rel = 1e-12, maxeval = 5000L),

@@ -148,9 +148,11 @@ test_that("ROI backend solves LP and MILP through plugins", {
   expect_equal(opt_objective_value(r, solver = TRUE), opt_objective_value(r))
 })
 
-test_that("no installed solver for MINLP gives a clear error", {
+test_that("a class no installed solver supports gives a clear error", {
   m <- opt_model()
   x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
-  opt_objective(m, exp(x))
-  expect_error(opt_solve(m), "No installed solver supports this MINLP")
+  t <- opt_variable(m, "t")
+  opt_exp_cone(m, x, 0 * x + 1, t)
+  opt_objective(m, t)
+  expect_error(opt_solve(m), "No installed solver supports this MICONIC")
 })
