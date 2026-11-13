@@ -81,7 +81,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   410
-#>   time:        0.010s (build 0.001s)
+#>   time:        0.009s (build 0.001s)
 opt_value(r, c(tables, chairs))
 #> [1] 30 40
 opt_objective_value(r)

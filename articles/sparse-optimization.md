@@ -46,7 +46,7 @@ opt_status(r)
 #> [1] "optimal"
 r$timing
 #> build solve 
-#> 0.001 0.062
+#> 0.002 0.059
 ```
 
 One vector constraint gives `k` rows; there is one constraint block, so
