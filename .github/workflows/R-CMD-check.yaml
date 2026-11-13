@@ -54,6 +54,19 @@ jobs:
           echo "Z3_LIB_DIR=$Z3_DIR/bin" >> "$GITHUB_ENV"
           echo "$Z3_DIR/bin" >> "$GITHUB_PATH"
 
+      - name: Install IPOPT
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            brew install ipopt pkgconf
+          else
+            sudo apt-get update -q
+            sudo apt-get install -y -q coinor-libipopt-dev pkg-config
+          fi
+          pkg-config --modversion ipopt
+          echo "OPTCOMPR_EXPECT_IPOPT=true" >> "$GITHUB_ENV"
+
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0

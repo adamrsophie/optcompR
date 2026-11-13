@@ -12,6 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 has_scip <- requireNamespace("scip", quietly = TRUE)
 has_osqp <- requireNamespace("osqp", quietly = TRUE)
 has_nloptr <- requireNamespace("nloptr", quietly = TRUE)
+has_ipopt <- optcompR::opt_ipopt_available()
 ```
 
 ```{r setup}
@@ -56,6 +57,31 @@ r <- opt_solve(m)
 opt_objective_value(r)  # reference 17.0140173
 opt_check(r)$kkt
 ```
+
+## IPOPT
+
+[IPOPT](https://coin-or.github.io/Ipopt/) is an interior point solver for
+large nonlinear programs. optcompR binds to its C interface when IPOPT is
+found with `pkg-config` at installation (`brew install ipopt` on macOS,
+`apt install coinor-libipopt-dev` on Debian and Ubuntu), and then
+`opt_ipopt_available()` is `TRUE`. IPOPT receives the exact gradient,
+Jacobian and Hessian of the Lagrangian; for external functions without a
+Hessian it uses a limited-memory quasi-Newton approximation. Unlike SLSQP it
+returns multipliers, so duals and the KKT check use solver values rather
+than estimates.
+
+```{r, eval = has_ipopt}
+r <- opt_solve(m, solver = "ipopt")
+opt_status(r)
+opt_objective_value(r)
+opt_dual(r, "product")
+opt_check(r)$kkt$estimated
+```
+
+IPOPT is a local solver: on nonconvex models its result is
+`"locally_optimal"`, exactly as for NLopt. The binding passes dense Jacobian
+and Hessian structures, which suits models with up to a few hundred
+variables.
 
 ## Exact derivatives
 

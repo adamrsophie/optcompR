@@ -37,13 +37,14 @@ opt_solver_capabilities("highs")
 | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by `opt_check()` | no | start point |
+| ipopt | NLP, QCQP, QP, LP (exact Hessians) | convex problems | yes | no | start point |
 | nlpbb | MINLP, MIQCQP, MIQP | convex relaxations | no | no | no |
 | roi | whatever the chosen ROI plugin solves | plugin | plugin | no | no |
 
 Indicator and SOS constraints are native in SCIP and are reformulated exactly
 (big-M rows from finite bounds, auxiliary binaries) for other mixed-integer
-backends. IPOPT is not available because it has no interface on CRAN;
-nonlinear models use NLopt.
+backends. The IPOPT backend exists when optcompR was installed with IPOPT
+on the `pkg-config` path; `opt_ipopt_available()` tells.
 
 ## Automatic choice
 

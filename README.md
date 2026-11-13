@@ -68,11 +68,13 @@ opt_check(r)           # independent feasibility and KKT checks
 | scip | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated | no | start point |
+| ipopt | IPOPT library | NLP, QCQP, QP, LP (exact Hessians) | convex problems | yes | no | start point |
 | nlpbb | nloptr | MINLP, MIQCQP, MIQP | convex relaxations | no | no | no |
 | roi | ROI + plugin | plugin classes | plugin | plugin | no | no |
 
-HiGHS is required; the others are optional. IPOPT is not supported because
-it has no interface on CRAN; nonlinear models use NLopt.
+HiGHS is required; the others are optional. The IPOPT backend is compiled
+in when `pkg-config` finds IPOPT at installation (`brew install ipopt`,
+`apt install coinor-libipopt-dev`); check with `opt_ipopt_available()`.
 
 ## Installation
 

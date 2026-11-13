@@ -2,6 +2,7 @@
 "_PACKAGE"
 
 #' @importFrom methods as
+#' @useDynLib optcompR, .registration = TRUE
 NULL
 
 .onLoad <- function(libname, pkgname) {
@@ -9,5 +10,6 @@ NULL
   register_builtin_backends()
   register_clarabel()
   register_nlpbb()
+  register_ipopt()
   invisible()
 }

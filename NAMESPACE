@@ -51,6 +51,7 @@ export(opt_has_solution)
 export(opt_hessian)
 export(opt_implies)
 export(opt_indicator)
+export(opt_ipopt_available)
 export(opt_jacobian)
 export(opt_lexicographic)
 export(opt_model)
@@ -99,3 +100,4 @@ importFrom(methods,
   setOldClass,
   signature
 )
+useDynLib(optcompR, .registration = TRUE)

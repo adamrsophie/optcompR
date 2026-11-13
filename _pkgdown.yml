@@ -89,6 +89,7 @@ reference:
   - opt_solve
   - opt_solvers
   - opt_solver_capabilities
+  - opt_ipopt_available
   - opt_classify
   - opt_standard_form
   - opt_write_model
