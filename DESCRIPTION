@@ -30,6 +30,7 @@ Suggests:
     clarabel,
     jaxR,
     knitr,
+    modelcompR,
     nloptr,
     osqp,
     rmarkdown,
@@ -45,7 +46,8 @@ VignetteBuilder: knitr
 Remotes:
     adamrsophie/symcompR,
     adamrsophie/z3r,
-    adamrsophie/jaxR
+    adamrsophie/jaxR,
+    adamrsophie/modelcompR
 Config/testthat/edition: 3
 URL: https://github.com/adamrsophie/optcompR, https://adamrsophie.github.io/optcompR/
 BugReports: https://github.com/adamrsophie/optcompR/issues
