@@ -149,6 +149,8 @@ to_sym_node <- function(e, k) {
       }
       out
     },
+    fn = stop(sprintf("External function '%s' has no symbolic form.",
+                      e$data$name), call. = FALSE),
     # base math functions dispatch to symcompR's Math method
     match.fun(e$op)(arg(e$args[[1L]])))
 }

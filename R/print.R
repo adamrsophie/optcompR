@@ -66,6 +66,7 @@ format_nl <- function(e, k) {
       if (length(terms) == 0L) "0" else
         paste0("(", paste(terms, collapse = " + "), ")")
     },
+    fn = paste0(e$data$name, "(<", e$args[[1L]]$len, " inputs>)"),
     paste0(e$op, "(", arg(e$args[[1L]]), ")"))
 }
 

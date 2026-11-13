@@ -64,6 +64,7 @@ eval_expr <- function(e, z) {
     "/" = rep_len(args[[1L]] / args[[2L]], n),
     "^" = rep_len(args[[1L]]^e$data$p, n),
     linmap = as.vector(e$data$M %*% args[[1L]]),
+    fn = e$data$f(args[[1L]]),
     match.fun(e$op)(args[[1L]]))
 }
 
@@ -93,6 +94,11 @@ jac_expr <- function(e, z, ns) {
     a <- jac_expr(e$args[[1L]], z, ns)
     M <- e$data$M
     return(list(val = as.vector(M %*% a$val), J = M %*% a$J))
+  }
+  if (e$op == "fn") {
+    a <- jac_expr(e$args[[1L]], z, ns)
+    g <- fn_node_grad(e, a$val)
+    return(list(val = e$data$f(a$val), J = Matrix::Matrix(g, 1L) %*% a$J))
   }
   if (e$op %in% unary_ops) {
     a <- jac_expr(e$args[[1L]], z, ns)
@@ -143,6 +149,17 @@ hess_expr <- function(e, z, ns, w) {
   if (e$op == "linmap") {
     return(hess_expr(e$args[[1L]], z, ns,
                      as.vector(Matrix::crossprod(e$data$M, w))))
+  }
+  if (e$op == "fn") {
+    if (is.null(e$data$hess)) {
+      stop(sprintf("No Hessian was supplied for external function '%s'.",
+                   e$data$name), call. = FALSE)
+    }
+    arg <- e$args[[1L]]
+    a <- jac_expr(arg, z, ns)
+    Hf <- Matrix::Matrix(as.matrix(e$data$hess(a$val)) * w)
+    return(Matrix::t(a$J) %*% Hf %*% a$J +
+             hess_expr(arg, z, ns, w * fn_node_grad(e, a$val)))
   }
   if (e$op %in% unary_ops || e$op == "^") {
     arg <- e$args[[1L]]
@@ -221,6 +238,7 @@ lower_expr <- function(e, is_par, pval) {
     "/" = expr_div(args[[1L]], args[[2L]]),
     "^" = expr_pow(args[[1L]], e$data$p),
     linmap = expr_linmap(e$data$M, args[[1L]]),
+    fn = new_nl(e$model, 1L, NULL, "fn", args, e$data),
     expr_unary(e$op, args[[1L]]))
   out$dim <- e$dim
   out

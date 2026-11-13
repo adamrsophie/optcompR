@@ -76,6 +76,15 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
   if (!is.null(res$col_dual)) names(res$col_dual) <- sf$col_names
   term <- res$termination
   if (term == "optimal" && isTRUE(res$local)) term <- "locally_optimal"
+  fd <- unique(unlist(lapply(c(list(model$objective),
+                               lapply(model$cons, `[[`, "expr")),
+                             function(e) if (is.null(e)) NULL else expr_fd_nodes(e))))
+  if (length(fd)) {
+    warnings <- c(warnings, sprintf(paste(
+      "Gradients of %s are finite-difference approximations; optimality",
+      "and multipliers hold only to their accuracy."),
+      paste(sQuote(fd, FALSE), collapse = ", ")))
+  }
   structure(list(
     model = model, solver = entry$name, solver_version = entry$version(),
     termination = term, primal_status = res$primal_status,
@@ -92,6 +101,7 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
     metadata = list(time = Sys.time(), R = R.version.string,
                     optcompR = as.character(utils::packageVersion("optcompR")),
                     platform = R.version$platform,
-                    model_id = model$id, model_key = sf$key)
+                    model_id = model$id, model_key = sf$key,
+                    finite_difference = fd)
   ), class = "opt_result")
 }

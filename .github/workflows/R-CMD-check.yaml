@@ -67,6 +67,13 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: Install the XLA runtime for jaxR
+        if: runner.os != 'Windows'
+        shell: Rscript {0}
+        run: |
+          lib <- jaxR::install_pjrt()
+          cat("JAXR_PJRT_PLUGIN=", lib, "\n", sep = "", file = Sys.getenv("GITHUB_ENV"), append = TRUE)
+
       - uses: r-lib/actions/check-r-package@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
           upload-snapshots: true
@@ -77,5 +84,5 @@ jobs:
         if: always()
         shell: Rscript {0}
         run: |
-          for (p in c("highs", "scip", "osqp", "nloptr", "ROI", "symcompR", "z3r"))
+          for (p in c("highs", "scip", "osqp", "nloptr", "ROI", "symcompR", "z3r", "jaxR"))
             cat(sprintf("%-10s %s\n", p, requireNamespace(p, quietly = TRUE)))
