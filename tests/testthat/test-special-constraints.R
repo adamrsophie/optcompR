@@ -199,3 +199,15 @@ test_that("symmetric matrix variables are symmetric", {
   S <- matrix(v, 3)
   expect_equal(S, t(S))
 })
+
+test_that("consumers that cannot represent special constraints refuse", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 8)
+  on <- opt_variable(m, "on", type = "binary")
+  opt_indicator(m, on, x <= 0, active = 0)
+  opt_objective(m, 2 * x + 10 * on)
+  f <- tempfile(fileext = ".mps")
+  expect_error(opt_write_model(m, f), "does not support indicator")
+  skip_if_not_installed("z3r")
+  expect_error(opt_z3_check(m), "does not support indicator")
+})

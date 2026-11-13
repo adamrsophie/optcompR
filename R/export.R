@@ -26,6 +26,7 @@ opt_write_model <- function(model, file) {
     stop("`file` must end in .mps or .lp.", call. = FALSE)
   }
   sf <- opt_standard_form(model)
+  stop_if_special(sf, "Model export")
   cls <- opt_classify(sf)
   if (!cls$class %in% c("LP", "MILP", "QP")) {
     stop(sprintf("Writing %s models is not supported (LP, MILP and QP only).",

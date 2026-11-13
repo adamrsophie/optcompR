@@ -436,6 +436,16 @@ special_kinds <- function(sf) {
 
 cone_types <- function(sf) unique(vapply(sf$cones, `[[`, "", "type"))
 
+# Stop when a consumer of the rows would silently drop special constraints.
+stop_if_special <- function(sf, what) {
+  sk <- special_kinds(sf)
+  if (length(sk)) {
+    stop(sprintf("%s does not support %s constraints; the result would ignore them.",
+                 what, paste(sk, collapse = ", ")), call. = FALSE)
+  }
+  invisible(sf)
+}
+
 # ------------------------------------------------- exact reformulations
 
 # Rewrite indicator and SOS constraints as big-M rows and binaries for a

@@ -27,6 +27,7 @@ z3_number_text <- function(v, coefficients) {
 }
 
 z3_translate <- function(sf, coefficients) {
+  stop_if_special(sf, "Z3 translation")
   if (any(sf$row_kind != "linear")) {
     stop(paste("SMT translation supports linear constraints only; Z3",
                "nonlinear arithmetic is incomplete."), call. = FALSE)

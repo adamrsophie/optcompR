@@ -51,3 +51,35 @@ test_that("infeasible MINLP and node limits", {
   r <- opt_solve(m2, options = list(max_nodes = 3L))
   expect_true(opt_status(r) %in% c("node_limit"))
 })
+
+test_that("indicator and SOS constraints hold on the nonlinear path", {
+  skip_if_not_installed("nloptr")
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 8, start = 1)
+  on <- opt_variable(m, "on", type = "binary")
+  opt_indicator(m, on, x <= 0, active = 0)
+  opt_constraint(m, x >= 3)
+  opt_objective(m, exp(0.2 * x) + 10 * on)
+  # without the indicator, x = 3 and on = 0 would be cheaper
+  r <- opt_solve(m, solver = "nlpbb")
+  expect_equal(opt_value(r, c(x, on)), c(3, 1), tolerance = 1e-6)
+  expect_true(opt_check(r)$feasible)
+  expect_equal(max(opt_check(r)$special$violation), 0)
+  m2 <- opt_model()
+  v <- opt_variable(m2, "v", dim = 3, lower = 0, upper = 2, start = c(1, 1, 1))
+  opt_sos1(m2, v)
+  opt_objective(m2, sum((v - c(1.5, 1, 0.5))^2) + exp(-sum(v)))
+  r2 <- opt_solve(m2, solver = "nlpbb")
+  vv <- opt_value(r2, v)
+  expect_lte(sum(abs(vv) > 1e-6), 1)
+  # enumerate the three single-support candidates
+  f1 <- function(i) {
+    o <- stats::optimize(function(t) {
+      w <- replace(numeric(3), i, t)
+      sum((w - c(1.5, 1, 0.5))^2) + exp(-sum(w))
+    }, c(0, 2), tol = 1e-10)
+    o$objective
+  }
+  expect_equal(opt_objective_value(r2), min(vapply(1:3, f1, 0)),
+               tolerance = 1e-6)
+})

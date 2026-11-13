@@ -225,31 +225,40 @@ nloptr_solve_sf <- function(sf, cls, control) {
   s <- if (sf$sense == "max") -1 else 1
   n <- length(sf$c)
   vs <- sf$var_sym
+  n0 <- length(vs)
   ns <- sf$n_sym
   obj <- sf$objective_lowered
   cons <- Filter(Negate(is.null), sf$cons_lowered)
+  # columns and linear rows added by reformulate_special()
+  extra <- if (is.null(sf$reformulated)) integer() else
+    seq.int(sf$reformulated$rows + 1L, length.out = sf$reformulated$added_rows)
+  E <- as.matrix(sf$A[extra, , drop = FALSE])
+  pad <- function(J) if (n > n0) cbind(J, matrix(0, nrow(J), n - n0)) else J
   zfull <- function(x) {
     z <- numeric(ns)
-    z[vs] <- x
+    z[vs] <- x[seq_len(n0)]
     z
   }
   f <- function(x) {
     z <- zfull(x)
     jj <- jac_expr(obj, z, ns)
     list(objective = s * jj$val,
-         gradient = s * as.vector(jj$J[, vs, drop = FALSE]))
+         gradient = c(s * as.vector(jj$J[, vs, drop = FALSE]),
+                      numeric(n - n0)))
   }
   # bounds on the lowered row expressions (constants included)
-  lo <- sf$expr_lower
-  hi <- sf$expr_upper
+  lo <- c(sf$expr_lower, sf$row_lower[extra])
+  hi <- c(sf$expr_upper, sf$row_upper[extra])
   eq <- is.finite(lo) & is.finite(hi) & lo == hi
   up <- is.finite(hi) & !eq
   dn <- is.finite(lo) & !eq
   gall <- function(x) {
     z <- zfull(x)
     parts <- lapply(cons, jac_expr, z = z, ns = ns)
-    list(val = unlist(lapply(parts, `[[`, "val")),
-         J = do.call(rbind, lapply(parts, function(p) p$J[, vs, drop = FALSE])))
+    J <- if (length(parts)) pad(as.matrix(do.call(rbind, lapply(parts,
+      function(p) p$J[, vs, drop = FALSE])))) else matrix(0, 0, n)
+    list(val = c(unlist(lapply(parts, `[[`, "val")), as.vector(E %*% x)),
+         J = rbind(J, E))
   }
   g_in <- if (any(up | dn)) function(x) {
     g <- gall(x)
@@ -278,7 +287,7 @@ nloptr_solve_sf <- function(sf, cls, control) {
   term <- nloptr_termination(res$status)
   primal <- "feasible_point"
   # a local solver can stop at an infeasible point: check it here
-  if (length(cons)) {
+  if (length(cons) || length(extra)) {
     v <- gall(x)$val
     sc <- pmax(1, abs(ifelse(is.finite(lo), lo, 0)), abs(ifelse(is.finite(hi), hi, 0)))
     viol <- max(c(pmax(lo - v, v - hi, 0) / sc, 0))

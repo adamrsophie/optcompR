@@ -35,6 +35,9 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   best <- NULL
   nodes <- 0L
   limit <- NULL
+  # nodes whose relaxation stopped without a verdict (limits, numerical
+  # trouble): their subtrees are lost, so nothing global can be claimed
+  lost <- 0L
   while (length(open)) {
     if (nodes >= max_nodes) { limit <- "node_limit"; break }
     left <- t_end - proc.time()[["elapsed"]]
@@ -54,7 +57,12 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     ctrl$options <- sub_opts
     res <- nloptr_solve_sf(sub, relax, ctrl)
     if (res$primal_status != "feasible_point" ||
-        !res$termination %in% c("optimal", "locally_optimal")) next
+        !res$termination %in% c("optimal", "locally_optimal")) {
+      if (!res$termination %in% c("infeasible", "locally_infeasible")) {
+        lost <- lost + 1L
+      }
+      next
+    }
     val <- s * res$objective
     if (convex && val >= incumbent - gap_tol * max(1, abs(incumbent))) next
     x <- res$x
@@ -78,14 +86,24 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     up$start <- x
     open <- c(open, list(dn, up))
   }
-  bound <- if (!convex) -Inf else if (length(open))
+  exact <- convex && lost == 0L
+  bound <- if (!exact) -Inf else if (length(open))
     min(c(incumbent, vapply(open, `[[`, 0, "bound"))) else incumbent
   term <- if (!is.null(limit)) limit else if (is.null(best))
-    (if (convex) "infeasible" else "locally_infeasible") else "optimal"
-  nlpbb_result(term, best, incumbent, bound, nodes, convex, s, sf)
+    (if (exact) "infeasible" else "locally_infeasible") else
+    (if (exact) "optimal" else "locally_optimal")
+  out <- nlpbb_result(term, best, incumbent, bound, nodes, convex, s, sf,
+                      local = !exact)
+  if (lost) {
+    out$message <- sprintf(paste(
+      "%s; %d node relaxation(s) stopped without a verdict, so the search",
+      "is incomplete"), out$message, lost)
+  }
+  out
 }
 
-nlpbb_result <- function(term, best, incumbent, bound, nodes, convex, s, sf) {
+nlpbb_result <- function(term, best, incumbent, bound, nodes, convex, s, sf,
+                         local = !convex) {
   has <- !is.null(best)
   gap <- if (has && is.finite(bound))
     abs(incumbent - bound) / max(1, abs(incumbent)) else NA_real_
@@ -98,7 +116,7 @@ nlpbb_result <- function(term, best, incumbent, bound, nodes, convex, s, sf) {
        gap = gap, bound = if (is.finite(bound)) s * bound else NA_real_,
        message = sprintf("NLP branch and bound, %d nodes, %s relaxation", nodes,
                          if (convex) "convex" else "not known to be convex"),
-       local = !convex, warm_start = FALSE, extra = list(), raw = NULL)
+       local = local, warm_start = FALSE, extra = list(), raw = NULL)
 }
 
 register_nlpbb <- function() {
