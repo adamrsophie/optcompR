@@ -1,0 +1,94 @@
+# Infeasible and unbounded models
+
+``` r
+
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables,
+expressions, constraints and an objective, and then classifies it,
+chooses a capable solver A model can fail to have an optimal solution
+because no point satisfies the constraints (infeasible) or because the
+objective improves without limit (unbounded). Some solvers can only say
+that one of the two holds.
+
+## Detecting infeasibility
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+opt_constraint(m, x[1] + x[2] <= 3, name = "cap")
+opt_constraint(m, x[1] >= 2, name = "min_a")
+opt_constraint(m, x[2] >= 2, name = "min_b")
+opt_objective(m, x[1] + x[2])
+r <- opt_solve(m)
+opt_status(r)
+#> [1] "infeasible"
+opt_has_solution(r)
+#> [1] FALSE
+opt_value(r, x)
+#> Warning: The result has no primal solution (status 'infeasible').
+#> [1] NA NA
+```
+
+Values are `NA` when there is no primal point, rather than the solver’s
+internal iterate.
+
+## Locating the conflict with elastic constraints
+
+Adding nonnegative slack to each suspect row and minimizing the total
+slack finds the smallest change that restores feasibility.
+
+``` r
+
+e <- opt_model()
+x <- opt_variable(e, "x", dim = 2, lower = 0)
+s <- opt_variable(e, "s", dim = 3, lower = 0)
+opt_constraint(e, x[1] + x[2] <= 3 + s[1], name = "cap")
+opt_constraint(e, x[1] >= 2 - s[2], name = "min_a")
+opt_constraint(e, x[2] >= 2 - s[3], name = "min_b")
+opt_objective(e, sum(s))
+re <- opt_solve(e)
+setNames(opt_value(re, s), c("cap", "min_a", "min_b"))
+#>   cap min_a min_b 
+#>     0     1     0
+```
+
+The total violation is 1: either capacity rises by 1 or one minimum
+falls by 1.
+
+## Exact proofs with Z3
+
+Floating point solvers declare infeasibility within tolerances. For
+linear models,
+[`opt_z3_check()`](https://adamrsophie.github.io/optcompR/reference/opt_z3_check.md)
+decides feasibility exactly (see
+[`vignette("exact-certificates")`](https://adamrsophie.github.io/optcompR/articles/exact-certificates.md)):
+
+``` r
+
+opt_z3_check(m)$status
+#> [1] "unsat"
+```
+
+## Unbounded models
+
+``` r
+
+u <- opt_model("max")
+y <- opt_variable(u, "y", lower = 0)
+opt_constraint(u, y >= 1)
+opt_objective(u, y)
+opt_status(opt_solve(u))
+#> [1] "unbounded"
+```
+
+OSQP certifies dual infeasibility, which does not prove the primal
+problem feasible, so optcompR reports `infeasible_or_unbounded` for it:
+
+``` r
+
+opt_status(opt_solve(u, solver = "osqp"))
+#> [1] "infeasible_or_unbounded"
+```

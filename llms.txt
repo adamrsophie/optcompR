@@ -1,0 +1,264 @@
+# optcompR
+
+Unified mathematical optimization and computational modeling in R.
+
+optcompR is a solver independent modeling layer. Variables, parameters,
+constraints and objectives are written with ordinary R operators; models
+are classified (LP, MILP, QP, MIQP, QCQP, MIQCQP, NLP) with recorded
+convexity evidence, lowered to sparse standard forms and solved by
+installed backends. Results carry standardized statuses, duals with one
+documented sign convention, and diagnostics recomputed independently
+from the model.
+
+``` r
+
+library(optcompR)
+
+m <- opt_model("max")
+x <- opt_variable(m, "x", lower = 0)
+y <- opt_variable(m, "y", lower = 0)
+cap <- opt_constraint(m, x + y <= 4, name = "capacity")
+opt_constraint(m, x <= 2)
+opt_constraint(m, y <= 3)
+opt_objective(m, 3 * x + 2 * y)
+
+r <- opt_solve(m)
+opt_status(r)          # "optimal"
+opt_value(r, c(x, y))  # 2 2
+opt_dual(r, cap)       # shadow price 2
+opt_check(r)           # independent feasibility and KKT checks
+```
+
+## Features
+
+- Vectorized expressions with sparse `Matrix` support, built in
+  milliseconds for 1e5 terms.
+- Parameters for reusable models, scenario sweeps and warm starts.
+- Exact gradients, Jacobians and Lagrangian Hessians of every model
+  function.
+- External R functions with supplied, jaxR or explicitly labeled finite
+  difference gradients.
+- Sensitivity: duals as derivatives of the optimal value, HiGHS ranging,
+  fixed relaxations of MILPs.
+- Multiobjective scalarizations: weighted sums, lexicographic order and
+  epsilon constraints.
+- Exact feasibility and optimality certificates for LP and MILP through
+  Z3 (z3r).
+- Conversion to and from symcompR expressions.
+
+## Solver support
+
+| Backend | Package | Classes | Global for | Duals | Ranging | Warm start |
+|----|----|----|----|----|----|----|
+| highs | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
+| scip | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP | all, including nonconvex | no | no | no |
+| osqp | osqp | convex QP, LP | convex problems | yes | no | no |
+| nloptr | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated | no | start point |
+| roi | ROI + plugin | plugin classes | plugin | plugin | no | no |
+
+HiGHS is required; the others are optional. Not supported in this
+version: conic programs, general MINLP, indicator and SOS constraints,
+IPOPT, and differentiation of optimal solutions.
+
+## Installation
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("adamrsophie/optcompR")
+```
+
+Optional integrations: `remotes::install_github("adamrsophie/z3r")`
+(needs the Z3 library),
+`remotes::install_github("adamrsophie/symcompR")`,
+`remotes::install_github("adamrsophie/jaxR")`.
+
+## Documentation
+
+Articles at <https://adamrsophie.github.io/optcompR/> cover linear,
+quadratic, mixed-integer, nonlinear and multiobjective optimization,
+parameterized and sparse models, solver comparison, diagnostics,
+infeasible models, sensitivity, exact certificates and the underlying
+concepts.
+
+## License
+
+GPL-3.
+
+# Package index
+
+## Models and variables
+
+- [`opt_model()`](https://adamrsophie.github.io/optcompR/reference/opt_model.md)
+  : Create an optimization model
+- [`opt_variable()`](https://adamrsophie.github.io/optcompR/reference/opt_variable.md)
+  : Add decision variables to a model
+- [`opt_parameter()`](https://adamrsophie.github.io/optcompR/reference/opt_parameter.md)
+  : Add parameters to a model
+- [`opt_get()`](https://adamrsophie.github.io/optcompR/reference/opt_get.md)
+  : Retrieve a variable or parameter block by name
+- [`opt_variables()`](https://adamrsophie.github.io/optcompR/reference/opt_variables.md)
+  : List the variables of a model
+- [`opt_set_bounds()`](https://adamrsophie.github.io/optcompR/reference/opt_set_bounds.md)
+  : Change variable bounds
+- [`opt_set_type()`](https://adamrsophie.github.io/optcompR/reference/opt_set_type.md)
+  : Change variable types
+- [`opt_fix()`](https://adamrsophie.github.io/optcompR/reference/opt_fix.md)
+  : Fix variables to values
+- [`opt_set_start()`](https://adamrsophie.github.io/optcompR/reference/opt_set_start.md)
+  : Set start values for variables
+- [`opt_set_parameter()`](https://adamrsophie.github.io/optcompR/reference/opt_set_parameter.md)
+  : Change parameter values
+
+## Expressions
+
+- [`Ops(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`Math(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`Summary(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`matrixOps(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`` `%*%`( ``*`<Matrix>`*`,`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  [`` `%*%`( ``*`<opt_expr>`*`,`*`<Matrix>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_operators.md)
+  : Arithmetic and comparison operators for expressions
+- [`` `[`( ``*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`` `[[`( ``*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`length(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`dim(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`` `dim<-`( ``*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`t(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  [`c(`*`<opt_expr>`*`)`](https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.md)
+  : Shape and indexing of expressions
+- [`is_opt_expr()`](https://adamrsophie.github.io/optcompR/reference/is_opt_expr.md)
+  : Test whether an object is an optimization expression
+- [`opt_function()`](https://adamrsophie.github.io/optcompR/reference/opt_function.md)
+  : Wrap an R function as a nonlinear expression
+
+## Constraints and objectives
+
+- [`opt_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_constraint.md)
+  : Add constraints to a model
+- [`opt_constraints()`](https://adamrsophie.github.io/optcompR/reference/opt_constraints.md)
+  : List the constraint blocks of a model
+- [`opt_delete_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_delete_constraint.md)
+  : Delete a constraint block
+- [`opt_objective()`](https://adamrsophie.github.io/optcompR/reference/opt_objective.md)
+  : Set the objective of a model
+
+## Solving
+
+- [`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)
+  : Solve an optimization model
+- [`opt_solvers()`](https://adamrsophie.github.io/optcompR/reference/opt_solvers.md)
+  : Available optimization solvers
+- [`opt_solver_capabilities()`](https://adamrsophie.github.io/optcompR/reference/opt_solver_capabilities.md)
+  : Capabilities of one solver backend
+- [`opt_classify()`](https://adamrsophie.github.io/optcompR/reference/opt_classify.md)
+  : Classify an optimization model
+- [`opt_standard_form()`](https://adamrsophie.github.io/optcompR/reference/opt_standard_form.md)
+  : Standard form of a model
+- [`opt_write_model()`](https://adamrsophie.github.io/optcompR/reference/opt_write_model.md)
+  : Write a model to an MPS or LP file
+
+## Results
+
+- [`opt_status()`](https://adamrsophie.github.io/optcompR/reference/opt_status.md)
+  [`opt_primal_status()`](https://adamrsophie.github.io/optcompR/reference/opt_status.md)
+  [`opt_dual_status()`](https://adamrsophie.github.io/optcompR/reference/opt_status.md)
+  [`opt_has_solution()`](https://adamrsophie.github.io/optcompR/reference/opt_status.md)
+  : Solver status of a result
+- [`opt_value()`](https://adamrsophie.github.io/optcompR/reference/opt_value.md)
+  : Values of expressions at a solution
+- [`opt_objective_value()`](https://adamrsophie.github.io/optcompR/reference/opt_objective_value.md)
+  [`opt_objective_bound()`](https://adamrsophie.github.io/optcompR/reference/opt_objective_value.md)
+  [`opt_gap()`](https://adamrsophie.github.io/optcompR/reference/opt_objective_value.md)
+  : Objective value of a result
+- [`opt_dual()`](https://adamrsophie.github.io/optcompR/reference/opt_dual.md)
+  [`opt_reduced_cost()`](https://adamrsophie.github.io/optcompR/reference/opt_dual.md)
+  : Dual values and reduced costs
+- [`opt_slack()`](https://adamrsophie.github.io/optcompR/reference/opt_slack.md)
+  : Constraint values, slacks and activity
+- [`opt_solution()`](https://adamrsophie.github.io/optcompR/reference/opt_solution.md)
+  : Solution table
+
+## Diagnostics, derivatives and sensitivity
+
+- [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md)
+  : Independent feasibility and optimality diagnostics
+- [`opt_gradient()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
+  [`opt_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
+  [`opt_hessian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
+  : Exact derivatives of the objective and constraints
+- [`opt_sensitivity()`](https://adamrsophie.github.io/optcompR/reference/opt_sensitivity.md)
+  : Linear programming sensitivity report
+- [`opt_fixed_relaxation()`](https://adamrsophie.github.io/optcompR/reference/opt_fixed_relaxation.md)
+  : Continuous problem with integer variables fixed
+- [`opt_scenarios()`](https://adamrsophie.github.io/optcompR/reference/opt_scenarios.md)
+  : Solve a model over parameter scenarios
+
+## Multiobjective optimization
+
+- [`opt_weighted()`](https://adamrsophie.github.io/optcompR/reference/opt_weighted.md)
+  : Weighted-sum scalarization
+- [`opt_lexicographic()`](https://adamrsophie.github.io/optcompR/reference/opt_lexicographic.md)
+  : Lexicographic optimization
+- [`opt_epsilon_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_epsilon_constraint.md)
+  : Epsilon-constraint method for two objectives
+
+## Integrations
+
+- [`opt_z3_check()`](https://adamrsophie.github.io/optcompR/reference/opt_z3_check.md)
+  : Exact feasibility check with Z3
+- [`opt_z3_certify()`](https://adamrsophie.github.io/optcompR/reference/opt_z3_certify.md)
+  : Certify a MILP or LP optimum with Z3
+- [`opt_from_sym()`](https://adamrsophie.github.io/optcompR/reference/opt_from_sym.md)
+  : Convert a symcompR expression to an optimization expression
+- [`opt_to_sym()`](https://adamrsophie.github.io/optcompR/reference/opt_to_sym.md)
+  : Convert an optimization expression to a symcompR expression
+
+## Package
+
+- [`optcompR`](https://adamrsophie.github.io/optcompR/reference/optcompR-package.md)
+  [`optcompR-package`](https://adamrsophie.github.io/optcompR/reference/optcompR-package.md)
+  : optcompR: Unified Mathematical Optimization and Computational
+  Modeling in R
+
+# Articles
+
+### Problem classes
+
+- [Linear
+  programming](https://adamrsophie.github.io/optcompR/articles/linear-programming.md):
+- [Quadratic
+  programming](https://adamrsophie.github.io/optcompR/articles/quadratic-programming.md):
+- [Mixed-integer
+  programming](https://adamrsophie.github.io/optcompR/articles/mixed-integer.md):
+- [Nonlinear
+  optimization](https://adamrsophie.github.io/optcompR/articles/nonlinear.md):
+- [Multiobjective
+  optimization](https://adamrsophie.github.io/optcompR/articles/multiobjective.md):
+
+### Working with models
+
+- [Reusable parameterized
+  models](https://adamrsophie.github.io/optcompR/articles/parameterized-models.md):
+- [Sparse
+  optimization](https://adamrsophie.github.io/optcompR/articles/sparse-optimization.md):
+- [Solver
+  comparison](https://adamrsophie.github.io/optcompR/articles/solver-comparison.md):
+
+### Results and analysis
+
+- [Constraint
+  diagnostics](https://adamrsophie.github.io/optcompR/articles/diagnostics.md):
+- [Infeasible and unbounded
+  models](https://adamrsophie.github.io/optcompR/articles/infeasible-models.md):
+- [Sensitivity and
+  derivatives](https://adamrsophie.github.io/optcompR/articles/sensitivity.md):
+- [Exact certificates with
+  Z3](https://adamrsophie.github.io/optcompR/articles/exact-certificates.md):
+
+### Background and integrations
+
+- [Optimization
+  concepts](https://adamrsophie.github.io/optcompR/articles/concepts.md):
+- [Symbolic expressions with
+  symcompR](https://adamrsophie.github.io/optcompR/articles/symbolic-integration.md):

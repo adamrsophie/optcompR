@@ -1,0 +1,104 @@
+# Reusable parameterized models
+
+``` r
+
+library(optcompR)
+```
+
+optcompR describes an optimization problem once, as variables,
+expressions, constraints and an objective, and then classifies it,
+chooses a capable solver Parameters are named constants that stay
+symbolic in the model. Changing their values does not rebuild
+expressions: optcompR substitutes the current values when it builds the
+standard form, and caches that form for each set of values.
+
+## Declaring parameters
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+d <- opt_parameter(m, "demand", value = 10)
+price <- opt_parameter(m, "price", value = c(3, 5))
+opt_constraint(m, sum(x) >= d, name = "demand")
+opt_constraint(m, x[1] <= 6)
+opt_objective(m, sum(price * x))
+opt_value(opt_solve(m), x)
+#> [1] 6 4
+```
+
+## Changing values
+
+``` r
+
+opt_set_parameter(m, price, c(6, 5))
+opt_value(opt_solve(m), x)
+#> [1]  0 10
+```
+
+## Scenario sweeps
+
+``` r
+
+opt_set_parameter(m, price, c(3, 5))
+opt_scenarios(m, d, c(4, 8, 12, 16))
+#>   scenario value  status objective
+#> 1        1     4 optimal        12
+#> 2        2     8 optimal        28
+#> 3        3    12 optimal        48
+#> 4        4    16 optimal        68
+```
+
+The parameter is restored after the sweep. With `keep = TRUE` the full
+results are kept in the `results` attribute.
+
+## Parameters in quadratic terms
+
+A product of a parameter and a quadratic term stays quadratic after
+substitution, so `p * x^2` is a QP for every value of `p`:
+
+``` r
+
+m2 <- opt_model()
+y <- opt_variable(m2, "y")
+p <- opt_parameter(m2, "p", value = 1)
+opt_objective(m2, p * y^2 - 4 * y)
+opt_classify(m2)$class
+#> [1] "QP"
+sapply(c(0.5, 1, 2), function(v) {
+  opt_set_parameter(m2, p, v)
+  opt_value(opt_solve(m2), y)
+})
+#> [1] 4 2 1
+```
+
+## Warm starts
+
+Start values are passed to solvers that accept them (HiGHS for MILP,
+NLopt for the initial point). Results record whether one was used.
+
+``` r
+
+m3 <- opt_model("max")
+z <- opt_variable(m3, "z", dim = 3, type = "integer", lower = 0, upper = 5)
+opt_constraint(m3, sum(z) <= 7)
+opt_objective(m3, sum(c(3, 2, 1) * z))
+opt_set_start(m3, z, c(5, 2, 0))
+r <- opt_solve(m3)
+r$warm_start
+#> [1] TRUE
+```
+
+## Changing structure
+
+Bounds, types and fixed values can also change between solves:
+
+``` r
+
+opt_set_bounds(m3, z[1], upper = 3)
+opt_value(opt_solve(m3), z)
+#> [1] 3 4 0
+opt_fix(m3, z[2], 0)
+opt_value(opt_solve(m3), z)
+#> [1] 3 0 4
+```

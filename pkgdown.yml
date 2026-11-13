@@ -1,0 +1,23 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  concepts: concepts.html
+  diagnostics: diagnostics.html
+  exact-certificates: exact-certificates.html
+  infeasible-models: infeasible-models.html
+  linear-programming: linear-programming.html
+  mixed-integer: mixed-integer.html
+  multiobjective: multiobjective.html
+  nonlinear: nonlinear.html
+  optcompR: optcompR.html
+  parameterized-models: parameterized-models.html
+  quadratic-programming: quadratic-programming.html
+  sensitivity: sensitivity.html
+  solver-comparison: solver-comparison.html
+  sparse-optimization: sparse-optimization.html
+  symbolic-integration: symbolic-integration.html
+last_built: 2026-11-13T04:53Z
+urls:
+  reference: https://adamrsophie.github.io/optcompR/reference
+  article: https://adamrsophie.github.io/optcompR/articles
