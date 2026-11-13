@@ -1,0 +1,43 @@
+Package: optcompR
+Title: Unified Mathematical Optimization and Computational Modeling in R
+Version: 0.1.0
+Authors@R:
+    person("Adam R", "Sophie", email = "adamrsophie@gmail.com",
+           role = c("aut", "cre", "cph"))
+Description: A solver independent modeling layer for mathematical
+    optimization. Decision variables, parameters, expressions, constraints
+    and objectives are written with ordinary R operators; models are
+    classified (linear, quadratic, mixed integer, nonlinear) with recorded
+    evidence, lowered to sparse standard forms, and solved by installed
+    backends such as 'HiGHS' through the 'highs' package, 'OSQP',
+    'NLopt', 'SCIP', and 'ROI' plugins. Results carry standardized
+    termination statuses, duals with a documented sign convention,
+    independent feasibility and Karush Kuhn Tucker diagnostics, exact
+    derivatives, sensitivity reports and reproducibility metadata. The
+    design follows 'JuMP' and 'MathOptInterface' <https://jump.dev>.
+License: GPL-3
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+Depends: R (>= 4.3.0)
+Imports:
+    highs,
+    Matrix,
+    methods,
+    stats,
+    utils
+Suggests:
+    knitr,
+    nloptr,
+    osqp,
+    rmarkdown,
+    ROI,
+    ROI.plugin.glpk,
+    ROI.plugin.highs,
+    scip,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://github.com/adamrsophie/optcompR, https://adamrsophie.github.io/optcompR/
+BugReports: https://github.com/adamrsophie/optcompR/issues
+Config/roxygen2/version: 8.1.1

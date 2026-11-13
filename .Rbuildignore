@@ -1,0 +1,17 @@
+^documentation$
+^benchmarks$
+^\.github$
+^\.claude$
+^\.gstack$
+^LICENSE\.md$
+^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^.*\.Rproj$
+^\.Rproj\.user$
+^.*\.Rcheck$
+^optcompR_[0-9.]+\.tar\.gz$
+^.*\.DS_Store$
+^\.Rhistory$
+^\.RData$
