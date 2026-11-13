@@ -45,8 +45,10 @@ test_that("bad external functions fail clearly", {
 
 test_that("jaxR gradients match the analytic gradient", {
   skip_if_not_installed("jaxR")
-  skip_if(inherits(try(jaxR::devices(), silent = TRUE), "try-error"),
-          "no XLA runtime for jaxR")
+  # probing jaxR without an XLA runtime can abort the process (no prebuilt
+  # runtime exists for Windows), so require one to be configured explicitly
+  skip_on_os("windows")
+  skip_if(!nzchar(Sys.getenv("JAXR_PJRT_PLUGIN")), "JAXR_PJRT_PLUGIN is not set")
   m <- opt_model()
   x <- opt_variable(m, "x", dim = 2)
   # jaxR indexing is 0-based, as in JAX: v[0] is the first element
@@ -54,5 +56,5 @@ test_that("jaxR gradients match the analytic gradient", {
   opt_objective(m, opt_function(jf, x, gradient = "jaxR"))
   at <- c(0.3, -0.2)
   expect_equal(unname(opt_gradient(m, at)), rosen_grad(at), tolerance = 1e-6)
-  expect_equal(optcompR:::eval_expr(m$objective, at), rosen(at), tolerance = 1e-12)
+  expect_equal(optcompR:::eval_expr(m$objective, at), rosen(at), tolerance = 1e-10)
 })

@@ -36,7 +36,8 @@ source is explicit:
 \item \code{"jaxR"}: reverse-mode automatic differentiation with
 \code{jaxR::grad()}. \code{fn} must be traceable by jaxR and receives a jaxR
 array, whose indexing is 0-based as in JAX (\code{v[0]} is the first
-element), so the same \code{fn} is evaluated by jaxR for values too;
+element), so the same \code{fn} is evaluated by jaxR for values too. It
+runs with 64-bit types enabled (\code{jax_enable_x64});
 \item \code{"finite_difference"}: central differences with relative step \code{step}.
 This is an approximation with error of order \code{step^2} (plus rounding
 of order \code{eps / step}); results record it, and it is never chosen

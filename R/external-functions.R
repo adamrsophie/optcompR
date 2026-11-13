@@ -20,7 +20,8 @@ fd_gradient <- function(f, v, h) {
 #' * `"jaxR"`: reverse-mode automatic differentiation with
 #'   `jaxR::grad()`. `fn` must be traceable by jaxR and receives a jaxR
 #'   array, whose indexing is 0-based as in JAX (`v[0]` is the first
-#'   element), so the same `fn` is evaluated by jaxR for values too;
+#'   element), so the same `fn` is evaluated by jaxR for values too. It
+#'   runs with 64-bit types enabled (`jax_enable_x64`);
 #' * `"finite_difference"`: central differences with relative step `step`.
 #'   This is an approximation with error of order `step^2` (plus rounding
 #'   of order `eps / step`); results record it, and it is never chosen
@@ -60,13 +61,14 @@ opt_function <- function(fn, x, gradient, hessian = NULL, name = "f",
         stop("gradient = \"jaxR\" needs the jaxR package.", call. = FALSE)
       }
       jg <- jaxR::grad(fn)
-      function(v) as.numeric(jg(jaxR::as_jax(v)))
+      function(v) jax64(as.numeric(jg(jaxR::as_jax(v))))
     },
     finite_difference = function(v) fd_gradient(fn, v, step))
   if (!is.null(hessian) && !is.function(hessian)) {
     stop("`hessian` must be a function or NULL.", call. = FALSE)
   }
-  raw <- if (source == "jaxR") function(v) as.numeric(fn(jaxR::as_jax(v))) else fn
+  raw <- if (source == "jaxR") function(v) jax64(as.numeric(fn(jaxR::as_jax(v))))
+    else fn
   value <- function(v) {
     out <- raw(v)
     if (length(out) != 1L || !is.finite(out)) {
@@ -81,6 +83,10 @@ opt_function <- function(fn, x, gradient, hessian = NULL, name = "f",
 }
 
 fn_node_eval <- function(e, v) e$data$f(v)
+
+# jaxR arrays are 32-bit by default, as in JAX; optimization needs doubles,
+# so jaxR code runs with 64-bit types enabled and the setting is restored.
+jax64 <- function(code) jaxR::with_jax_config("jax_enable_x64", TRUE, code)
 
 fn_node_grad <- function(e, v) {
   g <- as.numeric(e$data$grad(v))
