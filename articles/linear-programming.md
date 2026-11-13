@@ -115,7 +115,7 @@ f <- tempfile(fileext = ".mps")
 opt_write_model(m2, f)
 #> WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0
 #> WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0
-#> Writing the model to /tmp/RtmpiqomUU/file1e9470607299.mps
+#> Writing the model to /tmp/Rtmpj5ykjr/file1df3382ddb5.mps
 head(readLines(f))
 #> [1] "NAME        " "ROWS"         " N  Obj     " " E  r0      " " L  r1      "
 #> [6] "COLUMNS"
