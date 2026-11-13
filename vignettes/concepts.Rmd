@@ -42,7 +42,10 @@ opt_classify(m)$convexity
 ```
 
 For general nonlinear expressions convexity is reported as `unknown`; it is
-not guessed.
+not guessed. Cone constraints are convex sets by construction, so a model
+whose only nonlinear structure is cones (with a linear or convex quadratic
+objective) is classified as convex `"SOCP"` or `"CONIC"`; see
+`vignette("conic")`.
 
 ## Continuous and mixed-integer
 
@@ -104,4 +107,7 @@ whether the returned vectors are feasible. A `time_limit` termination with a
 The gradient of the objective, $\nabla f(x)$, describes the model function.
 The sensitivity of the optimum, $\partial f^* / \partial b$, describes the
 optimization problem as a whole; by the envelope theorem it equals the dual.
-See `vignette("sensitivity")`.
+See `vignette("sensitivity")`. The derivative of the optimal point itself,
+$\partial x^* / \partial p$, follows from differentiating the KKT
+conditions and is computed by `opt_solution_jacobian()`; see
+`vignette("solution-derivatives")`.

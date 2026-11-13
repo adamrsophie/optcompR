@@ -22,7 +22,10 @@ articles:
   - quadratic-programming
   - mixed-integer
   - nonlinear
+  - conic
+  - discrete-structure
   - multiobjective
+  - robust-stochastic
 - title: Working with models
   navbar: Working with models
   contents:
@@ -35,12 +38,14 @@ articles:
   - diagnostics
   - infeasible-models
   - sensitivity
+  - solution-derivatives
   - exact-certificates
 - title: Background and integrations
   navbar: Background and integrations
   contents:
   - concepts
   - symbolic-integration
+  - ode-fitting
 
 reference:
 - title: Models and variables
@@ -67,6 +72,18 @@ reference:
   - opt_constraints
   - opt_delete_constraint
   - opt_objective
+- title: Cones, discrete structure and logic
+  contents:
+  - opt_soc_constraint
+  - opt_sym_variable
+  - opt_indicator
+  - opt_sos1
+  - opt_implies
+- title: Robust and stochastic optimization
+  contents:
+  - opt_robust_constraint
+  - opt_chance_constraint
+  - opt_cvar
 - title: Solving
   contents:
   - opt_solve
@@ -87,6 +104,7 @@ reference:
   contents:
   - opt_check
   - opt_gradient
+  - opt_solution_jacobian
   - opt_sensitivity
   - opt_fixed_relaxation
   - opt_scenarios
@@ -101,6 +119,7 @@ reference:
   - opt_z3_certify
   - opt_from_sym
   - opt_to_sym
+  - opt_ode_loss
 - title: Package
   contents:
   - optcompR-package

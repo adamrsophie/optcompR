@@ -137,6 +137,7 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
     as.vector(jac_expr(result$objective, z, ns)$J)
   df <- gf[ps] - as.vector(crossprod(J[, ps, drop = FALSE], y))
   list(solution = dx, objective = stats::setNames(df, pn),
-       active = c(sf$row_names[act], paste0("bound:", sf$col_names[bact])),
+       active = c(sf$row_names[act],
+                  if (any(bact)) paste0("bound:", sf$col_names[bact])),
        multipliers = multipliers)
 }

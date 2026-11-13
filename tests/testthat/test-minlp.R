@@ -3,7 +3,7 @@ enumerate_min <- function(f, grid) {
   list(value = min(vals), at = unlist(grid[which.min(vals), ]))
 }
 
-test_that("convex MINLP is solved to global optimality", {
+test_that("MINLP branch and bound matches enumeration", {
   skip_if_not_installed("nloptr")
   m <- opt_model()
   x <- opt_variable(m, "x", type = "integer", lower = -3, upper = 3)

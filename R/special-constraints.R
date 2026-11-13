@@ -318,7 +318,8 @@ opt_complementarity <- function(model, x, y, name = NULL) {
 #' these functions are the explicit alternative (`1 - x` is the negation of
 #' a binary `x`).
 #'
-#' * `opt_implies(model, a, b)`: \eqn{a \Rightarrow b}, i.e. \eqn{a \le b}.
+#' * `opt_implies(model, a, b)`: \eqn{a \Rightarrow b}, i.e. \eqn{a \le b};
+#'   `a` and `b` may be negations such as `1 - x`.
 #' * `opt_and(model, z, x)`: \eqn{z = x_1 \wedge \dots \wedge x_k}.
 #' * `opt_or(model, z, x)`: \eqn{z = x_1 \vee \dots \vee x_k}.
 #'
@@ -339,9 +340,21 @@ opt_complementarity <- function(model, x, y, name = NULL) {
 #' @export
 opt_implies <- function(model, a, b, name = NULL) {
   check_model(model)
-  as_binary_symbol(model, a, "a")
-  as_binary_symbol(model, b, "b")
+  check_binary_literal(model, a, "a")
+  check_binary_literal(model, b, "b")
   opt_constraint(model, a - b <= 0, name = name)
+}
+
+# A binary variable or its negation 1 - x: affine in binary variables.
+check_binary_literal <- function(model, e, what) {
+  e <- check_affine(model_expr(model, e, what), what)
+  sym <- expr_symbols(e)
+  if (!length(sym) || !all(model$sym_kind[sym] == "var" &
+                           model$type[sym] == "binary")) {
+    stop(sprintf("`%s` must be binary variables or their negations (1 - x).",
+                 what), call. = FALSE)
+  }
+  invisible(e)
 }
 
 #' @rdname opt_implies

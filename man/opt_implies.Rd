@@ -33,7 +33,8 @@ a binary \code{x}).
 }
 \details{
 \itemize{
-\item \code{opt_implies(model, a, b)}: \eqn{a \Rightarrow b}, i.e. \eqn{a \le b}.
+\item \code{opt_implies(model, a, b)}: \eqn{a \Rightarrow b}, i.e. \eqn{a \le b};
+\code{a} and \code{b} may be negations such as \code{1 - x}.
 \item \code{opt_and(model, z, x)}: \eqn{z = x_1 \wedge \dots \wedge x_k}.
 \item \code{opt_or(model, z, x)}: \eqn{z = x_1 \vee \dots \vee x_k}.
 }

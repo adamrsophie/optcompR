@@ -33,13 +33,17 @@ opt_solver_capabilities("highs")
 | Backend | Classes | Global for | Duals | Ranging | Warm start |
 |---|---|---|---|---|---|
 | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
-| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP | all, including nonconvex | no | no | no |
+| clarabel | LP, convex QP, SOCP, CONIC | all of these | yes | no | no |
+| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by `opt_check()` | no | start point |
+| nlpbb | MINLP, MIQCQP, MIQP | convex relaxations | no | no | no |
 | roi | whatever the chosen ROI plugin solves | plugin | plugin | no | no |
 
-Not supported in this version: conic programs (SOCP, SDP), general MINLP,
-indicator and SOS constraints, IPOPT.
+Indicator and SOS constraints are native in SCIP and are reformulated exactly
+(big-M rows from finite bounds, auxiliary binaries) for other mixed-integer
+backends. IPOPT is not available because it has no interface on CRAN;
+nonlinear models use NLopt.
 
 ## Automatic choice
 
@@ -48,9 +52,12 @@ and convexity of the model. For nonconvex problems global solvers come first.
 When nothing fits, the error explains why each backend was rejected:
 
 ```{r, error = TRUE}
+# an integer variable inside an exponential cone: no installed backend
 m <- opt_model()
 x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
-opt_objective(m, exp(x))
+t <- opt_variable(m, "t")
+opt_exp_cone(m, x, 0 * x + 1, t)
+opt_objective(m, t)
 opt_solve(m)
 ```
 
