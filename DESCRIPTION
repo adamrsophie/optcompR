@@ -37,10 +37,12 @@ Suggests:
     scip,
     slam,
     symcompR,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    z3r
 VignetteBuilder: knitr
 Remotes:
-    adamrsophie/symcompR
+    adamrsophie/symcompR,
+    adamrsophie/z3r
 Config/testthat/edition: 3
 URL: https://github.com/adamrsophie/optcompR, https://adamrsophie.github.io/optcompR/
 BugReports: https://github.com/adamrsophie/optcompR/issues

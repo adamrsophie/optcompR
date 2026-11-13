@@ -1,3 +1,6 @@
+# R CMD check on Linux, macOS and Windows. The optional z3r integration
+# needs the Z3 library, so a pinned official Z3 release (verified by
+# SHA-256) is downloaded before z3r is installed from GitHub.
 name: R-CMD-check
 
 on:
@@ -13,19 +16,43 @@ jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         config:
-          - { os: macos-latest, r: release }
-          - { os: windows-latest, r: release }
-          - { os: ubuntu-latest, r: release }
-          - { os: ubuntu-latest, r: devel, http-user-agent: release }
+          - {os: macos-latest, r: release, asset: z3-5.4.1-arm64-osx-13.3.zip,
+             sha: a4a878121e81dfc297d027dd0b51dc4f08feb4296d6ecace42bfbc87a29d6d58}
+          - {os: windows-latest, r: release, asset: z3-5.4.1-x64-win.zip,
+             sha: f16e991e1c883b0cee30c78eb445343e1a3f49c142aa7dead7d6c35f9cc44934}
+          - {os: ubuntu-24.04, r: release, asset: z3-5.4.1-x64-glibc-2.39.zip,
+             sha: b548bac48ef2452b4e09ea2945cf4b011d5f43fcf39e4799df268ee7e0769d85}
+          - {os: ubuntu-24.04, r: devel, http-user-agent: release,
+             asset: z3-5.4.1-x64-glibc-2.39.zip,
+             sha: b548bac48ef2452b4e09ea2945cf4b011d5f43fcf39e4799df268ee7e0769d85}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Download pinned Z3 release
+        shell: bash
+        run: |
+          if command -v sha256sum > /dev/null; then sum="sha256sum"; else sum="shasum -a 256"; fi
+          (
+            cd "$RUNNER_TEMP"
+            curl -sSL -o z3.zip "https://github.com/Z3Prover/z3/releases/download/z3-5.4.1/${{ matrix.config.asset }}"
+            echo "${{ matrix.config.sha }}  z3.zip" | $sum -c -
+            unzip -q z3.zip
+          )
+          Z3_DIR="$RUNNER_TEMP/${{ matrix.config.asset }}"
+          Z3_DIR="${Z3_DIR%.zip}"
+          if command -v cygpath > /dev/null; then Z3_DIR=$(cygpath -m "$Z3_DIR"); fi
+          echo "Z3_DIR=$Z3_DIR" >> "$GITHUB_ENV"
+          echo "Z3_INCLUDE_DIR=$Z3_DIR/include" >> "$GITHUB_ENV"
+          echo "Z3_LIB_DIR=$Z3_DIR/bin" >> "$GITHUB_ENV"
+          echo "$Z3_DIR/bin" >> "$GITHUB_PATH"
 
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
 
@@ -44,3 +71,11 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+          error-on: '"warning"'
+
+      - name: Report optional backends
+        if: always()
+        shell: Rscript {0}
+        run: |
+          for (p in c("highs", "scip", "osqp", "nloptr", "ROI", "symcompR", "z3r"))
+            cat(sprintf("%-10s %s\n", p, requireNamespace(p, quietly = TRUE)))
