@@ -50,7 +50,8 @@ A scalar nonlinear `opt_expr`.
   [`jaxR::grad()`](https://adamrsophie.github.io/jaxR/reference/grad.html).
   `fn` must be traceable by jaxR and receives a jaxR array, whose
   indexing is 0-based as in JAX (`v[0]` is the first element), so the
-  same `fn` is evaluated by jaxR for values too;
+  same `fn` is evaluated by jaxR for values too. It runs with 64-bit
+  types enabled (`jax_enable_x64`);
 
 - `"finite_difference"`: central differences with relative step `step`.
   This is an approximation with error of order `step^2` (plus rounding
