@@ -1,0 +1,47 @@
+"group","task","size","way","seconds","mb"
+"LP","build","1000 x 10000","optcompR",0.177,156.7
+"LP","build and solve","1000 x 10000","optcompR highs",0.18,167.5
+"LP","build and solve","1000 x 10000","highs direct",0.011,0.8
+"LP","build and solve","1000 x 10000","ROI highs",0.017,2.7
+"LP","build","5000 x 50000","optcompR",2.139,3835.3
+"LP","build and solve","5000 x 50000","optcompR highs",2.24,3888.2
+"LP","build and solve","5000 x 50000","highs direct",0.059,3.9
+"LP","build and solve","5000 x 50000","ROI highs",0.075,13.4
+"QP","build","1000","optcompR",0.031,65.2
+"QP","solve","1000","optcompR highs",0.427,21.2
+"QP","solve","1000","optcompR osqp",0.085,21.2
+"QP","solve","1000","optcompR clarabel",0.115,21.3
+"QP","solve","1000","osqp direct",0.01,0.3
+"QP","build","5000","optcompR",1.229,1451.5
+"QP","solve","5000","optcompR highs",101.174,27.7
+"QP","solve","5000","optcompR osqp",1.752,27.8
+"QP","solve","5000","optcompR clarabel",5.606,28.3
+"QP","solve","5000","osqp direct",0.473,1.3
+"MILP","build and solve","50","optcompR highs",0.037,0.1
+"MILP","build and solve","50","optcompR scip",0.015,0.1
+"MILP","build and solve","50","highs direct",0.031,0
+"MILP","build and solve","50","ROI glpk",0.005,0.1
+"MILP","build and solve","200","optcompR highs",0.016,0.3
+"MILP","build and solve","200","optcompR scip",0.012,0.3
+"MILP","build and solve","200","highs direct",0.01,0
+"MILP","build and solve","200","ROI glpk",0.01,0.2
+"NLP","build and solve","50","optcompR ipopt",0.132,2.4
+"NLP","build and solve","50","optcompR nloptr",0.312,15
+"NLP","build and solve","400","optcompR ipopt",0.402,22.7
+"repeated","20 solves after parameter updates","40 x 500","optcompR parameters",0.198,91.7
+"repeated","20 solves after parameter updates","40 x 500","rebuild each time",0.371,133.5
+"repeated","20 scenarios","40 x 500","opt_scenarios",0.197,91.7
+"derivatives","solution Jacobian","20","implicit KKT",0.016,0.3
+"derivatives","solution Jacobian","200","implicit KKT",0.023,10.9
+"construction","scalar constraints in a loop","1000","optcompR",0.123,8.2
+"construction","one vector constraint","1000","optcompR",0.001,0.5
+"construction","scalar constraints in a loop","5000","optcompR",0.652,193.5
+"construction","one vector constraint","5000","optcompR",0.003,2.5
+"construction","scalar variables in a loop","2000","optcompR",0.176,162.1
+"construction","quadratic rows x_i^2 <= 1","2000","optcompR",0.71,113.5
+"construction","indicators z_i => x_i <= 1","2000","optcompR",0.175,233.3
+"construction","scalar variables in a loop","8000","optcompR",2.001,2580.2
+"construction","quadratic rows x_i^2 <= 1","8000","optcompR",4.349,1745
+"construction","indicators z_i => x_i <= 1","8000","optcompR",4.588,3679.6
+"repeated","20 QP solves after parameter updates","2000","optcompR osqp kept",0.241,142.4
+"repeated","20 QP solves after parameter updates","2000","optcompR osqp new",0.245,142.1

@@ -1,0 +1,75 @@
+---
+title: "Benchmarks"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+These timings come from `benchmarks/run.R`, run by the `benchmarks`
+GitHub Actions workflow on one clean Ubuntu runner for the release and for
+an earlier commit (`base`), one after the other. Times are medians of three
+runs in seconds (one run for the slowest tasks); memory is what one run
+allocates in R, measured with `bench::bench_memory()`. Solvers run with one
+thread. Run the script yourself with `Rscript benchmarks/run.R`.
+
+```{r}
+dir <- "../../benchmarks/results"
+new <- read.csv(file.path(dir, "new.csv"))
+base <- read.csv(file.path(dir, "base.csv"))
+tab <- merge(base, new, by = c("group", "task", "size", "way"),
+             suffixes = c("_base", "_new"), sort = FALSE)
+tab$speedup <- round(tab$seconds_base / pmax(tab$seconds_new, 1e-3), 1)
+show <- function(g) {
+  t <- tab[tab$group %in% g, c("task", "size", "way", "seconds_base",
+                               "seconds_new", "speedup", "mb_base", "mb_new")]
+  knitr::kable(t, row.names = FALSE,
+               col.names = c("task", "size", "way", "s (base)", "s",
+                             "speedup", "MB (base)", "MB"))
+}
+```
+
+```{r, results = "asis"}
+cat(readLines(file.path(dir, "platform.txt")), sep = "\n")
+```
+
+## Building models
+
+Construction paths are linear in the size of the model: concatenation,
+indicator constraints, quadratic rows (stored as one triplet table) and
+variables added one at a time no longer copy what is already there, and a
+sparse coefficient matrix stays sparse in `A %*% x`.
+
+```{r}
+show("construction")
+```
+
+## Linear and mixed-integer programs
+
+The same model solved through optcompR, through the solver's own R package
+and through ROI. The difference to the direct call is the cost of building,
+classifying and checking the model.
+
+```{r}
+show(c("LP", "MILP"))
+```
+
+## Quadratic and nonlinear programs
+
+Automatic selection sends convex QPs to Clarabel: the HiGHS active set QP
+solver needs thousands of iterations at a few thousand variables.
+
+```{r}
+show(c("QP", "NLP"))
+```
+
+## Repeated solves and derivatives
+
+After `opt_set_parameter()`, lowered blocks whose parameters did not change
+are reused, and the HiGHS solver and OSQP workspace of the previous solve are
+updated in place. For the QP below, setting up a new OSQP workspace is cheap
+next to the rest of each solve, so keeping it gains nothing measurable.
+
+```{r}
+show(c("repeated", "derivatives"))
+```

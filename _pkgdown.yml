@@ -46,6 +46,7 @@ articles:
   - concepts
   - symbolic-integration
   - ode-fitting
+  - articles/benchmarks
 
 reference:
 - title: Models and variables
