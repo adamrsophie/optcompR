@@ -56,7 +56,8 @@ opt_to_cvxr <- function(model) {
   if (length(lb)) cons <- c(cons, list(x[lb] >= sf$lower[lb]))
   if (length(ub)) cons <- c(cons, list(x[ub] <= sf$upper[ub]))
   quad <- function(Q) 0.5 * CVXR::quad_form(x, as.matrix(Q))
-  qrows <- as.integer(names(sf$row_Q))
+  qg <- row_quad_groups(sf)
+  qrows <- as.integer(names(qg))
   lin <- setdiff(seq_len(nrow(sf$A)), qrows)
   A <- as.matrix(sf$A)
   for (side in c("upper", "lower")) {
@@ -75,7 +76,7 @@ opt_to_cvxr <- function(model) {
   }
   for (k in seq_along(qrows)) {
     ri <- qrows[k]
-    g <- A[ri, , drop = FALSE] %*% x + quad(sf$row_Q[[k]])
+    g <- A[ri, , drop = FALSE] %*% x + quad(row_q(sf, ri, qg[[k]]))
     if (is.finite(sf$row_upper[ri])) cons <- c(cons, list(g <= sf$row_upper[ri]))
     if (is.finite(sf$row_lower[ri])) cons <- c(cons, list(g >= sf$row_lower[ri]))
   }

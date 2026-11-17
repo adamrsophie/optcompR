@@ -515,17 +515,32 @@ lower_special <- function(model, is_par, pval, col, n) {
       stop(sprintf(paste("Indicator '%s' needs a binary switch variable;",
                          "its type was changed."), it$name), call. = FALSE)
     }
-    a <- affine_matrix(it$expr, is_par, pval, col, n)
-    for (r in seq_len(nrow(a$M))) {
-      row <- a$M[r, ]
-      nz <- which(row != 0)
-      # expression a'x + c  (sense)  0, as a'x <= -c and/or -a'x <= c
-      add <- function(sign) list(name = it$name, z = col[it$z[r]],
-                                 active = it$active, j = nz,
-                                 v = sign * row[nz], rhs = -sign * a$const[r])
-      if (it$sense %in% c("<=", "==")) ind <- c(ind, list(add(1)))
-      if (it$sense %in% c(">=", "==")) ind <- c(ind, list(add(-1)))
+    low <- compact_poly(lower_expr(it$expr, is_par, pval))
+    if (low$type != "poly" || length(low$qv)) {
+      stop("A conic or indicator expression is not affine after parameter substitution.",
+           call. = FALSE)
     }
+    # the terms of each row, from the triplets in one pass (no dense rows)
+    m <- low$len
+    keep <- low$lv != 0
+    by_row <- split(seq_along(low$li)[keep], factor(low$li[keep], levels = seq_len(m)))
+    const <- rep_len(low$const, m)
+    signs <- c(if (it$sense %in% c("<=", "==")) 1, if (it$sense %in% c(">=", "==")) -1)
+    out <- vector("list", m * length(signs))
+    k <- 0L
+    for (r in seq_len(m)) {
+      t <- by_row[[r]]
+      j <- col[low$lj[t]]
+      v <- low$lv[t]
+      o <- order(j)
+      # expression a'x + c  (sense)  0, as a'x <= -c and/or -a'x <= c
+      for (sg in signs) {
+        k <- k + 1L
+        out[[k]] <- list(name = it$name, z = col[it$z[r]], active = it$active,
+                         j = j[o], v = sg * v[o], rhs = -sg * const[r])
+      }
+    }
+    ind <- c(ind, out)
   }
   sos <- lapply(sp$sos %||% list(), function(s) {
     list(name = s$name, type = s$type, cols = col[s$sym], weights = s$weights)
@@ -561,15 +576,13 @@ reformulate_special <- function(sf, entry) {
   need_sos <- length(sf$sos) && !"sos" %in% native
   if (!need_ind && !need_sos) return(sf)
   n0 <- length(sf$c)
-  new_i <- integer(); new_j <- integer(); new_v <- numeric()
-  lo <- numeric(); hi <- numeric(); nr <- 0L
+  # rows are collected as chunks and flattened once
+  chunks <- vector("list", 64L)
+  nr <- 0L
   add_row <- function(j, v, l, u) {
     nr <<- nr + 1L
-    new_i <<- c(new_i, rep.int(nr, length(j)))
-    new_j <<- c(new_j, j)
-    new_v <<- c(new_v, v)
-    lo <<- c(lo, l)
-    hi <<- c(hi, u)
+    if (nr > length(chunks)) length(chunks) <<- 2L * length(chunks)
+    chunks[[nr]] <<- list(j = j, v = v, l = l, u = u)
   }
   add_col <- character()
   bound_err <- function(what) {
@@ -616,6 +629,12 @@ reformulate_special <- function(sf, entry) {
       add_row(ycols, rep(1, nb), -Inf, 1)
     }
   }
+  chunks <- chunks[seq_len(nr)]
+  new_i <- rep.int(seq_len(nr), vapply(chunks, function(r) length(r$j), 0L))
+  new_j <- unlist(lapply(chunks, `[[`, "j"), use.names = FALSE) %||% integer()
+  new_v <- unlist(lapply(chunks, `[[`, "v"), use.names = FALSE) %||% numeric()
+  lo <- vapply(chunks, `[[`, 0, "l")
+  hi <- vapply(chunks, `[[`, 0, "u")
   na <- length(add_col)
   n <- n0 + na
   A0 <- sf$A
@@ -656,10 +675,17 @@ trim_result <- function(res, sf) {
 
 # Violations of special constraints at x (columns of the standard form).
 special_violations <- function(sf, x, tol) {
-  out <- data.frame(constraint = character(), kind = character(),
-                    violation = numeric(), stringsAsFactors = FALSE)
+  # entries are collected in preallocated vectors, one data frame at the end
+  N <- length(sf$cones) + length(sf$indicators) + length(sf$sos)
+  nm_ <- character(N)
+  kind_ <- character(N)
+  v_ <- numeric(N)
+  k <- 0L
   add <- function(nm, kind, v) {
-    out[nrow(out) + 1L, ] <<- list(nm, kind, v)
+    k <<- k + 1L
+    nm_[k] <<- nm
+    kind_[k] <<- kind
+    v_[k] <<- v
   }
   for (cn in sf$cones) {
     v <- as.vector(cn$M %*% x) + cn$const
@@ -698,5 +724,6 @@ special_violations <- function(sf, x, tol) {
     }
     add(s$name, paste0("sos", s$type), v)
   }
-  out
+  data.frame(constraint = nm_, kind = kind_, violation = v_,
+             stringsAsFactors = FALSE)
 }

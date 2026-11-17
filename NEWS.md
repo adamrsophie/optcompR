@@ -172,3 +172,12 @@
 * `opt_degree()` removes exact cancellation first; `%*%` follows base R in
   treating a vector as a row or a column; named points with repeated names
   are rejected.
+* Faster and smaller construction: `c()` of expressions stacks its
+  arguments in one pass (linear instead of quadratic memory), indicator
+  constraints are lowered from their triplets without dense rows, and the
+  indicator and SOS reformulation chosen during solver selection is reused
+  for the solve. Quadratic rows are stored in the standard form as one
+  triplet table `row_quad` instead of a list of full-size matrices;
+  `opt_row_hessian()` gives one row's matrix. Separable quadratic rows are
+  classified without building matrices, and diagonally dominant forms are
+  proved PSD before any factorization.

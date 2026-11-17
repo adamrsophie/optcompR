@@ -13,9 +13,10 @@ opt_standard_form(model)
 An \code{opt_standard_form} list with elements \code{sense}, \code{c}, \code{Q},
 \code{offset}, \code{A}, \code{row_lower}, \code{row_upper}, \code{lower}, \code{upper}, \code{type},
 \code{col_names}, \code{row_names}, \code{row_block}, \code{row_kind} (\code{"linear"},
-\code{"quadratic"} or \code{"nonlinear"}), \code{row_Q} (list of row Hessian matrices
-in the one-half convention for quadratic rows), and the lowered
-expressions used by nonlinear solvers.
+\code{"quadratic"} or \code{"nonlinear"}), \code{row_quad} (the quadratic terms of all
+rows as one triplet list \code{i}, \code{j}, \code{k}, \code{v} with \code{j <= k}: row \code{i} has
+the term \code{v * x[j] * x[k]}; \code{\link[=opt_row_hessian]{opt_row_hessian()}} gives one row's matrix),
+and the lowered expressions used by nonlinear solvers.
 }
 \description{
 Substitutes parameter values and lowers the model to sparse matrices in

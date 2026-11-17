@@ -280,21 +280,40 @@ c.opt_expr <- function(...) {
   lens <- vapply(args, `[[`, 0L, "len")
   n <- sum(lens)
   off <- cumsum(c(0L, lens))
-  out <- NULL
-  for (k in seq_along(args)) {
-    a <- args[[k]]
-    if (a$type == "poly") {
-      a <- new_poly(a$model, n, NULL,
-                    const = replace(numeric(n), off[k] + seq_len(a$len), a$const),
-                    li = a$li + off[k], lj = a$lj, lv = a$lv,
-                    qi = a$qi + off[k], qj = a$qj, qk = a$qk, qv = a$qv)
-    } else {
-      M <- Matrix::sparseMatrix(i = off[k] + seq_len(a$len),
-                                j = seq_len(a$len), x = 1,
-                                dims = c(n, a$len))
-      a <- expr_linmap(M, a)
+  model <- NULL
+  for (a in args) {
+    if (!is.null(a$model)) {
+      if (!is.null(model) && !identical(model, a$model)) {
+        stop("Cannot combine expressions that belong to different models.",
+             call. = FALSE)
+      }
+      model <- a$model
     }
-    out <- if (is.null(out)) a else expr_add(out, a)
+  }
+  # the polynomial parts are stacked in one pass, with row indices shifted
+  # by each argument's offset; nonlinear parts are placed by linear maps
+  pl <- vapply(args, function(a) a$type == "poly", NA)
+  pa <- args[pl]
+  po <- off[-length(off)][pl]
+  pull <- function(k, empty) unlist(lapply(pa, .subset2, k),
+                                   use.names = FALSE) %||% empty
+  nl <- vapply(pa, function(a) length(a$li), 0L)
+  nq <- vapply(pa, function(a) length(a$qi), 0L)
+  const <- numeric(n)
+  for (k in seq_along(pa)) {
+    const[po[k] + seq_len(pa[[k]]$len)] <- rep_len(pa[[k]]$const, pa[[k]]$len)
+  }
+  out <- new_poly(model, n, NULL, const = const,
+                  li = pull("li", integer()) + rep.int(po, nl),
+                  lj = pull("lj", integer()), lv = pull("lv", numeric()),
+                  qi = pull("qi", integer()) + rep.int(po, nq),
+                  qj = pull("qj", integer()), qk = pull("qk", integer()),
+                  qv = pull("qv", numeric()))
+  for (k in which(!pl)) {
+    a <- args[[k]]
+    M <- Matrix::sparseMatrix(i = off[k] + seq_len(a$len),
+                              j = seq_len(a$len), x = 1, dims = c(n, a$len))
+    out <- expr_add(out, expr_linmap(M, a))
   }
   out
 }

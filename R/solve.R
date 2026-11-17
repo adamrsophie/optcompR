@@ -73,7 +73,8 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
                   verbose = verbose, warm_start = warm_start,
                   options = options, cache = model$cache$backend[[entry$name]])
   warnings <- unsupported_controls(entry, control, sf)
-  sf_solver <- reformulate_special(sf, entry)
+  sf_solver <- entry$prepared_sf %||% reformulate_special(sf, entry)
+  entry$prepared_sf <- NULL
   if (!is.null(sf_solver$reformulated)) {
     warnings <- c(warnings, sprintf(paste(
       "Indicator/SOS constraints were reformulated exactly for %s with %d",

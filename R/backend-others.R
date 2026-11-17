@@ -83,14 +83,15 @@ scip_solve_sf <- function(sf, cls, control) {
       rhs = if (sf$sense == "max") Inf else 0)
   }
   rt <- row_terms(sf$A)
+  qg <- row_quad_groups(sf)
+  rq <- sf$row_quad
   for (r in seq_len(nrow(sf$A))) {
     idx <- if (rt$p[r + 1L] > rt$p[r]) (rt$p[r] + 1L):rt$p[r + 1L] else integer()
-    key <- as.character(r)
-    if (!is.null(sf$row_Q[[key]])) {
-      qt <- half_q_terms(sf$row_Q[[key]])
+    qi <- qg[[as.character(r)]]
+    if (length(qi)) {
       scip::scip_add_quadratic_cons(m, linvars = rt$j[idx], lincoefs = rt$x[idx],
-                                    quadvars1 = qt$i, quadvars2 = qt$j,
-                                    quadcoefs = qt$v, lhs = sf$row_lower[r],
+                                    quadvars1 = rq$j[qi], quadvars2 = rq$k[qi],
+                                    quadcoefs = rq$v[qi], lhs = sf$row_lower[r],
                                     rhs = sf$row_upper[r])
     } else {
       scip::scip_add_linear_cons(m, vars = rt$j[idx], coefs = rt$x[idx],

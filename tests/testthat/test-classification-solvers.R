@@ -25,7 +25,8 @@ test_that("convexity uses Hessian analysis, not syntax", {
   opt_objective(m, x^2 + x * y + y^2)
   cl <- opt_classify(m)
   expect_identical(cl$convexity, "convex")
-  expect_match(cl$evidence[2], "numerical eigenvalues")
+  # diagonally dominant: proved by Gershgorin, before any eigenvalues
+  expect_match(cl$evidence[2], "Gershgorin")
   opt_objective(m, x^2 - 3 * x * y + y^2)
   expect_identical(opt_classify(m)$convexity, "nonconvex")
   opt_objective(m, x^2 + y^2, sense = "max")
@@ -55,7 +56,10 @@ test_that("singular and nearly singular quadratic forms", {
   opt_objective(m, (x + y)^2 + x)
   cl <- opt_classify(m)
   expect_identical(cl$convexity, "convex")
-  expect_match(cl$evidence[2], "zero up to rounding")
+  expect_match(cl$evidence[2], "Gershgorin")
+  # a PSD form that is not diagonally dominant needs eigenvalues
+  opt_objective(m, (x + 2 * y)^2)
+  expect_match(opt_classify(m)$evidence[2], "zero up to rounding")
   opt_constraint(m, x >= -1)
   opt_constraint(m, y <= 3)
   r <- opt_solve(m)

@@ -140,16 +140,16 @@ select_solver <- function(cls, solver, sf = NULL) {
                                     paste(e$package, collapse = ", ")))
       next
     }
-    # indicator and SOS constraints must be native or reformulable
+    # indicator and SOS constraints must be native or reformulable; the
+    # reformulation is kept for the solve
     if (!is.null(sf) && (length(sf$indicators) || length(sf$sos))) {
-      why <- tryCatch({
-        reformulate_special(sf, e)
-        NULL
-      }, error = function(err) conditionMessage(err))
-      if (!is.null(why)) {
-        reasons <- c(reasons, why)
+      prep <- tryCatch(reformulate_special(sf, e),
+                       error = function(err) conditionMessage(err))
+      if (is.character(prep)) {
+        reasons <- c(reasons, prep)
         next
       }
+      e$prepared_sf <- prep
     }
     return(e)
   }

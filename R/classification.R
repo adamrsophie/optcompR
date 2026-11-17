@@ -7,13 +7,26 @@ psd_check <- function(Q, tol = 1e-9) {
     return(list(psd = TRUE, method = "structural", min_eigen = 0,
                 detail = "zero matrix"))
   }
-  n <- nrow(Q)
   Qs <- Matrix::forceSymmetric(Q)
   Tq <- methods::as(Qs, "TsparseMatrix")
   if (all(Tq@i == Tq@j)) {
     d <- Matrix::diag(Q)
     return(list(psd = all(d >= 0), method = "structural", min_eigen = min(d),
                 detail = "diagonal matrix; signs of the diagonal decide exactly"))
+  }
+  # rows and columns without entries do not affect definiteness
+  S <- sort(unique(c(Tq@i, Tq@j))) + 1L
+  if (length(S) < nrow(Q)) {
+    Qs <- Matrix::forceSymmetric(Qs[S, S, drop = FALSE])
+  }
+  n <- nrow(Qs)
+  # a symmetric matrix with a nonnegative, weakly dominant diagonal is PSD
+  # (Gershgorin), a cheap exact test before any factorization
+  d <- Matrix::diag(Qs)
+  off <- Matrix::rowSums(abs(Qs)) - abs(d)
+  if (all(d >= off)) {
+    return(list(psd = TRUE, method = "structural", min_eigen = NA_real_,
+                detail = "diagonally dominant with a nonnegative diagonal (Gershgorin)"))
   }
   if (n <= 2000L) {
     ev <- eigen(as.matrix(Qs), symmetric = TRUE, only.values = TRUE)$values
@@ -148,9 +161,15 @@ opt_classify <- function(model, tol = 1e-9) {
     } else {
       evidence <- c(evidence, "structural: linear objective")
     }
-    for (r in names(sf$row_Q)) {
+    qg <- row_quad_groups(sf)
+    for (r in names(qg)) {
       ri <- as.integer(r)
-      Qr <- sf$row_Q[[r]]
+      qi <- qg[[r]]
+      rq <- sf$row_quad
+      # a separable row (squares only) is decided by the signs of its
+      # summed diagonal terms, without building its matrix
+      sep <- all(rq$j[qi] == rq$k[qi])
+      Qr <- if (sep) NULL else row_q(sf, ri, qi)
       fin_up <- is.finite(sf$row_upper[ri])
       fin_lo <- is.finite(sf$row_lower[ri])
       lab <- sf$row_names[ri]
@@ -158,6 +177,7 @@ opt_classify <- function(model, tol = 1e-9) {
       if (fin_up && fin_lo) {
         # a side that the quadratic can never cross is redundant: for
         # 0 <= x^2 <= 1 only the upper side restricts, and the set is convex
+        if (is.null(Qr)) Qr <- row_q(sf, ri, qi)
         two <- two_sided_quadratic(Qr, sf$A[ri, ], sf$row_lower[ri],
                                    sf$row_upper[ri], tol)
         if (two$verdict == "nonconvex") convex <- "nonconvex" else
@@ -166,7 +186,11 @@ opt_classify <- function(model, tol = 1e-9) {
                                         two$method, lab, two$detail))
         next
       }
-      chk <- psd_check(if (fin_up) Qr else -Qr, tol)
+      chk <- if (sep) {
+        d <- rowsum(rq$v[qi], rq$j[qi])[, 1L] * (if (fin_up) 1 else -1)
+        list(psd = all(d >= 0), method = "structural",
+             detail = "diagonal matrix; signs of the diagonal decide exactly")
+      } else psd_check(if (fin_up) Qr else -Qr, tol)
       if (isFALSE(chk$psd)) {
         convex <- "nonconvex"
         evidence <- c(evidence, sprintf("%s: row %s defines a nonconvex set (%s)",

@@ -33,9 +33,10 @@ half_q <- function(j, k, v, n) {
 #' @return An `opt_standard_form` list with elements `sense`, `c`, `Q`,
 #'   `offset`, `A`, `row_lower`, `row_upper`, `lower`, `upper`, `type`,
 #'   `col_names`, `row_names`, `row_block`, `row_kind` (`"linear"`,
-#'   `"quadratic"` or `"nonlinear"`), `row_Q` (list of row Hessian matrices
-#'   in the one-half convention for quadratic rows), and the lowered
-#'   expressions used by nonlinear solvers.
+#'   `"quadratic"` or `"nonlinear"`), `row_quad` (the quadratic terms of all
+#'   rows as one triplet list `i`, `j`, `k`, `v` with `j <= k`: row `i` has
+#'   the term `v * x[j] * x[k]`; [opt_row_hessian()] gives one row's matrix),
+#'   and the lowered expressions used by nonlinear solvers.
 #' @examples
 #' m <- opt_model("max")
 #' x <- opt_variable(m, "x", lower = 0)
@@ -106,7 +107,6 @@ build_standard_form <- function(model) {
   # constraints: collect per block, concatenate once
   nb <- length(model$cons)
   parts <- vector("list", nb)
-  row_Q <- list()
   cons_low <- vector("list", nb)
   off <- 0L
   for (b in seq_len(nb)) {
@@ -120,13 +120,13 @@ build_standard_form <- function(model) {
       parts[[b]] <- list(i = off + e$li, j = col[e$lj], v = e$lv,
                          lo = blk$lower - e$const, hi = blk$upper - e$const)
       if (length(e$qv)) {
-        qrows <- sort(unique(e$qi))
-        kind[qrows] <- "quadratic"
-        for (r in qrows) {
-          t <- e$qi == r
-          row_Q[[as.character(off + r)]] <- half_q(col[e$qj[t]], col[e$qk[t]],
-                                                  e$qv[t], n)
-        }
+        kind[unique(e$qi)] <- "quadratic"
+        a <- col[e$qj]
+        b2 <- col[e$qk]
+        parts[[b]]$qi <- off + e$qi
+        parts[[b]]$qj <- pmin(a, b2)
+        parts[[b]]$qk <- pmax(a, b2)
+        parts[[b]]$qv <- e$qv
       }
     } else {
       kind[] <- "nonlinear"
@@ -150,6 +150,10 @@ build_standard_form <- function(model) {
   relem <- pull("elem", integer())
   raw_lo <- pull("raw_lo", numeric()); raw_hi <- pull("raw_hi", numeric())
   A <- Matrix::sparseMatrix(i = ri, j = rj, x = rv, dims = c(off, n))
+  # quadratic terms of all rows as one triplet table: the quadratic part
+  # of row r is the sum of v * x_j * x_k over its entries (j <= k)
+  row_quad <- list(i = pull("qi", integer()), j = pull("qj", integer()),
+                   k = pull("qk", integer()), v = pull("qv", numeric()))
   row_names <- unlist(lapply(model$cons, function(blk) {
     element_labels(blk$name, blk$expr$len, blk$expr$dim)
   }), use.names = FALSE) %||% character()
@@ -161,7 +165,7 @@ build_standard_form <- function(model) {
     sense = model$sense, c = cvec, Q = Q, offset = offset,
     objective_kind = obj_kind,
     A = A, row_lower = rlo, row_upper = rhi, row_block = rblock,
-    row_element = relem, row_kind = rkind, row_Q = row_Q,
+    row_element = relem, row_kind = rkind, row_quad = row_quad,
     row_names = row_names, expr_lower = raw_lo, expr_upper = raw_hi,
     lower = ifelse(model$type[vs] == "binary", pmax(model$lower[vs], 0),
                   model$lower[vs]),
@@ -229,4 +233,40 @@ stop_nonfinite_start <- function() {
   stop(paste("The objective or a constraint is not finite at the start",
              "point; give a start where every function is defined with",
              "opt_set_start()."), call. = FALSE)
+}
+
+# Indices into sf$row_quad of the terms of each quadratic row, named by row.
+row_quad_groups <- function(sf) {
+  q <- sf$row_quad
+  if (is.null(q) || !length(q$i)) return(list())
+  split(seq_along(q$i), q$i)
+}
+
+# The Hessian matrix Q_r of row r in the one-half convention (the quadratic
+# part is 0.5 x'Q_r x), or NULL for a row without quadratic terms.
+row_q <- function(sf, r, idx = NULL) {
+  q <- sf$row_quad
+  if (is.null(idx)) idx <- which(q$i == r)
+  if (!length(idx)) return(NULL)
+  half_q(q$j[idx], q$k[idx], q$v[idx], length(sf$c))
+}
+
+#' Hessian of one quadratic row of a standard form
+#'
+#' @param sf An [opt_standard_form()].
+#' @param row Row index.
+#' @return The symmetric sparse matrix \eqn{Q_r} with quadratic part
+#'   \eqn{\frac12 x^\top Q_r x}, or `NULL` when the row has no quadratic
+#'   terms.
+#' @examples
+#' m <- opt_model()
+#' x <- opt_variable(m, "x", dim = 2)
+#' opt_constraint(m, x[1]^2 + x[1] * x[2] <= 1)
+#' opt_row_hessian(opt_standard_form(m), 1)
+#' @export
+opt_row_hessian <- function(sf, row) {
+  if (!inherits(sf, "opt_standard_form")) {
+    stop("`sf` must come from opt_standard_form().", call. = FALSE)
+  }
+  row_q(sf, row)
 }

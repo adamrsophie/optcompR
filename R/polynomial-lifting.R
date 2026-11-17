@@ -110,9 +110,17 @@ lift_sf <- function(sf) {
   terms <- function(p, i) {
     w <- which(p$li == i)
     q <- which(p$qi == i)
+    a <- col(p$qj[q])
+    b <- col(p$qk[q])
     list(k = rep_len(p$const, p$len)[i], j = col(p$lj[w]), v = p$lv[w],
-         Q = if (length(q)) half_q(col(p$qj[q]), col(p$qk[q]), p$qv[q], N)
-         else NULL)
+         nq = length(q), qj = pmin(a, b), qk = pmax(a, b), qv = p$qv[q])
+  }
+  # quadratic row terms, collected as chunks and flattened once
+  rq <- sf$row_quad
+  qparts <- list(rq)
+  add_quad <- function(r, t, sign) {
+    if (t$nq) qparts[[length(qparts) + 1L]] <<- list(
+      i = rep.int(r, t$nq), j = t$qj, k = t$qk, v = sign * t$qv)
   }
   pad <- function(M) {
     T <- methods::as(M, "TsparseMatrix")
@@ -129,7 +137,6 @@ lift_sf <- function(sf) {
     T <- methods::as(methods::as(Q, "generalMatrix"), "TsparseMatrix")
     Matrix::sparseMatrix(i = T@i + 1L, j = T@j + 1L, x = T@x, dims = c(N, N))
   }
-  row_Q <- lapply(sf$row_Q, pad_sym)
   lo <- sf$row_lower
   up <- sf$row_upper
   kinds <- sf$row_kind
@@ -139,10 +146,10 @@ lift_sf <- function(sf) {
     ai <- c(ai[keep], rep.int(r, length(t$j)))
     aj <- c(aj[keep], t$j)
     ax <- c(ax[keep], t$v)
-    if (!is.null(t$Q)) row_Q[[as.character(r)]] <- t$Q
+    add_quad(r, t, 1)
     lo[r] <- sf$expr_lower[r] - t$k
     up[r] <- sf$expr_upper[r] - t$k
-    kinds[r] <- if (is.null(t$Q)) "linear" else "quadratic"
+    kinds[r] <- if (t$nq) "quadratic" else "linear"
   }
   m0 <- nrow(sf$A)
   r <- m0
@@ -153,14 +160,16 @@ lift_sf <- function(sf) {
       ai <- c(ai, rep.int(r, length(t$j) + 1L))
       aj <- c(aj, col(d$ids[i]), t$j)
       ax <- c(ax, 1, -t$v)
-      if (!is.null(t$Q)) row_Q[[as.character(r)]] <- -t$Q
+      add_quad(r, t, -1)
       lo <- c(lo, t$k)
       up <- c(up, t$k)
-      kinds <- c(kinds, if (is.null(t$Q)) "linear" else "quadratic")
+      kinds <- c(kinds, if (t$nq) "quadratic" else "linear")
     }
   }
   out$A <- Matrix::sparseMatrix(i = ai, j = aj, x = ax, dims = c(r, N))
-  out$row_Q <- row_Q
+  pq <- function(f) unlist(lapply(qparts, `[[`, f), use.names = FALSE) %||%
+    (if (f == "v") numeric() else integer())
+  out$row_quad <- list(i = pq("i"), j = pq("j"), k = pq("k"), v = pq("v"))
   out$row_lower <- lo
   out$row_upper <- up
   out$row_kind <- kinds
@@ -170,11 +179,11 @@ lift_sf <- function(sf) {
     cc <- numeric(N)
     cc[t$j] <- cc[t$j] + t$v
     out$c <- cc
-    out$Q <- t$Q
+    out$Q <- if (t$nq) half_q(t$qj, t$qk, t$qv, N) else NULL
     # a nonlinear objective has offset NA: the lifted polynomial carries the
     # whole constant
     out$offset <- t$k
-    out$objective_kind <- if (is.null(t$Q)) "linear" else "quadratic"
+    out$objective_kind <- if (t$nq) "quadratic" else "linear"
   } else {
     out$c <- c(sf$c, numeric(na))
     if (!is.null(sf$Q)) out$Q <- pad_sym(sf$Q)
