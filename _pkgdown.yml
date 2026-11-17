@@ -97,6 +97,7 @@ reference:
   - opt_ipopt_available
   - opt_classify
   - opt_standard_form
+  - opt_row_hessian
   - opt_write_model
 - title: Results
   contents:
