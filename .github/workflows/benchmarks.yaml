@@ -50,13 +50,16 @@ jobs:
           R CMD INSTALL -l "$RUNNER_TEMP/new" .
           git worktree add "$RUNNER_TEMP/src-base" "${{ inputs.base }}"
           R CMD INSTALL -l "$RUNNER_TEMP/base" "$RUNNER_TEMP/src-base"
+          echo "NEW_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "BASE_SHA=$(git -C "$RUNNER_TEMP/src-base" rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Run the benchmarks
         run: |
-          R_LIBS="$RUNNER_TEMP/new" Rscript benchmarks/run.R out/new
-          R_LIBS="$RUNNER_TEMP/base" Rscript benchmarks/run.R out/base
+          OPTCOMPR_BENCH_SHA="$NEW_SHA" R_LIBS="$RUNNER_TEMP/new" Rscript benchmarks/run.R out/new
+          OPTCOMPR_BENCH_SHA="$BASE_SHA" R_LIBS="$RUNNER_TEMP/base" Rscript benchmarks/run.R out/base
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: benchmarks
           path: out

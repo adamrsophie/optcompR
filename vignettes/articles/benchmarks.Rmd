@@ -10,22 +10,30 @@ These timings come from `benchmarks/run.R`, run by the `benchmarks`
 GitHub Actions workflow on one clean Ubuntu runner for the release and for
 an earlier commit (`base`), one after the other. Times are medians of three
 runs in seconds (one run for the slowest tasks); memory is what one run
-allocates in R, measured with `bench::bench_memory()`. Solvers run with one
+allocates in R, in MiB, measured with `bench::bench_memory()`: not peak
+memory, and native solver allocations are not included. The script also
+records the status and objective of each result outside the timed runs. Solvers run with one
 thread. Run the script yourself with `Rscript benchmarks/run.R`.
 
 ```{r}
 dir <- "../../benchmarks/results"
 new <- read.csv(file.path(dir, "new.csv"))
 base <- read.csv(file.path(dir, "base.csv"))
+# older result files name the memory column mb; it was MiB all along
+for (nm in c("new", "base")) {
+  d <- get(nm)
+  if (is.null(d$mib)) d$mib <- d$mb
+  assign(nm, d[c("group", "task", "size", "way", "seconds", "mib")])
+}
 tab <- merge(base, new, by = c("group", "task", "size", "way"),
              suffixes = c("_base", "_new"), sort = FALSE)
 tab$speedup <- round(tab$seconds_base / pmax(tab$seconds_new, 1e-3), 1)
 show <- function(g) {
   t <- tab[tab$group %in% g, c("task", "size", "way", "seconds_base",
-                               "seconds_new", "speedup", "mb_base", "mb_new")]
+                               "seconds_new", "speedup", "mib_base", "mib_new")]
   knitr::kable(t, row.names = FALSE,
                col.names = c("task", "size", "way", "s (base)", "s",
-                             "speedup", "MB (base)", "MB"))
+                             "speedup", "MiB (base)", "MiB"))
 }
 ```
 

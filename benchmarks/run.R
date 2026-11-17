@@ -3,7 +3,13 @@
 # parameter updates, solution derivatives and memory.
 #
 # Run with: Rscript benchmarks/run.R [output directory]
-# Results are printed and written to results.csv and results.md.
+# Results are printed and written to results.csv (after every task, so a
+# failed run keeps what finished) and results.md. Each row records, outside
+# the timed runs, the status, objective and largest scaled row violation of
+# the last result, so timings of wrong answers are visible. Memory is what
+# one run allocates in R (bench::bench_memory()), in MiB; it is not peak
+# memory and excludes native solver allocations. Set OPTCOMPR_BENCH_SHA to
+# record the commit measured.
 suppressPackageStartupMessages({
   library(optcompR)
   library(Matrix)
@@ -13,25 +19,61 @@ args <- commandArgs(trailingOnly = TRUE)
 out_dir <- if (length(args)) args[[1L]] else "benchmarks"
 has <- function(...) all(vapply(c(...), requireNamespace, TRUE, quietly = TRUE))
 
-# median elapsed seconds over `reps` runs, and memory allocated by one run
+sha <- Sys.getenv("OPTCOMPR_BENCH_SHA", "unknown")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+# median elapsed seconds over `reps` runs, memory allocated by one run, and
+# the value of the last run (checked afterwards, outside the timing)
 measure <- function(expr, reps = 3L) {
   # the benchmark expression, evaluated in the caller's frame
   e <- substitute(expr)
   env <- parent.frame()
   f <- function() eval(e, env)
+  val <- NULL
   times <- vapply(seq_len(reps), function(i)
-    unname(system.time(f())[["elapsed"]]), 0)
+    unname(system.time(val <<- f())[["elapsed"]]), 0)
   mem <- if (has("bench")) as.numeric(bench::bench_memory(f())$mem_alloc) else NA
-  c(seconds = stats::median(times), mb = mem / 2^20)
+  list(seconds = stats::median(times), mib = mem / 2^20, value = val)
 }
+
+# status, objective and largest scaled row violation of a result
+check_value <- function(v) {
+  na <- list(status = NA_character_, objective = NA_real_, violation = NA_real_)
+  if (inherits(v, "opt_result")) {
+    viol <- if (opt_has_solution(v)) opt_check(v)$max_row_violation else NA_real_
+    return(list(status = opt_status(v), objective = opt_objective_value(v),
+                violation = viol))
+  }
+  if (inherits(v, "opt_model")) return(modifyList(na, list(status = "built")))
+  if (is.list(v) && !is.null(v$status_message)) {
+    return(modifyList(na, list(status = v$status_message,
+                               objective = v$objective_value)))
+  }
+  if (is.list(v) && !is.null(v$info$status) && !is.null(v$info$obj_val)) {
+    return(modifyList(na, list(status = v$info$status,
+                               objective = v$info$obj_val)))
+  }
+  if (inherits(v, "OP_solution")) {
+    return(modifyList(na, list(status = v$status$msg$message %||% "",
+                               objective = v$objval)))
+  }
+  na
+}
+`%||%` <- function(a, b) if (is.null(a)) b else a
 
 rows <- list()
 add <- function(group, task, size, way, m) {
-  message(sprintf("%-12s %-40s %-10s %-22s %8.3f s", group, task, size, way,
-                  m[["seconds"]]))
+  ck <- check_value(m$value)
+  message(sprintf("%-12s %-40s %-10s %-22s %8.3f s  %s", group, task, size,
+                  way, m$seconds, ck$status))
   rows[[length(rows) + 1L]] <<- data.frame(
     group = group, task = task, size = size, way = way,
-    seconds = round(m[["seconds"]], 4), mb = round(m[["mb"]], 1))
+    seconds = round(m$seconds, 4), mib = round(m$mib, 1),
+    status = ck$status, objective = signif(ck$objective, 10),
+    violation = signif(ck$violation, 3), sha = sha)
+  # saved after every task
+  utils::write.csv(do.call(rbind, rows), file.path(out_dir, "results.csv"),
+                   row.names = FALSE)
 }
 
 # ----------------------------------------------------------- sparse LP
@@ -90,10 +132,16 @@ for (n in c(1e3, 5e3)) {
         measure(opt_solve(qp$m, solver = s)))
   }
   if (has("osqp")) {
+    # the same settings as optcompR's OSQP defaults, and a fresh workspace
+    # on both sides, so the difference is the wrapper alone
+    set <- list(eps_abs = 1e-7, eps_rel = 1e-7, polishing = TRUE,
+                max_iter = 100000L)
+    add("QP", "solve", size, "optcompR osqp fresh",
+        measure(opt_solve(qp$m, solver = "osqp", warm_start = FALSE)))
     A <- rbind(Matrix(1, 1, n, sparse = TRUE), Diagonal(n))
-    add("QP", "solve", size, "osqp direct", measure(osqp::solve_osqp(
+    add("QP", "solve", size, "osqp direct fresh", measure(osqp::solve_osqp(
       qp$P, qp$q, A, c(0, rep(-1, n)), c(0, rep(1, n)),
-      osqp::osqpSettings(verbose = FALSE))))
+      do.call(osqp::osqpSettings, c(list(verbose = FALSE), set)))))
   }
 }
 
@@ -275,12 +323,17 @@ if (has("osqp")) {
 
 out <- do.call(rbind, rows)
 print(out, row.names = FALSE)
-dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 utils::write.csv(out, file.path(out_dir, "results.csv"), row.names = FALSE)
-md <- c(sprintf("R %s, %s, optcompR %s.", getRversion(), R.version$platform,
-                packageVersion("optcompR")), "",
-        "| group | task | size | way | seconds | MB |",
-        "|---|---|---|---|---:|---:|",
-        sprintf("| %s | %s | %s | %s | %s | %s |", out$group, out$task,
-                out$size, out$way, format(out$seconds), format(out$mb)))
+ver <- function(p) if (has(p)) as.character(packageVersion(p)) else "absent"
+md <- c(sprintf("R %s, %s, optcompR %s (%s).", getRversion(), R.version$platform,
+                packageVersion("optcompR"), sha),
+        sprintf("Solvers: %s.", paste(sprintf("%s %s",
+          c("highs", "osqp", "clarabel", "scs", "nloptr", "scip", "ipoptr"),
+          vapply(c("highs", "osqp", "clarabel", "scs", "nloptr", "scip", "ipoptr"),
+                 ver, "")), collapse = ", ")), "",
+        "| group | task | size | way | seconds | MiB | status | objective |",
+        "|---|---|---|---|---:|---:|---|---:|",
+        sprintf("| %s | %s | %s | %s | %s | %s | %s | %s |", out$group, out$task,
+                out$size, out$way, format(out$seconds), format(out$mib),
+                out$status, format(out$objective)))
 writeLines(md, file.path(out_dir, "results.md"))
