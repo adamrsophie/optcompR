@@ -160,5 +160,9 @@ register_clarabel <- function() {
     features = list(duals = TRUE, time_limit = TRUE, iteration_limit = TRUE,
                     cones = c("soc", "psd", "exp", "pow")),
     solve = clarabel_solve_sf, version = pkg_version("clarabel"),
-    priority = 15L)
+    priority = 15L,
+    # its interior point method is much faster than the HiGHS active set QP
+    # solver beyond a few hundred variables (0.11 s against 0.44 s at 1,000
+    # and 6 s against 110 s at 5,000 in benchmarks/run.R)
+    first_for = "QP")
 }

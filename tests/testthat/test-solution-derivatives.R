@@ -93,5 +93,8 @@ test_that("degenerate and discrete cases are refused or flagged", {
   s <- opt_parameter(m3, "s", value = 1)
   opt_constraint(m3, w <= s)
   opt_objective(m3, (w - s)^2)
-  expect_warning(opt_solution_jacobian(opt_solve(m3), s), "Strict complementarity")
+  # an active set solver lands on the bound exactly; an interior point
+  # solver stops just inside, where the row is inactive
+  expect_warning(opt_solution_jacobian(opt_solve(m3, solver = "highs"), s),
+                 "Strict complementarity")
 })

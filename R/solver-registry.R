@@ -8,7 +8,8 @@
 register_solver <- function(name, package, description, classes,
                             convex_only = character(), global = character(),
                             features = list(), solve, version, priority = 50L,
-                            check = NULL, feasibility_tol = 1e-5) {
+                            check = NULL, feasibility_tol = 1e-5,
+                            first_for = character()) {
   .solver_registry[[name]] <- list(
     name = name, package = package, description = description,
     classes = classes, convex_only = convex_only, global = global,
@@ -18,7 +19,7 @@ register_solver <- function(name, package, description, classes,
       cones = character(), special = character()),
       features),
     solve = solve, version = version, priority = priority, check = check,
-    feasibility_tol = feasibility_tol)
+    feasibility_tol = feasibility_tol, first_for = first_for)
 }
 
 solver_available <- function(entry) {
@@ -119,6 +120,9 @@ select_solver <- function(cls, solver, sf = NULL) {
   }
   ent <- as.list(.solver_registry)
   ent <- ent[order(vapply(ent, `[[`, 0L, "priority"))]
+  # backends that lead automatic selection for particular classes
+  first <- vapply(ent, function(e) cls$class %in% e$first_for, NA)
+  ent <- c(ent[first], ent[!first])
   reasons <- character()
   # prefer solvers that give global guarantees for nonconvex classes
   if (cls$convexity != "convex") {

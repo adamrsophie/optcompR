@@ -4,7 +4,8 @@
 #' that supports the class, and returns a standardized result. With
 #' `solver = "auto"` the first installed backend (in registry priority order)
 #' whose R binding supports the model class is used; for nonconvex classes
-#' backends with global guarantees come first. A model is never transformed
+#' backends with global guarantees come first, and convex QPs go to the
+#' Clarabel interior point solver before HiGHS when it is installed. A model is never transformed
 #' into an approximation to fit a solver: if no installed backend supports
 #' it, an error lists what is missing.
 #'
