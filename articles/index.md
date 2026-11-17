@@ -49,3 +49,4 @@
   symcompR](https://adamrsophie.github.io/optcompR/articles/symbolic-integration.md):
 - [Fitting ODE models with
   modelcompR](https://adamrsophie.github.io/optcompR/articles/ode-fitting.md):
+- [Benchmarks](https://adamrsophie.github.io/optcompR/articles/benchmarks.md):
