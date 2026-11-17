@@ -48,7 +48,8 @@ independently checked results.
   indicator and SOS constraints), Clarabel and SCS (LP, convex QP and conic
   programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP),
   IPOPT with exact sparse Hessians (compiled in when available), NLP branch
-  and bound for MINLP, and ROI plugins.
+  and bound for MINLP with outer approximation bounds certified by weak
+  duality, and ROI plugins.
 * `opt_register_solver()` makes the backend contract public, so other
   solvers can be connected without changing optcompR.
 
@@ -58,7 +59,9 @@ independently checked results.
   optimality, local optimality, early stops (including `"gap_limit"` with
   its gap and a valid bound) and infeasibility certificates.
 * Every returned point is checked against the model before it is reported
-  feasible.
+  feasible, at tolerances that follow the accuracy requested from the
+  solver and are stored in the result; a point where the objective is not
+  defined is not a solution.
 * Duals are derivatives of the optimal value with a documented sign
   convention; `opt_check()` recomputes feasibility and the Karush Kuhn
   Tucker conditions, including conic ones, from the original expressions.
@@ -87,7 +90,8 @@ independently checked results.
 ## Integrations
 
 * ODE least squares losses for modelcompR models with forward or adjoint
-  gradients (`opt_ode_loss()`).
+  gradients (`opt_ode_loss()`), both covering parameter-dependent initial
+  values, events and observations in any order.
 * Conversion to and from symcompR expressions, to CVXR problems
   (`opt_to_cvxr()`), and export to MPS and LP files.
 
