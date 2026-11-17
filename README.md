@@ -84,7 +84,10 @@ opt_check(r)           # independent feasibility and KKT checks
 
 HiGHS is required; the others are optional. The IPOPT backend is compiled
 in when `pkg-config` finds IPOPT at installation (`brew install ipopt`,
-`apt install coinor-libipopt-dev`); check with `opt_ipopt_available()`.
+`apt install coinor-libipopt-dev`). On Windows, unpack a COIN-OR binary
+release (`Ipopt-3.14.x-win64-msvs2022-md.zip`), set `IPOPT_HOME` to its
+folder before installing, and keep its `bin` folder on `PATH`. Check with
+`opt_ipopt_available()`.
 
 ## Installation
 

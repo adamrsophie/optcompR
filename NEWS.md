@@ -97,3 +97,5 @@
 * A mixed-integer solve that stops at a user `mip_gap` with a positive gap
   reports `"gap_limit"` instead of `"optimal"`. SCIP results carry the dual
   bound recovered from SCIP's gap.
+* `configure` links a test program before enabling IPOPT, and Windows
+  builds use IPOPT from a COIN-OR binary release named by `IPOPT_HOME`.

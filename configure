@@ -16,8 +16,8 @@ if [ -z "$OPTCOMPR_NO_IPOPT" ] && command -v pkg-config >/dev/null 2>&1 &&
   CC=`"${R_HOME}/bin/R" CMD config CC`
   CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
   LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
-  probe_dir=`mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/optcompR_probe_$$"`
-  mkdir -p "$probe_dir"
+  probe_dir="src/optcompR_probe"
+  rm -rf "$probe_dir" && mkdir "$probe_dir"
   cat > "$probe_dir/probe.c" <<'EOC'
 #include <IpStdCInterface.h>
 int main(void) {

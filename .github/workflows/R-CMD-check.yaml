@@ -67,6 +67,19 @@ jobs:
           pkg-config --modversion ipopt
           echo "OPTCOMPR_EXPECT_IPOPT=true" >> "$GITHUB_ENV"
 
+      - name: Install IPOPT (Windows binary release)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSL -o ipopt.zip "https://github.com/coin-or/Ipopt/releases/download/releases/3.14.20/Ipopt-3.14.20-win64-msvs2022-md.zip"
+          echo "1fd1de97d3e8e48c298f6ccf5ac91cbfc417b42c61262c08d193fd14117e9098  ipopt.zip" | sha256sum -c -
+          unzip -q ipopt.zip
+          home=$(cygpath -m "$RUNNER_TEMP/Ipopt-3.14.20-win64-msvs2022-md")
+          echo "IPOPT_HOME=$home" >> "$GITHUB_ENV"
+          cygpath -w "$RUNNER_TEMP/Ipopt-3.14.20-win64-msvs2022-md/bin" >> "$GITHUB_PATH"
+          echo "OPTCOMPR_EXPECT_IPOPT=true" >> "$GITHUB_ENV"
+
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0

@@ -1,0 +1,48 @@
+#!/bin/sh
+# Rtools has no IPOPT. To build the IPOPT backend on Windows, unpack a
+# COIN-OR binary release (Ipopt-3.14.x-win64-msvs2022-md.zip from
+# https://github.com/coin-or/Ipopt/releases) and set IPOPT_HOME to its
+# folder; its bin folder must be on PATH whenever optcompR is loaded.
+# Without IPOPT_HOME, or with OPTCOMPR_NO_IPOPT=1, the backend is left out.
+PKG_CPPFLAGS=""
+PKG_LIBS=""
+if [ -z "$OPTCOMPR_NO_IPOPT" ] && [ -n "$IPOPT_HOME" ]; then
+  home=`printf '%s' "$IPOPT_HOME" | sed 's|\\\\|/|g'`
+  inc="$home/include/coin-or"
+  dll=`ls "$home"/bin/ipopt*.dll 2>/dev/null | grep -v amplinterface | head -n 1`
+  if [ -f "$inc/IpStdCInterface.h" ] && [ -n "$dll" ]; then
+    PKG_CPPFLAGS="-DHAVE_IPOPT -I\"$inc\""
+    minor=`sed -n 's/^#define IPOPT_VERSION_MINOR *\([0-9]*\).*/\1/p' "$inc/IpoptConfig.h" 2>/dev/null`
+    if [ -n "$minor" ] && [ "$minor" -ge 14 ]; then
+      PKG_CPPFLAGS="-DHAVE_IPOPT_314 $PKG_CPPFLAGS"
+    fi
+    PKG_LIBS="\"$dll\""
+    CC=`"${R_HOME}/bin/R" CMD config CC`
+    probe_dir="src/optcompR_probe"
+    rm -rf "$probe_dir" && mkdir "$probe_dir"
+    cat > "$probe_dir/probe.c" <<'EOC'
+#include <IpStdCInterface.h>
+int main(void) {
+  IpoptProblem p = CreateIpoptProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0);
+  if (p) FreeIpoptProblem(p);
+  return 0;
+}
+EOC
+    if eval "$CC $PKG_CPPFLAGS \"$probe_dir/probe.c\" -o \"$probe_dir/probe.exe\" $PKG_LIBS" >/dev/null 2>&1; then
+      echo "optcompR: building with IPOPT from $home"
+    else
+      echo "optcompR: IPOPT_HOME is set but a test program did not link; building without IPOPT"
+      PKG_CPPFLAGS=""
+      PKG_LIBS=""
+    fi
+    rm -rf "$probe_dir"
+  else
+    echo "optcompR: IPOPT_HOME does not contain include/coin-or/IpStdCInterface.h and bin/ipopt*.dll; building without IPOPT"
+  fi
+else
+  echo "optcompR: building without IPOPT (set IPOPT_HOME to enable it)"
+fi
+esc() { printf '%s\n' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+sed -e "s|@PKG_CPPFLAGS@|$(esc "$PKG_CPPFLAGS")|" \
+  -e "s|@PKG_LIBS@|$(esc "$PKG_LIBS")|" src/Makevars.win.in > src/Makevars.win
