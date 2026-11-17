@@ -162,14 +162,17 @@ opt_classify <- function(model, tol = 1e-9) {
       evidence <- c(evidence, "structural: linear objective")
     }
     qg <- row_quad_groups(sf)
-    for (r in names(qg)) {
-      ri <- as.integer(r)
-      qi <- qg[[r]]
-      rq <- sf$row_quad
+    rq <- sf$row_quad
+    # evidence per row is collected in a preallocated vector, and each row's
+    # matrix lives on its own support only
+    rev_ <- character(length(qg))
+    Ar <- NULL
+    for (g in seq_along(qg)) {
+      ri <- as.integer(names(qg)[g])
+      qi <- qg[[g]]
       # a separable row (squares only) is decided by the signs of its
       # summed diagonal terms, without building its matrix
       sep <- all(rq$j[qi] == rq$k[qi])
-      Qr <- if (sep) NULL else row_q(sf, ri, qi)
       fin_up <- is.finite(sf$row_upper[ri])
       fin_lo <- is.finite(sf$row_lower[ri])
       lab <- sf$row_names[ri]
@@ -177,33 +180,37 @@ opt_classify <- function(model, tol = 1e-9) {
       if (fin_up && fin_lo) {
         # a side that the quadratic can never cross is redundant: for
         # 0 <= x^2 <= 1 only the upper side restricts, and the set is convex
-        if (is.null(Qr)) Qr <- row_q(sf, ri, qi)
-        two <- two_sided_quadratic(Qr, sf$A[ri, ], sf$row_lower[ri],
-                                   sf$row_upper[ri], tol)
+        if (is.null(Ar)) Ar <- methods::as(sf$A, "RsparseMatrix")
+        loc <- row_local(rq, qi, Ar, ri)
+        two <- two_sided_quadratic(loc$Q, loc$a, sf$row_lower[ri],
+                                   sf$row_upper[ri])
         if (two$verdict == "nonconvex") convex <- "nonconvex" else
           if (two$verdict == "unknown" && convex == "convex") convex <- "unknown"
-        evidence <- c(evidence, sprintf("%s: quadratic row %s is bounded on both sides; %s",
-                                        two$method, lab, two$detail))
+        rev_[g] <- sprintf("%s: quadratic row %s is bounded on both sides; %s",
+                           two$method, lab, two$detail)
         next
       }
       chk <- if (sep) {
         d <- rowsum(rq$v[qi], rq$j[qi])[, 1L] * (if (fin_up) 1 else -1)
         list(psd = all(d >= 0), method = "structural",
              detail = "diagonal matrix; signs of the diagonal decide exactly")
-      } else psd_check(if (fin_up) Qr else -Qr, tol)
+      } else {
+        Ql <- row_local(rq, qi)$Q
+        psd_check(if (fin_up) Ql else -Ql, tol)
+      }
       if (isFALSE(chk$psd)) {
         convex <- "nonconvex"
-        evidence <- c(evidence, sprintf("%s: row %s defines a nonconvex set (%s)",
-                                        chk$method, lab, chk$detail))
+        rev_[g] <- sprintf("%s: row %s defines a nonconvex set (%s)",
+                           chk$method, lab, chk$detail)
       } else if (is.na(chk$psd)) {
         if (convex == "convex") convex <- "unknown"
-        evidence <- c(evidence, sprintf("%s: row %s, %s", chk$method, lab,
-                                        chk$detail))
+        rev_[g] <- sprintf("%s: row %s, %s", chk$method, lab, chk$detail)
       } else {
-        evidence <- c(evidence, sprintf("%s: row %s defines a convex set (%s)",
-                                        chk$method, lab, chk$detail))
+        rev_[g] <- sprintf("%s: row %s defines a convex set (%s)",
+                           chk$method, lab, chk$detail)
       }
     }
+    evidence <- c(evidence, rev_[nzchar(rev_)])
     if (!has_qrow && sf$objective_kind != "quadratic" && !length(ctypes)) {
       evidence <- c(evidence, "structural: all rows linear, feasible set is a polyhedron")
     }
@@ -228,44 +235,74 @@ print.opt_classification <- function(x, ...) {
   invisible(x)
 }
 
-# Convexity of the set lo <= a'x + 0.5 x'Qx <= up with both bounds finite.
-# When Q is PSD (or NSD) and the quadratic attains its minimum (maximum) m,
-# the lower (upper) side is redundant if lo <= m (up >= m), and the set is
-# then the convex sublevel (superlevel) set. Otherwise, for Q PSD, nonzero
-# and m < lo, a line through the minimizer along a curved direction meets
-# the set in two separate intervals, so the set is nonconvex. Everything
-# else is left unknown.
-two_sided_quadratic <- function(Q, a, lo, up, tol) {
-  a <- as.vector(a)
-  S <- sort(unique(c(which(a != 0), methods::as(Q, "TsparseMatrix")@i + 1L)))
-  if (length(S) > 500L) {
+# The quadratic and linear parts of quadratic row r on its own support: the
+# columns named by either index of a quadratic term (a symmetric matrix keeps
+# one triangle, so both are needed) and, when the row-compressed constraint
+# matrix Ar is given, by a linear coefficient. Q is the |S| x |S| matrix of
+# the one-half convention, a the linear coefficients on S.
+row_local <- function(rq, qi, Ar = NULL, r = NULL) {
+  j <- rq$j[qi]
+  k <- rq$k[qi]
+  v <- rq$v[qi]
+  lj <- integer()
+  lv <- numeric()
+  if (!is.null(Ar)) {
+    w <- seq.int(Ar@p[r] + 1L, length.out = Ar@p[r + 1L] - Ar@p[r])
+    lj <- Ar@j[w] + 1L
+    lv <- Ar@x[w]
+  }
+  S <- sort(unique(c(j, k, lj[lv != 0])))
+  Q <- half_q(match(j, S), match(k, S), v, length(S))
+  a <- numeric(length(S))
+  a[match(lj, S)] <- lv
+  list(S = S, Q = Q, a = a)
+}
+
+# Convexity of the set lo <= a'x + 0.5 x'Qx <= up with both bounds finite,
+# for Q and a on the row's own support. When Q is PSD (or NSD) and the
+# quadratic attains its minimum (maximum) m, the lower (upper) side is
+# redundant if lo <= m (up >= m), and the set is then the convex sublevel
+# (superlevel) set. Otherwise, for Q PSD, nonzero and m < lo, a line through
+# the minimizer along a curved direction meets the set in two separate
+# intervals, so the set is nonconvex. Everything else is left unknown.
+#
+# Redundancy changes the topology of the set, so it is accepted only when
+# lo <= m holds beyond the rounding error of computing m; a lower bound a
+# little above the minimum (1e-5 <= x^2) is never treated as redundant,
+# whatever feasibility tolerance a solver uses.
+two_sided_quadratic <- function(Q, a, lo, up) {
+  n <- length(a)
+  if (n > 500L) {
     return(list(verdict = "unknown", method = "numerical",
                 detail = "too many variables to decide redundancy of a side"))
   }
-  Qs <- as.matrix(Matrix::forceSymmetric(Q[S, S, drop = FALSE]))
-  as_ <- a[S]
+  Qs <- as.matrix(Q)
   e <- eigen(Qs, symmetric = TRUE)
   scale <- max(1, abs(e$values))
-  rt <- 100 * length(S) * .Machine$double.eps * scale
+  eps <- 100 * n * .Machine$double.eps
+  rt <- eps * scale
   for (sg in c(1, -1)) {
     ev <- sg * e$values
     if (min(ev) < -rt) next
     # extremum of sg * g: solve sg * (Q x + a) = 0 by the pseudo-inverse
     keep <- ev > rt
     V <- e$vectors[, keep, drop = FALSE]
-    xs <- -V %*% ((crossprod(V, as_)) / e$values[keep])
-    attained <- max(abs(Qs %*% xs + as_)) <= sqrt(tol) * max(1, abs(as_))
+    xs <- -V %*% ((crossprod(V, a)) / e$values[keep])
+    # attained only if the gradient vanishes up to rounding
+    attained <- max(abs(Qs %*% xs + a)) <= eps * (scale * max(1, abs(xs)) +
+                                                    max(1, abs(a)))
     if (!attained) next
-    m <- sum(as_ * xs) + 0.5 * sum(xs * (Qs %*% xs))
-    side <- if (sg > 0) lo else up
-    slack <- sqrt(tol) * max(1, abs(side))
-    if ((sg > 0 && lo <= m + slack) || (sg < 0 && up >= m - slack)) {
+    m <- sum(a * xs) + 0.5 * sum(xs * (Qs %*% xs))
+    # rounding error of m
+    err <- eps * (abs(m) + sum(abs(a * xs)) + scale * sum(xs^2))
+    if ((sg > 0 && lo <= m - err) || (sg < 0 && up >= m + err) ||
+        (sg > 0 && lo == m) || (sg < 0 && up == m)) {
       return(list(verdict = "convex", method = "numerical", detail = sprintf(
         "the %s side is redundant (the quadratic's %s is %s), so the set is convex",
         if (sg > 0) "lower" else "upper", if (sg > 0) "minimum" else "maximum",
         fmt_num(m))))
     }
-    if (any(keep)) {
+    if (any(keep) && ((sg > 0 && lo > m + err) || (sg < 0 && up < m - err))) {
       return(list(verdict = "nonconvex", method = "numerical", detail = sprintf(
         "the %s %s lies outside the bounds, so the set is not convex",
         if (sg > 0) "minimum" else "maximum", fmt_num(m))))
