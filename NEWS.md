@@ -105,3 +105,7 @@
   results carry cone multipliers by cone in `extra$cone_dual`, and
   `opt_check()` verifies the conic KKT conditions with them (stationarity,
   dual cone membership and complementarity per cone).
+* `opt_solution_jacobian()` differentiates conic solutions through the
+  smooth boundaries of active second-order, exponential and power cones,
+  and through the linearized complementarity of active PSD constraints;
+  inactive cones drop out.

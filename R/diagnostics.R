@@ -70,7 +70,7 @@ opt_check <- function(result, tol = 1e-6) {
                      violation = viol, stringsAsFactors = FALSE)
   special <- special_violations(sf, x, tol)
   kkt <- NULL
-  cone_z <- result$extra$cone_dual
+  cone_z <- result$extra[["cone_dual"]]
   conic_ok <- !length(sf$cones) ||
     (!is.null(cone_z) && all(vapply(sf$cones, function(cn)
       !is.null(cone_z[[cn$name]]), logical(1))))
@@ -110,6 +110,7 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
   n <- length(cols)
   g <- if (is.null(result$objective)) numeric(n) else
     as.vector(jac_expr(result$objective, z, ns)$J[, cols, drop = FALSE])
+  g <- g - (result$extra$grad_offset %||% 0)
   act <- (is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))) |
     (is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up)))
   bact <- (is.finite(sf$lower) & abs(x - sf$lower) <= sqrt(tol) * pmax(1, abs(sf$lower))) |
@@ -171,7 +172,7 @@ kkt_check <- function(result, v, lo, up, tol) {
   }
   s <- if (result$sense == "max") -1 else 1
   cone <- conic_kkt_terms(result, x, s)
-  stat <- g - Jty - zc - cone$grad
+  stat <- g - Jty - zc - cone$grad - (result$extra$grad_offset %||% 0)
   stat_rel <- max(c(abs(stat) / pmax(1, abs(g)), 0))
   # row dual signs: at upper bound y*s <= 0, at lower y*s >= 0
   at_lo <- is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))
@@ -213,7 +214,7 @@ conic_kkt_terms <- function(result, x, s) {
   out <- list(grad = numeric(n), dual_violation = 0, complementarity = 0,
               z = numeric(), table = NULL)
   if (!length(sf$cones)) return(out)
-  zs <- result$extra$cone_dual
+  zs <- result$extra[["cone_dual"]]
   rows <- list()
   for (cn in sf$cones) {
     z <- zs[[cn$name]]

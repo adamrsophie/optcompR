@@ -42,8 +42,22 @@ sufficiency fails) and warns when an active row or bound has a zero
 multiplier (strict complementarity fails, so the solution map may only
 have one-sided derivatives). The active set is held fixed, so the
 derivatives are local: a large parameter change can change the active
-set. Mixed-integer and conic models are refused; for a mixed-integer
-model, differentiate the \code{\link[=opt_fixed_relaxation]{opt_fixed_relaxation()}} instead.
+set. Mixed-integer models are refused; differentiate the
+\code{\link[=opt_fixed_relaxation]{opt_fixed_relaxation()}} instead.
+
+Cone constraints are differentiated through their boundaries, which are
+smooth away from the apex: an active second-order cone \eqn{\|u\| \le t}
+becomes the row \eqn{\|u\| - t \le 0} (needs \eqn{u \ne 0}), an active
+exponential cone the row \eqn{y e^{x/y} - z \le 0} (needs \eqn{y > 0}) and
+an active power cone the row \eqn{|z| - x^lpha y^{1-lpha} \le 0}
+(needs \eqn{z \ne 0} and \eqn{x, y > 0}); their multipliers are estimated
+on the active set. An active PSD constraint \eqn{S(x, p) \succeq 0}
+keeps the solver's multiplier \eqn{Z} (Clarabel and SCS return it) and
+contributes the linearized complementarity
+\eqn{\mathrm{sym}(dS\,Z + S\,dZ) = 0}, which is nonsingular under
+strict complementarity and nondegeneracy. Inactive cones, including PSD
+constraints whose matrix is positive definite, drop out. A cone at its
+apex is refused.
 }
 \examples{
 m <- opt_model()

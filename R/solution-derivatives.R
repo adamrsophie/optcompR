@@ -25,8 +25,22 @@
 #' multiplier (strict complementarity fails, so the solution map may only
 #' have one-sided derivatives). The active set is held fixed, so the
 #' derivatives are local: a large parameter change can change the active
-#' set. Mixed-integer and conic models are refused; for a mixed-integer
-#' model, differentiate the [opt_fixed_relaxation()] instead.
+#' set. Mixed-integer models are refused; differentiate the
+#' [opt_fixed_relaxation()] instead.
+#'
+#' Cone constraints are differentiated through their boundaries, which are
+#' smooth away from the apex: an active second-order cone \eqn{\|u\| \le t}
+#' becomes the row \eqn{\|u\| - t \le 0} (needs \eqn{u \ne 0}), an active
+#' exponential cone the row \eqn{y e^{x/y} - z \le 0} (needs \eqn{y > 0}) and
+#' an active power cone the row \eqn{|z| - x^lpha y^{1-lpha} \le 0}
+#' (needs \eqn{z \ne 0} and \eqn{x, y > 0}); their multipliers are estimated
+#' on the active set. An active PSD constraint \eqn{S(x, p) \succeq 0}
+#' keeps the solver's multiplier \eqn{Z} (Clarabel and SCS return it) and
+#' contributes the linearized complementarity
+#' \eqn{\mathrm{sym}(dS\,Z + S\,dZ) = 0}, which is nonsingular under
+#' strict complementarity and nondegeneracy. Inactive cones, including PSD
+#' constraints whose matrix is positive definite, drop out. A cone at its
+#' apex is refused.
 #'
 #' @param result A solved `opt_result` with a primal solution.
 #' @param parameter A parameter expression or name.
@@ -60,10 +74,10 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
                "differentiate opt_fixed_relaxation(result) instead."),
          call. = FALSE)
   }
-  sf <- result$standard_form
-  if (length(sf$cones)) {
-    stop("Differentiation of conic solutions is not supported.", call. = FALSE)
+  if (length(result$standard_form$cones)) {
+    result <- conic_as_smooth(result, tol)
   }
+  sf <- result$standard_form
   model <- result$model
   ps <- resolve_symbols(model, parameter, "par")
   z <- result$z
@@ -141,6 +155,11 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
     off <- off + k
   }
   J <- if (length(Jrows)) as.matrix(do.call(rbind, Jrows)) else matrix(0, 0, ns)
+  psd <- result$extra$psd_active %||% list()
+  s_sense <- if (result$sense == "max") -1 else 1
+  for (q in psd) {
+    H <- H - s_sense * hess_expr(q$vec, z, ns, svec_scale(q$k) * q$z)
+  }
   H <- as.matrix(H)
   H <- (H + t(H)) / 2
   free <- cols[!bact]
@@ -150,6 +169,41 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   K <- rbind(cbind(H[free, free, drop = FALSE], -t(JA[, free, drop = FALSE])),
              cbind(JA[, free, drop = FALSE], matrix(0, na, na)))
   rhs <- -rbind(H[free, ps, drop = FALSE], JA[, ps, drop = FALSE])
+  # active PSD constraints S(x, p) >= 0 with multiplier Z: the stationarity
+  # term -s M' W dz and the linearized complementarity
+  # sym(dS Z + S dZ) = 0, nonsingular under strict complementarity and
+  # nondegeneracy (Alizadeh, Haeberly and Overton 1997)
+  for (q in psd) {
+    k <- q$k
+    nz <- k * (k + 1L) / 2L
+    w <- svec_scale(k)
+    Mv <- as.matrix(jac_expr(q$vec, z, ns)$J)
+    Zm <- smat_upper(q$z, k, scale = TRUE)
+    rs <- qr(q$S, tol = sqrt(tol))$rank
+    rz <- qr(Zm, tol = sqrt(tol))$rank
+    if (rs + rz < k) {
+      warning(sprintf(paste("Strict complementarity fails at the PSD",
+                            "constraint '%s' (rank %d + %d < %d); the",
+                            "solution may only have one-sided derivatives."),
+                      q$name, rs, rz, k), call. = FALSE)
+    }
+    Cs <- -s_sense * t(Mv[, free, drop = FALSE]) %*% diag(w, nz)
+    Cx <- vapply(free, function(j) svec_upper(smat_upper(Mv[, j], k) %*% Zm),
+                 numeric(nz))
+    Cz <- vapply(seq_len(nz), function(i) {
+      e <- numeric(nz)
+      e[i] <- 1
+      svec_upper(q$S %*% smat_upper(e, k, scale = TRUE))
+    }, numeric(nz))
+    Rp <- -vapply(ps, function(j) svec_upper(smat_upper(Mv[, j], k) %*% Zm),
+                  numeric(nz))
+    nk <- nrow(K)
+    pad <- matrix(0, nk - nf, nz)
+    K <- rbind(cbind(K, rbind(Cs, pad)),
+               cbind(matrix(Cx, nz, nf), matrix(0, nz, nk - nf),
+                     matrix(Cz, nz, nz)))
+    rhs <- rbind(rhs, matrix(Rp, nz, length(ps)))
+  }
   bad <- ps[colSums(!is.finite(rhs)) > 0 |
               !is.finite(colSums(J[, ps, drop = FALSE]))]
   if (length(bad)) {
@@ -160,7 +214,9 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   }
   # second-order sufficiency: the Lagrangian Hessian (negated for a
   # maximum) is positive definite on the null space of the active rows
-  if (nf) {
+  # (with active PSD constraints the curvature condition has an extra
+  # term, so nonsingularity of the KKT matrix is the test there)
+  if (nf && !length(psd)) {
     Hff <- H[free, free, drop = FALSE]
     A <- JA[, free, drop = FALSE]
     rk <- if (na) qr(t(A))$rank else 0L
@@ -196,6 +252,11 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   gf <- if (is.null(result$objective)) numeric(ns) else
     as.vector(jac_expr(result$objective, z, ns)$J)
   df <- gf[ps] - as.vector(crossprod(J[, ps, drop = FALSE], y))
+  for (q in psd) {
+    Jv <- as.matrix(jac_expr(q$vec, z, ns)$J)
+    df <- df - s_sense * as.vector(crossprod(Jv[, ps, drop = FALSE],
+                                             svec_scale(q$k) * q$z))
+  }
   list(solution = dx, objective = stats::setNames(df, pn),
        active = c(sf$row_names[act],
                   if (any(bact)) paste0("bound:", sf$col_names[bact])),
@@ -218,4 +279,121 @@ nonsmooth_check <- function(result, z, tol) {
                "defined."), call. = FALSE)
   }
   invisible()
+}
+
+# Replace the cones of a conic result by equivalent smooth rows g <= 0 near
+# the solution, so the NLP machinery applies. Inactive cones are dropped.
+conic_as_smooth <- function(result, tol) {
+  model <- result$model
+  key <- paste(model$structure_version, model$parameter_version, sep = ":")
+  if (!identical(result$model_key, key)) {
+    stop("The model changed after this result was computed; solve it again.",
+         call. = FALSE)
+  }
+  z <- result$z
+  near <- function(val, scale) abs(val) <= sqrt(tol) * max(1, scale)
+  blocks <- list()
+  psd <- list()
+  for (it in model$special$cone %||% list()) {
+    a <- lapply(it$args, as_expr)
+    g <- switch(it$type,
+      soc = {
+        t <- a[[1L]]
+        u <- a[[2L]]
+        uv <- eval_expr(u, z)
+        tv <- eval_expr(t, z)
+        if (tv - sqrt(sum(uv^2)) > sqrt(tol) * max(1, abs(tv))) NULL else {
+          if (near(sqrt(sum(uv^2)), abs(tv))) {
+            stop(sprintf(paste("The second-order cone '%s' is active at its",
+                               "apex, where it is not differentiable."),
+                         it$name), call. = FALSE)
+          }
+          expr_unary("sqrt", expr_sum(expr_mul(u, u))) - t
+        }
+      },
+      exp = {
+        v <- vapply(a, eval_expr, 0, z = z)
+        if (v[2L] <= sqrt(tol)) {
+          stop(sprintf(paste("The exponential cone '%s' is at y = 0, where",
+                             "it is not differentiable."), it$name),
+               call. = FALSE)
+        }
+        gv <- v[2L] * exp(v[1L] / v[2L]) - v[3L]
+        if (-gv > sqrt(tol) * max(1, abs(v[3L]))) NULL else
+          a[[2L]] * exp(a[[1L]] / a[[2L]]) - a[[3L]]
+      },
+      pow = {
+        v <- vapply(a, eval_expr, 0, z = z)
+        al <- it$alpha
+        cap <- max(v[1L], 0)^al * max(v[2L], 0)^(1 - al)
+        if (cap - abs(v[3L]) > sqrt(tol) * max(1, cap)) NULL else {
+          if (v[1L] <= sqrt(tol) || v[2L] <= sqrt(tol) || near(v[3L], cap)) {
+            stop(sprintf(paste("The power cone '%s' is active where x, y or",
+                               "z is zero, where it is not differentiable."),
+                         it$name), call. = FALSE)
+          }
+          sign(v[3L]) * a[[3L]] - a[[1L]]^al * a[[2L]]^(1 - al)
+        }
+      },
+      psd = {
+        k <- it$k
+        vec <- eval_expr(a[[1L]], z)
+        Mv <- matrix(0, k, k)
+        Mv[upper.tri(Mv, diag = TRUE)] <- vec
+        Mv[lower.tri(Mv)] <- t(Mv)[lower.tri(Mv)]
+        ev <- eigen(Mv, symmetric = TRUE, only.values = TRUE)$values
+        if (min(ev) <= sqrt(tol) * max(1, abs(ev))) {
+          zc <- result$extra[["cone_dual"]][[it$name]]
+          if (is.null(zc)) {
+            stop(sprintf(paste("The PSD constraint '%s' is active; its",
+                               "derivatives need the cone multipliers of",
+                               "Clarabel or SCS."), it$name), call. = FALSE)
+          }
+          psd <- c(psd, list(list(name = it$name, k = k, vec = a[[1L]],
+                                  z = zc, S = Mv)))
+        }
+        NULL
+      })
+    if (!is.null(g)) {
+      g$model <- model
+      blocks <- c(blocks, list(list(name = it$name, expr = g, lower = -Inf,
+                                    upper = 0, sense = "<=")))
+    }
+  }
+  result$cons <- c(result$cons, blocks)
+  sf <- result$standard_form
+  sf$cones <- list()
+  sf$row_names <- c(sf$row_names, vapply(blocks, `[[`, "", "name"))
+  result$standard_form <- sf
+  result$row_dual <- NULL
+  result$col_dual <- NULL
+  result$extra[["cone_dual"]] <- NULL
+  # active PSD constraints keep their solver multipliers Z: their term
+  # s * M' W z in the stationarity condition is a fixed gradient offset when
+  # the other multipliers are estimated
+  if (length(psd)) {
+    s <- if (result$sense == "max") -1 else 1
+    ns <- length(z)
+    off <- numeric(ns)
+    for (q in psd) {
+      Jv <- jac_expr(q$vec, z, ns)$J
+      off <- off + s * as.vector(Matrix::crossprod(Jv, svec_scale(q$k) * q$z))
+    }
+    result$extra$grad_offset <- off[sf$var_sym]
+    result$extra$psd_active <- psd
+  }
+  result
+}
+
+# Symmetric matrix from upper-triangle-by-columns values, and back.
+smat_upper <- function(v, k, scale = FALSE) {
+  if (scale) v <- v / svec_scale(k)
+  M <- matrix(0, k, k)
+  M[upper.tri(M, diag = TRUE)] <- v
+  M[lower.tri(M)] <- t(M)[lower.tri(M)]
+  M
+}
+svec_upper <- function(M) {
+  M <- (M + t(M)) / 2
+  M[upper.tri(M, diag = TRUE)]
 }

@@ -236,3 +236,84 @@ test_that("opt_check() verifies conic KKT conditions with cone multipliers", {
   r2 <- opt_solve(m2, solver = "clarabel")
   expect_true(opt_check(r2)$kkt$pass)
 })
+
+test_that("solutions of conic programs are differentiated through cone boundaries", {
+  skip_if_not_installed("clarabel")
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2)
+  t <- opt_variable(m, "t")
+  p <- opt_parameter(m, "p", value = 2)
+  opt_constraint(m, sum(x) == p)
+  opt_soc_constraint(m, x, t)
+  opt_objective(m, t)
+  d <- opt_solution_jacobian(opt_solve(m, solver = "clarabel"), p)
+  expect_equal(unname(d$solution[, 1]), c(0.5, 0.5, 1 / sqrt(2)),
+               tolerance = 1e-5)
+  expect_equal(unname(d$objective), 1 / sqrt(2), tolerance = 1e-5)
+
+  m <- opt_model("max")
+  x <- opt_variable(m, "x")
+  y <- opt_variable(m, "y")
+  q <- opt_parameter(m, "q", value = 2)
+  opt_constraint(m, y <= 1)
+  opt_exp_cone(m, x, y, q)
+  opt_objective(m, x)
+  d <- opt_solution_jacobian(opt_solve(m, solver = "clarabel"), q)
+  expect_equal(unname(d$solution["x", 1]), exp(-1), tolerance = 1e-5)
+
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", lower = 0)
+  y <- opt_variable(m, "y", lower = 0)
+  z <- opt_variable(m, "z")
+  b <- opt_parameter(m, "b", value = 2)
+  opt_constraint(m, x + y <= b)
+  opt_pow_cone(m, x, y, z, 0.3)
+  opt_objective(m, z)
+  d <- opt_solution_jacobian(opt_solve(m, solver = "clarabel"), b)
+  expect_equal(unname(d$solution[, 1]), c(0.3, 0.7, 0.3^0.3 * 0.7^0.7),
+               tolerance = 1e-4)
+
+  m <- opt_model()
+  X <- opt_sym_variable(m, "X", 2)
+  w <- opt_parameter(m, "w", value = 1)
+  opt_psd_constraint(m, X, name = "P")
+  opt_constraint(m, X[1, 1] + X[2, 2] == w)
+  opt_objective(m, 2 * X[1, 1] + X[2, 2] + 2 * X[1, 2])
+  r <- opt_solve(m, solver = "clarabel")
+  d <- opt_solution_jacobian(r, w)
+  # X*(w) = w * v v' for the eigenvector v of the smallest eigenvalue
+  e <- eigen(matrix(c(2, 1, 1, 1), 2), symmetric = TRUE)
+  v <- e$vectors[, 2]
+  V <- tcrossprod(v)
+  expect_equal(unname(d$solution[, 1]), V[upper.tri(V, diag = TRUE)],
+               tolerance = 1e-5)
+  expect_equal(unname(d$objective), e$values[2], tolerance = 1e-5)
+  r$extra$cone_dual <- NULL
+  expect_error(opt_solution_jacobian(r, w), "cone multipliers")
+})
+
+test_that("active PSD derivatives match finite differences with parameters in the cone", {
+  skip_if_not_installed("clarabel")
+  build <- function(wv, pv) {
+    m <- opt_model()
+    X <- opt_sym_variable(m, "X", 3)
+    w <- opt_parameter(m, "w", value = wv)
+    p <- opt_parameter(m, "p", value = pv)
+    C <- matrix(c(2, 1, 0, 1, 2, 1, 0, 1, 3), 3)
+    opt_psd_constraint(m, X - p * diag(3))
+    opt_constraint(m, X[1, 1] + X[2, 2] + X[3, 3] == w)
+    opt_objective(m, sum(C * X) + X[1, 2])
+    list(m = m, w = w, p = p)
+  }
+  b <- build(1, 0.1)
+  r <- opt_solve(b$m, solver = "clarabel")
+  d <- opt_solution_jacobian(r, b$p)
+  h <- 1e-4
+  r1 <- opt_solve(build(1, 0.1 + h)$m, solver = "clarabel")
+  r0 <- opt_solve(build(1, 0.1 - h)$m, solver = "clarabel")
+  expect_equal(unname(d$solution[, 1]), unname((r1$x - r0$x) / (2 * h)),
+               tolerance = 1e-4)
+  expect_equal(unname(d$objective),
+               (opt_objective_value(r1) - opt_objective_value(r0)) / (2 * h),
+               tolerance = 1e-4)
+})
