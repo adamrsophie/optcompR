@@ -147,3 +147,25 @@ test_that("sparse matrix products stay sparse", {
   skip_if_not_installed("bench")
   expect_lt(as.numeric(bench::bench_memory(A %*% x)$mem_alloc), 50 * 2^20)
 })
+
+test_that("classification allocation grows linearly with quadratic rows", {
+  skip_if_not_installed("bench")
+  mk <- function(n) {
+    m <- opt_model()
+    x <- opt_variable(m, "x", dim = n, lower = -2, upper = 2)
+    for (i in seq_len(n)) {
+      opt_constraint(m, x[i]^2 + x[i], lower = -0.1, upper = 1)
+    }
+    opt_objective(m, sum(x))
+    opt_standard_form(m)
+  }
+  a <- mk(500)
+  b <- mk(2000)
+  opt_classify(a)
+  opt_classify(b)
+  ma <- as.numeric(bench::bench_memory(opt_classify(a))$mem_alloc)
+  mb <- as.numeric(bench::bench_memory(opt_classify(b))$mem_alloc)
+  # four times the rows: linear growth gives about four times the bytes,
+  # quadratic growth sixteen
+  expect_lt(mb / ma, 8)
+})
