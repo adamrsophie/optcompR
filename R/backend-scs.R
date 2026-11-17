@@ -75,5 +75,5 @@ register_scs <- function() {
     features = list(duals = TRUE, time_limit = TRUE, iteration_limit = TRUE,
                     warm_start = TRUE, cones = c("soc", "psd", "exp", "pow")),
     solve = scs_solve_sf, version = pkg_version("scs"), priority = 35L,
-    feasibility_tol = 1e-2)
+    feasibility_tol = 1e-2, accuracy_options = c("eps_abs", "eps_rel"))
 }

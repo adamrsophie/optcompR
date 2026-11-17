@@ -220,3 +220,23 @@ test_that("LP row ranges agree with re-solves at their endpoints", {
   expect_equal(z$bound_lower, 2)
   expect_identical(z$bound_upper, Inf)
 })
+
+test_that("a strict accuracy request tightens result validation", {
+  skip_if_not_installed("scs")
+  m <- opt_model()
+  x <- opt_variable(m, "x")
+  t <- opt_variable(m, "t")
+  opt_constraint(m, x == 1)
+  opt_soc_constraint(m, x, t)
+  opt_objective(m, t)
+  r <- opt_solve(m, solver = "scs",
+                 options = list(max_iters = 15L, eps_abs = 1e-9, eps_rel = 1e-9))
+  expect_identical(r$validation$source, "requested solver accuracy")
+  expect_equal(r$validation$tol, 1e-7)
+  if (!opt_check(r, tol = 1e-6)$feasible) {
+    expect_false(opt_has_solution(r))
+  }
+  r <- opt_solve(m, solver = "scs")
+  expect_identical(r$validation$source, "solver default")
+  expect_true(opt_has_solution(r))
+})

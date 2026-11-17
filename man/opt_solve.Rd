@@ -63,11 +63,18 @@ The point a backend returns is checked against the model (rows from the
 original expressions, bounds, integrality, cones, indicators and SOS
 constraints), each side scaled by \verb{max(1, |bound|)}, with the backend's
 feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
-first-order solvers OSQP and SCS). A point that fails is labelled
+first-order solvers OSQP and SCS); cones, indicators and SOS
+constraints are checked at its square root. When \code{options} request a
+stricter accuracy from OSQP or SCS (\code{eps_abs}, \code{eps_rel}), the tolerance
+becomes 100 times the strictest request, so the check matches the
+accuracy asked for. The resolved tolerances are stored in
+\code{result$validation}. A point that fails is labelled
 \code{"infeasible_point"}, a claimed optimum then becomes
 \code{"locally_infeasible"} (local solvers) or \code{"numerical_error"}, and a
-warning gives the violation. A backend is treated as local for the
-classes it does not declare global unless the model is proven convex.
+warning gives the violation. An objective that is not finite at the
+point (for example \code{log(0)}) also makes it \code{"infeasible_point"}. A
+backend is treated as local for the classes it does not declare global
+unless the model is continuous and proven convex.
 }
 
 \examples{

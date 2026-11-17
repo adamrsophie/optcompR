@@ -520,7 +520,7 @@ register_builtin_backends <- function() {
     classes = c("LP", "QP"), convex_only = "QP", global = c("LP", "QP"),
     features = list(duals = TRUE, time_limit = TRUE, iteration_limit = TRUE),
     solve = osqp_solve_sf, version = pkg_version("osqp"), priority = 30L,
-    feasibility_tol = 1e-2)
+    feasibility_tol = 1e-2, accuracy_options = c("eps_abs", "eps_rel"))
   register_solver(
     "nloptr", "nloptr",
     "NLopt SLSQP (default): local gradient-based nonlinear programming",

@@ -35,11 +35,18 @@
 #' original expressions, bounds, integrality, cones, indicators and SOS
 #' constraints), each side scaled by `max(1, |bound|)`, with the backend's
 #' feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
-#' first-order solvers OSQP and SCS). A point that fails is labelled
+#' first-order solvers OSQP and SCS); cones, indicators and SOS
+#' constraints are checked at its square root. When `options` request a
+#' stricter accuracy from OSQP or SCS (`eps_abs`, `eps_rel`), the tolerance
+#' becomes 100 times the strictest request, so the check matches the
+#' accuracy asked for. The resolved tolerances are stored in
+#' `result$validation`. A point that fails is labelled
 #' `"infeasible_point"`, a claimed optimum then becomes
 #' `"locally_infeasible"` (local solvers) or `"numerical_error"`, and a
-#' warning gives the violation. A backend is treated as local for the
-#' classes it does not declare global unless the model is proven convex.
+#' warning gives the violation. An objective that is not finite at the
+#' point (for example `log(0)`) also makes it `"infeasible_point"`. A
+#' backend is treated as local for the classes it does not declare global
+#' unless the model is continuous and proven convex.
 #'
 #' @return An `opt_result`. See [opt_status()], [opt_value()],
 #'   [opt_objective_value()], [opt_dual()] and [opt_check()].
@@ -110,6 +117,28 @@ unsupported_controls <- function(entry, control, sf) {
       sprintf("%s does not use start values; they were ignored.", entry$name))
 }
 
+# The tolerances a returned point is validated against: the backend's
+# default, tightened to the accuracy the user asked the solver for (for
+# SCS and OSQP, eps_abs and eps_rel), so a strict request is not met by a
+# percent-level check. Rows and bounds use `tol`, cone and other special
+# constraints `special_tol`.
+validation_policy <- function(entry, control) {
+  tol <- entry$feasibility_tol %||% 1e-5
+  source <- "solver default"
+  opts <- control$options[intersect(names(control$options),
+                                    entry$accuracy_options)]
+  req <- suppressWarnings(as.numeric(unlist(opts)))
+  req <- req[is.finite(req) & req > 0]
+  if (length(req)) {
+    t2 <- max(100 * max(req), 1e-8)
+    if (t2 < tol) {
+      tol <- t2
+      source <- "requested solver accuracy"
+    }
+  }
+  list(tol = tol, special_tol = sqrt(tol), source = source)
+}
+
 build_result <- function(model, sf, cls, entry, res, control, warnings,
                          timing) {
   z <- sf$parameter_values
@@ -137,8 +166,9 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
     (cls$integer || cls$convexity != "convex"))
   # the returned point is checked against the model: a backend's
   # feasibility claim is not trusted on its own
+  validation <- validation_policy(entry, control)
   if (has_x && res$primal_status %in% c("feasible_point", "unknown")) {
-    tol <- entry$feasibility_tol %||% 1e-5
+    tol <- validation$tol
     fs <- feasibility_summary(point_feasibility(sf, model$cons, z, tol), tol)
     if (!fs$ok || any(!is.finite(res$x))) {
       res$primal_status <- "infeasible_point"
@@ -201,6 +231,7 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
     classification = cls, standard_form = sf, cons = model$cons,
     objective = model$objective, special = model$special, sense = sf$sense,
     warm_start = isTRUE(res$warm_start), extra = res$extra,
+    validation = validation,
     warnings = c(warnings, res$warnings), raw = res$raw, control = control,
     timing = timing,
     metadata = list(time = Sys.time(), R = R.version.string,

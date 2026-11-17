@@ -9,7 +9,8 @@ register_solver <- function(name, package, description, classes,
                             convex_only = character(), global = character(),
                             features = list(), solve, version, priority = 50L,
                             check = NULL, feasibility_tol = 1e-5,
-                            first_for = character()) {
+                            first_for = character(),
+                            accuracy_options = character()) {
   .solver_registry[[name]] <- list(
     name = name, package = package, description = description,
     classes = classes, convex_only = convex_only, global = global,
@@ -19,7 +20,8 @@ register_solver <- function(name, package, description, classes,
       cones = character(), special = character()),
       features),
     solve = solve, version = version, priority = priority, check = check,
-    feasibility_tol = feasibility_tol, first_for = first_for)
+    feasibility_tol = feasibility_tol, first_for = first_for,
+    accuracy_options = accuracy_options)
 }
 
 solver_available <- function(entry) {
