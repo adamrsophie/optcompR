@@ -153,6 +153,20 @@ slack finds the smallest change that restores feasibility.</p>
 <span><span class="co">#&gt;     0     1     0</span></span></code></pre></div>
 <p>The total violation is 1: either capacity rises by 1 or one minimum
 falls by 1.</p>
+<p><code><a href="../reference/opt_explain_infeasibility.html">opt_explain_infeasibility()</a></code> builds this relaxation
+automatically on a copy of the model, for every constraint row and, by
+default, every variable bound. It reports each row or bound that must
+move, on which side, and by how much:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_explain_infeasibility.html">opt_explain_infeasibility</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;opt_infeasibility: 1 row(s) and 0 bound(s) must move, total violation 1&gt;</span></span>
+<span><span class="co">#&gt;   row min_a: lower bound 2, relaxed value 1 (violation 1)</span></span></code></pre></div>
+<p>Weights express which changes are acceptable. A large weight on the
+capacity row makes the explanation move a minimum instead:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_explain_infeasibility.html">opt_explain_infeasibility</a></span><span class="op">(</span><span class="va">m</span>, weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>cap <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">violations</span></span>
+<span><span class="co">#&gt;   kind  name block  side bound value violation</span></span>
+<span><span class="co">#&gt; 1  row min_a min_a lower     2     1         1</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="exact-proofs-with-z3">Exact proofs with Z3<a class="anchor" aria-label="anchor" href="#exact-proofs-with-z3"></a>
@@ -160,14 +174,14 @@ falls by 1.</p>
 <p>Floating point solvers declare infeasibility within tolerances. For
 linear models, <code><a href="../reference/opt_z3_check.html">opt_z3_check()</a></code> decides feasibility exactly
 (see <code><a href="../articles/exact-certificates.html">vignette("exact-certificates")</a></code>):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_z3_check.html">opt_z3_check</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] "unsat"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="unbounded-models">Unbounded models<a class="anchor" aria-label="anchor" href="#unbounded-models"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">u</span>, <span class="st">"y"</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">u</span>, <span class="va">y</span> <span class="op">&gt;=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -177,7 +191,7 @@ linear models, <code><a href="../reference/opt_z3_check.html">opt_z3_check()</a>
 <p>OSQP certifies dual infeasibility, which does not prove the primal
 problem feasible, so optcompR reports
 <code>infeasible_or_unbounded</code> for it:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">u</span>, solver <span class="op">=</span> <span class="st">"osqp"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "infeasible_or_unbounded"</span></span></code></pre></div>
 </div>

@@ -132,12 +132,26 @@ polynomial models of degree two and records how:</p>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">convexity</span></span>
 <span><span class="co">#&gt; [1] "nonconvex"</span></span></code></pre></div>
-<p>For general nonlinear expressions convexity is reported as
-<code>unknown</code>; it is not guessed. Cone constraints are convex
-sets by construction, so a model whose only nonlinear structure is cones
-(with a linear or convex quadratic objective) is classified as convex
-<code>"SOCP"</code> or <code>"CONIC"</code>; see
-<code><a href="../articles/conic.html">vignette("conic")</a></code>.</p>
+<p>Nonlinear expressions are checked by composition rules, as in
+disciplined convex programming: <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> of a convex
+expression is convex, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> and <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt()</a></code> of a
+concave one are concave, and atoms such as <code><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin()</a></code> or
+<code>x^3</code> use their curvature on the range implied by the
+variable bounds. A proof makes the model <code>convex</code>; when the
+rules do not apply, convexity is reported as <code>unknown</code>. It is
+never guessed.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span>, dim <span class="op">=</span> <span class="fl">2</span>, lower <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;opt_classification: NLP, convex&gt;</span></span>
+<span><span class="co">#&gt;   - syntactic: objective is nonlinear; constraint rows: none</span></span>
+<span><span class="co">#&gt;   - structural: composition rules (disciplined convex programming) on the box of variable bounds prove the objective and every bounded side of the constraints convex</span></span></code></pre></div>
+<p>Cone constraints are convex sets by construction, so a model whose
+only nonlinear structure is cones (with a linear or convex quadratic
+objective) is classified as convex <code>"SOCP"</code> or
+<code>"CONIC"</code>; see <code><a href="../articles/conic.html">vignette("conic")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="continuous-and-mixed-integer">Continuous and mixed-integer<a class="anchor" aria-label="anchor" href="#continuous-and-mixed-integer"></a>
@@ -145,7 +159,7 @@ sets by construction, so a model whose only nonlinear structure is cones
 <p>Integer variables make the feasible set a union of points or slices.
 The LP relaxation gives a bound, and branch and bound closes the
 gap:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span>, dim <span class="op">=</span> <span class="fl">2</span>, type <span class="op">=</span> <span class="st">"integer"</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">m</span>, <span class="fl">2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;=</span> <span class="fl">7</span><span class="op">)</span></span>
@@ -160,7 +174,7 @@ gap:</p>
 <div class="section level2">
 <h2 id="local-and-global-optima">Local and global optima<a class="anchor" aria-label="anchor" href="#local-and-global-optima"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span>, lower <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, upper <span class="op">=</span> <span class="fl">3</span>, start <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">^</span><span class="fl">4</span> <span class="op">-</span> <span class="fl">4</span> <span class="op">*</span> <span class="va">x</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">x</span><span class="op">)</span></span>

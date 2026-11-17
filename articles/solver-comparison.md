@@ -14,20 +14,30 @@ features it supports.
 ``` r
 
 opt_solvers()
-#>     solver   package available                                 classes duals
-#> 1    highs     highs      TRUE                              LP MILP QP  TRUE
-#> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE
-#> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE
-#> 4     osqp      osqp      TRUE                                   LP QP  TRUE
-#> 5      scs       scs      TRUE                        LP QP SOCP CONIC  TRUE
-#> 6   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE
-#> 7    ipopt                TRUE                          NLP QCQP QP LP  TRUE
-#> 8      roi ROI, slam      TRUE                              LP MILP QP FALSE
-#> 9    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE
+#>     solver   package available
+#> 1    highs     highs      TRUE
+#> 2 clarabel  clarabel      TRUE
+#> 3     scip      scip      TRUE
+#> 4     osqp      osqp      TRUE
+#> 5      scs       scs      TRUE
+#> 6   nloptr    nloptr      TRUE
+#> 7    ipopt                TRUE
+#> 8      roi ROI, slam      TRUE
+#> 9    nlpbb    nloptr      TRUE
+#>                                             classes duals
+#> 1                                        LP MILP QP  TRUE
+#> 2                                  LP QP SOCP CONIC  TRUE
+#> 3 LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP NLP MINLP FALSE
+#> 4                                             LP QP  TRUE
+#> 5                                  LP QP SOCP CONIC  TRUE
+#> 6                                    NLP QCQP QP LP FALSE
+#> 7                                    NLP QCQP QP LP  TRUE
+#> 8                                        LP MILP QP FALSE
+#> 9                                 MINLP MIQCQP MIQP FALSE
 #>                                                                                                                    description
 #> 1                                               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
 #> 2                                 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs
-#> 3                                         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
+#> 3                          SCIP: branch and bound with spatial branching, global for nonconvex quadratic and polynomial models
 #> 4                                               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
 #> 5 SCS: operator splitting for LP, convex QP and SOC, PSD, exponential and power cone programs (first-order, moderate accuracy)
 #> 6                                                            NLopt SLSQP (default): local gradient-based nonlinear programming
@@ -93,7 +103,7 @@ opt_solver_capabilities("highs")
 | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
 | clarabel | LP, convex QP, SOCP, CONIC | all of these | yes | no | no |
 | scs | LP, convex QP, SOCP, CONIC (first order) | all of these | yes | no | yes |
-| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
+| scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP, polynomial NLP and MINLP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md) | no | start point |
 | ipopt | NLP, QCQP, QP, LP (exact Hessians) | convex problems | yes | no | start point |
@@ -169,6 +179,29 @@ The ROI adapter passes linear rows only and returns no duals. A time
 limit is sent as `tm_limit` in milliseconds, the control GLPK reads;
 other plugins may name their limit differently, so pass it in `options`
 for them.
+
+## Exporting to CVXR
+
+[`opt_to_cvxr()`](https://adamrsophie.github.io/optcompR/reference/opt_to_cvxr.md)
+writes a linear, quadratic, mixed-integer or conic model as a CVXR
+problem, so it can be solved with any CVXR solver or checked by CVXR’s
+own disciplined convex programming rules:
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+opt_constraint(m, x[1] + x[2] >= 1)
+opt_objective(m, x[1]^2 + 2 * x[2]^2)
+cv <- opt_to_cvxr(m)
+CVXR::psolve(cv$problem)
+#> [1] 0.6666667
+opt_cvxr_values(cv)
+#>      x[1]      x[2] 
+#> 0.6666667 0.3333333
+opt_value(opt_solve(m), x)
+#> [1] 0.6666667 0.3333333
+```
 
 ## Solver options
 

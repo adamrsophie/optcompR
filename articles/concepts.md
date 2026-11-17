@@ -35,10 +35,30 @@ opt_classify(m)$convexity
 #> [1] "nonconvex"
 ```
 
-For general nonlinear expressions convexity is reported as `unknown`; it
-is not guessed. Cone constraints are convex sets by construction, so a
-model whose only nonlinear structure is cones (with a linear or convex
-quadratic objective) is classified as convex `"SOCP"` or `"CONIC"`; see
+Nonlinear expressions are checked by composition rules, as in
+disciplined convex programming:
+[`exp()`](https://rdrr.io/r/base/Log.html) of a convex expression is
+convex, [`log()`](https://rdrr.io/r/base/Log.html) and
+[`sqrt()`](https://rdrr.io/r/base/MathFun.html) of a concave one are
+concave, and atoms such as [`sin()`](https://rdrr.io/r/base/Trig.html)
+or `x^3` use their curvature on the range implied by the variable
+bounds. A proof makes the model `convex`; when the rules do not apply,
+convexity is reported as `unknown`. It is never guessed.
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0.1)
+opt_objective(m, sum(exp(x)) - log(x[1] + x[2]))
+opt_classify(m)
+#> <opt_classification: NLP, convex>
+#>   - syntactic: objective is nonlinear; constraint rows: none
+#>   - structural: composition rules (disciplined convex programming) on the box of variable bounds prove the objective and every bounded side of the constraints convex
+```
+
+Cone constraints are convex sets by construction, so a model whose only
+nonlinear structure is cones (with a linear or convex quadratic
+objective) is classified as convex `"SOCP"` or `"CONIC"`; see
 [`vignette("conic")`](https://adamrsophie.github.io/optcompR/articles/conic.md).
 
 ## Continuous and mixed-integer

@@ -144,6 +144,8 @@
 
 - [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md)
   : Independent feasibility and optimality diagnostics
+- [`opt_explain_infeasibility()`](https://adamrsophie.github.io/optcompR/reference/opt_explain_infeasibility.md)
+  : Explain why a model is infeasible
 - [`opt_gradient()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
   [`opt_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
   [`opt_hessian()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
@@ -176,6 +178,10 @@
   : Convert a symcompR expression to an optimization expression
 - [`opt_to_sym()`](https://adamrsophie.github.io/optcompR/reference/opt_to_sym.md)
   : Convert an optimization expression to a symcompR expression
+- [`opt_to_cvxr()`](https://adamrsophie.github.io/optcompR/reference/opt_to_cvxr.md)
+  : Convert a model to a CVXR problem
+- [`opt_cvxr_values()`](https://adamrsophie.github.io/optcompR/reference/opt_cvxr_values.md)
+  : Read a CVXR solution back by variable name
 - [`opt_ode_loss()`](https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.md)
   : Least squares loss of an ODE model from modelcompR
 

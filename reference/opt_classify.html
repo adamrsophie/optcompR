@@ -5,15 +5,25 @@ levels of evidence are distinguished: syntactic recognition of the
 class, structural proofs (for example a diagonal quadratic form with
 nonnegative entries), numerical evidence (eigenvalues compared with a
 tolerance, which is not a formal proof near the boundary), and properties
-that cannot be established automatically (general nonlinear expressions
-are reported as "unknown").'><meta property="og:description" content='Determines the problem class from the lowered standard form (after
+that cannot be established automatically. Nonlinear expressions are
+analyzed by composition rules (disciplined convex programming) on the box
+of variable bounds: for example exp() of a convex expression is convex,
+log() and sqrt() of a concave one are concave, and sin() is concave
+where its argument lies in \([0, \pi]\). When the rules prove every
+part, the model is "convex"; otherwise it is "unknown", never guessed
+"nonconvex".'><meta property="og:description" content='Determines the problem class from the lowered standard form (after
 parameter substitution) and records how convexity was established. Four
 levels of evidence are distinguished: syntactic recognition of the
 class, structural proofs (for example a diagonal quadratic form with
 nonnegative entries), numerical evidence (eigenvalues compared with a
 tolerance, which is not a formal proof near the boundary), and properties
-that cannot be established automatically (general nonlinear expressions
-are reported as "unknown").'><meta property="og:image" content="https://adamrsophie.github.io/optcompR/logo.svg"></head><body>
+that cannot be established automatically. Nonlinear expressions are
+analyzed by composition rules (disciplined convex programming) on the box
+of variable bounds: for example exp() of a convex expression is convex,
+log() and sqrt() of a concave one are concave, and sin() is concave
+where its argument lies in \([0, \pi]\). When the rules prove every
+part, the model is "convex"; otherwise it is "unknown", never guessed
+"nonconvex".'><meta property="og:image" content="https://adamrsophie.github.io/optcompR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -90,8 +100,13 @@ levels of evidence are distinguished: <em>syntactic</em> recognition of the
 class, <em>structural</em> proofs (for example a diagonal quadratic form with
 nonnegative entries), <em>numerical</em> evidence (eigenvalues compared with a
 tolerance, which is not a formal proof near the boundary), and properties
-that cannot be established automatically (general nonlinear expressions
-are reported as <code>"unknown"</code>).</p>
+that cannot be established automatically. Nonlinear expressions are
+analyzed by composition rules (disciplined convex programming) on the box
+of variable bounds: for example <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> of a convex expression is convex,
+<code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> and <code><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt()</a></code> of a concave one are concave, and <code><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin()</a></code> is concave
+where its argument lies in \([0, \pi]\). When the rules prove every
+part, the model is <code>"convex"</code>; otherwise it is <code>"unknown"</code>, never guessed
+<code>"nonconvex"</code>.</p>
     </div>
 
     <div class="section level2">

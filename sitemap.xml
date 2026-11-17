@@ -35,10 +35,12 @@
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_constraints.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_copy.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_cvar.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_cvxr_values.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_delete_constraint.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_dual.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_epsilon_constraint.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_evaluate.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_explain_infeasibility.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_fix.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_fixed_relaxation.html</loc></url>
@@ -77,6 +79,7 @@
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_status.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_sym_variable.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_terms.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_to_cvxr.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_to_sym.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_value.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_variable.html</loc></url>

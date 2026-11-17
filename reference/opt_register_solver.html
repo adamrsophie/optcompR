@@ -164,8 +164,11 @@ model (parameters substituted; for indicator and SOS constraints that the
 backend does not list in <code>special</code>, already reformulated with binary
 columns and rows), the <code><a href="opt_classify.html">opt_classify()</a></code> result <code>cls</code>, and <code>control</code>, a
 list with <code>time_limit</code> (seconds, <code>Inf</code> for none), <code>mip_gap</code> (<code>NULL</code> for
-the solver default), <code>verbose</code>, <code>warm_start</code> and <code>options</code> (the
-<code>options</code> list given to <code><a href="opt_solve.html">opt_solve()</a></code>). The objective is
+the solver default), <code>verbose</code>, <code>warm_start</code>, <code>options</code> (the
+<code>options</code> list given to <code><a href="opt_solve.html">opt_solve()</a></code>) and <code>cache</code>, an environment kept
+per model and backend in which a backend may store state, such as a
+basis, for the next solve of the same model. <code>sf$structure_key</code> changes
+whenever the model structure does. The objective is
 <code>0.5 x'Qx + c'x + offset</code> in the sense <code>sf$sense</code>, or, when
 <code>sf$objective_kind</code> is <code>"nonlinear"</code>, the lowered expression
 <code>sf$objective_lowered</code>, which <code><a href="opt_gradient.html">opt_gradient()</a></code> and the other derivative

@@ -128,8 +128,8 @@ them.</p>
 <span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;opt_classification: NLP, unknown&gt;</span></span>
 <span><span class="co">#&gt;   - syntactic: objective is nonlinear; constraint rows: none</span></span>
-<span><span class="co">#&gt;   - unknown: convexity of general nonlinear expressions is not analyzed; solutions from local solvers are local optima</span></span>
-<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   - unknown: composition rules cannot prove the objective convex; solutions from local solvers are local optima</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span>, solver <span class="op">=</span> <span class="st">"nloptr"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "locally_optimal"</span></span>
 <span><span class="fu"><a href="../reference/opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span>
@@ -149,7 +149,7 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 <span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">&gt;=</span> <span class="fl">25</span>, name <span class="op">=</span> <span class="st">"product"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">m</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">x</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">==</span> <span class="fl">40</span>, name <span class="op">=</span> <span class="st">"sphere"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span>, solver <span class="op">=</span> <span class="st">"nloptr"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_objective_value.html">opt_objective_value</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span>  <span class="co"># reference 17.0140173</span></span>
 <span><span class="co">#&gt; [1] 17.01402</span></span>
 <span><span class="fu"><a href="../reference/opt_check.html">opt_check</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">$</span><span class="va">kkt</span></span>
@@ -255,10 +255,38 @@ with gradients from modelcompR’s forward sensitivities; see
 <code><a href="../articles/ode-fitting.html">vignette("ode-fitting")</a></code>.</p>
 </div>
 <div class="section level2">
+<h2 id="global-solutions-of-polynomial-models-with-scip">Global solutions of polynomial models with SCIP<a class="anchor" aria-label="anchor" href="#global-solutions-of-polynomial-models-with-scip"></a>
+</h2>
+<p>Both problems above are polynomial. SCIP solves polynomial models,
+with or without integer variables, to global optimality: optcompR lifts
+them exactly to quadratic rows, giving every product of degree above two
+auxiliary variables (for example <span class="math inline">w =
+x^2</span> in <span class="math inline">x^4 = w^2</span>) with bounds
+from interval arithmetic. In automatic selection SCIP is preferred for
+nonconvex polynomial models, while convex ones stay with the local NLP
+solvers, whose optima are then global.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span>, lower <span class="op">=</span> <span class="op">-</span><span class="fl">2</span>, upper <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">^</span><span class="fl">4</span> <span class="op">-</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">x</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">x</span><span class="op">)</span>  <span class="co"># two local minima</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="va">r</span><span class="op">$</span><span class="va">solver</span></span>
+<span><span class="co">#&gt; [1] "scip"</span></span>
+<span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "optimal"</span></span>
+<span><span class="fu"><a href="../reference/opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] -1.300677</span></span></code></pre></div>
+<p>Operators other than sums, products, linear maps, division by
+constants and nonnegative integer powers (for example <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code>
+or <code><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin()</a></code>) cannot be lifted exactly, so SCIP refuses those
+models and they go to a local solver.</p>
+</div>
+<div class="section level2">
 <h2 id="limits">Limits<a class="anchor" aria-label="anchor" href="#limits"></a>
 </h2>
 <ul>
-<li>NLopt SLSQP finds local solutions.</li>
+<li>NLopt SLSQP and IPOPT find local solutions; for nonconvex models
+they are global only when SCIP solves a polynomial model.</li>
 <li>Mixed-integer nonlinear problems (MINLP) are solved by NLP branch
 and bound (<code>solver = "nlpbb"</code>); results are global only when
 the continuous relaxation is known to be convex, and labeled local

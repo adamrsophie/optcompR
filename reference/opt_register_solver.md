@@ -92,10 +92,13 @@ reformulated with binary columns and rows), the
 [`opt_classify()`](https://adamrsophie.github.io/optcompR/reference/opt_classify.md)
 result `cls`, and `control`, a list with `time_limit` (seconds, `Inf`
 for none), `mip_gap` (`NULL` for the solver default), `verbose`,
-`warm_start` and `options` (the `options` list given to
-[`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)).
-The objective is `0.5 x'Qx + c'x + offset` in the sense `sf$sense`, or,
-when `sf$objective_kind` is `"nonlinear"`, the lowered expression
+`warm_start`, `options` (the `options` list given to
+[`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md))
+and `cache`, an environment kept per model and backend in which a
+backend may store state, such as a basis, for the next solve of the same
+model. `sf$structure_key` changes whenever the model structure does. The
+objective is `0.5 x'Qx + c'x + offset` in the sense `sf$sense`, or, when
+`sf$objective_kind` is `"nonlinear"`, the lowered expression
 `sf$objective_lowered`, which
 [`opt_gradient()`](https://adamrsophie.github.io/optcompR/reference/opt_gradient.md)
 and the other derivative functions evaluate. It returns a list with

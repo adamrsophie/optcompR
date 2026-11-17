@@ -92,20 +92,30 @@ R binding exposes, which can be less than the native solver supports.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">opt_solvers</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     solver   package available                                 classes duals</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    highs     highs      TRUE                              LP MILP QP  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     osqp      osqp      TRUE                                   LP QP  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      scs       scs      TRUE                        LP QP SOCP CONIC  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7    ipopt                TRUE                          NLP QCQP QP LP  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8      roi ROI, slam      TRUE                              LP MILP QP FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     solver   package available</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    highs     highs      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 clarabel  clarabel      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     scip      scip      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     osqp      osqp      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      scs       scs      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   nloptr    nloptr      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7    ipopt                TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8      roi ROI, slam      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9    nlpbb    nloptr      TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                             classes duals</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                                        LP MILP QP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                                  LP QP SOCP CONIC  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP NLP MINLP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                                             LP QP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                                  LP QP SOCP CONIC  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6                                    NLP QCQP QP LP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7                                    NLP QCQP QP LP  TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8                                        LP MILP QP FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9                                 MINLP MIQCQP MIQP FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                                                    description</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1                                               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2                                 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                                         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                          SCIP: branch and bound with spatial branching, global for nonconvex quadratic and polynomial models</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4                                               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5 SCS: operator splitting for LP, convex QP and SOC, PSD, exponential and power cone programs (first-order, moderate accuracy)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6                                                            NLopt SLSQP (default): local gradient-based nonlinear programming</span>

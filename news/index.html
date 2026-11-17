@@ -116,6 +116,15 @@
 <li>SCS is a second conic backend (<code>solver = "scs"</code>). Clarabel and SCS results carry cone multipliers by cone in <code>extra$cone_dual</code>, and <code><a href="../reference/opt_check.html">opt_check()</a></code> verifies the conic KKT conditions with them (stationarity, dual cone membership and complementarity per cone).</li>
 <li>
 <code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code> differentiates conic solutions through the smooth boundaries of active second-order, exponential and power cones, and through the linearized complementarity of active PSD constraints; inactive cones drop out.</li>
+<li>Lowered constraint blocks and objectives are reused across parameter updates when the parameters they use keep their values, and HiGHS restarts LPs from the previous optimal basis. Scalar constraints built in loops are about a quarter faster.</li>
+<li>SCIP solves polynomial NLP and MINLP models to global optimality: products of degree above two are lifted exactly to quadratic rows with auxiliary variables bounded by interval arithmetic. Nonconvex polynomial models choose SCIP automatically; models with other operators are refused with the reason.</li>
+<li>
+<code><a href="../reference/opt_to_cvxr.html">opt_to_cvxr()</a></code> converts linear, quadratic, mixed-integer and conic models to CVXR problems, and <code><a href="../reference/opt_cvxr_values.html">opt_cvxr_values()</a></code> reads the solution back by variable name.</li>
+<li>
+<code><a href="../reference/opt_explain_infeasibility.html">opt_explain_infeasibility()</a></code> solves a weighted elastic relaxation of the rows and variable bounds and reports which must move, and by how much, for an infeasible model to become feasible.</li>
+<li>
+<code><a href="../reference/opt_classify.html">opt_classify()</a></code> proves convexity of nonlinear models by composition rules (disciplined convex programming) with interval bounds from the variable bounds, so local solvers and NLP branch and bound report global optima for more models.</li>
+<li>The IPOPT binding passes sparse Jacobian and Hessian structures derived from the expressions instead of dense ones.</li>
 </ul></div>
   </main></div>
 

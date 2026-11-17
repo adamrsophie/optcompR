@@ -114,20 +114,30 @@ classes it accepts, the classes it solves to global optimality and the
 features it supports.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_solvers.html">opt_solvers</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     solver   package available                                 classes duals</span></span>
-<span><span class="co">#&gt; 1    highs     highs      TRUE                              LP MILP QP  TRUE</span></span>
-<span><span class="co">#&gt; 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE</span></span>
-<span><span class="co">#&gt; 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE</span></span>
-<span><span class="co">#&gt; 4     osqp      osqp      TRUE                                   LP QP  TRUE</span></span>
-<span><span class="co">#&gt; 5      scs       scs      TRUE                        LP QP SOCP CONIC  TRUE</span></span>
-<span><span class="co">#&gt; 6   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE</span></span>
-<span><span class="co">#&gt; 7    ipopt                TRUE                          NLP QCQP QP LP  TRUE</span></span>
-<span><span class="co">#&gt; 8      roi ROI, slam      TRUE                              LP MILP QP FALSE</span></span>
-<span><span class="co">#&gt; 9    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE</span></span>
+<span><span class="co">#&gt;     solver   package available</span></span>
+<span><span class="co">#&gt; 1    highs     highs      TRUE</span></span>
+<span><span class="co">#&gt; 2 clarabel  clarabel      TRUE</span></span>
+<span><span class="co">#&gt; 3     scip      scip      TRUE</span></span>
+<span><span class="co">#&gt; 4     osqp      osqp      TRUE</span></span>
+<span><span class="co">#&gt; 5      scs       scs      TRUE</span></span>
+<span><span class="co">#&gt; 6   nloptr    nloptr      TRUE</span></span>
+<span><span class="co">#&gt; 7    ipopt                TRUE</span></span>
+<span><span class="co">#&gt; 8      roi ROI, slam      TRUE</span></span>
+<span><span class="co">#&gt; 9    nlpbb    nloptr      TRUE</span></span>
+<span><span class="co">#&gt;                                             classes duals</span></span>
+<span><span class="co">#&gt; 1                                        LP MILP QP  TRUE</span></span>
+<span><span class="co">#&gt; 2                                  LP QP SOCP CONIC  TRUE</span></span>
+<span><span class="co">#&gt; 3 LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP NLP MINLP FALSE</span></span>
+<span><span class="co">#&gt; 4                                             LP QP  TRUE</span></span>
+<span><span class="co">#&gt; 5                                  LP QP SOCP CONIC  TRUE</span></span>
+<span><span class="co">#&gt; 6                                    NLP QCQP QP LP FALSE</span></span>
+<span><span class="co">#&gt; 7                                    NLP QCQP QP LP  TRUE</span></span>
+<span><span class="co">#&gt; 8                                        LP MILP QP FALSE</span></span>
+<span><span class="co">#&gt; 9                                 MINLP MIQCQP MIQP FALSE</span></span>
 <span><span class="co">#&gt;                                                                                                                    description</span></span>
 <span><span class="co">#&gt; 1                                               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)</span></span>
 <span><span class="co">#&gt; 2                                 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs</span></span>
-<span><span class="co">#&gt; 3                                         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models</span></span>
+<span><span class="co">#&gt; 3                          SCIP: branch and bound with spatial branching, global for nonconvex quadratic and polynomial models</span></span>
 <span><span class="co">#&gt; 4                                               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)</span></span>
 <span><span class="co">#&gt; 5 SCS: operator splitting for LP, convex QP and SOC, PSD, exponential and power cone programs (first-order, moderate accuracy)</span></span>
 <span><span class="co">#&gt; 6                                                            NLopt SLSQP (default): local gradient-based nonlinear programming</span></span>
@@ -231,7 +241,8 @@ features it supports.</p>
 </tr>
 <tr class="even">
 <td>scip</td>
-<td>LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP</td>
+<td>LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP, polynomial NLP and
+MINLP</td>
 <td>all, including nonconvex</td>
 <td>no</td>
 <td>no</td>
@@ -346,11 +357,32 @@ reads; other plugins may name their limit differently, so pass it in
 <code>options</code> for them.</p>
 </div>
 <div class="section level2">
+<h2 id="exporting-to-cvxr">Exporting to CVXR<a class="anchor" aria-label="anchor" href="#exporting-to-cvxr"></a>
+</h2>
+<p><code><a href="../reference/opt_to_cvxr.html">opt_to_cvxr()</a></code> writes a linear, quadratic, mixed-integer
+or conic model as a CVXR problem, so it can be solved with any CVXR
+solver or checked by CVXR’s own disciplined convex programming
+rules:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"x"</span>, dim <span class="op">=</span> <span class="fl">2</span>, lower <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&gt;=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_to_cvxr.html">opt_to_cvxr</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="fu">CVXR</span><span class="fu">::</span><span class="fu"><a href="https://www.cvxgrp.org/CVXR/reference/psolve.html" class="external-link">psolve</a></span><span class="op">(</span><span class="va">cv</span><span class="op">$</span><span class="va">problem</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.6666667</span></span>
+<span><span class="fu"><a href="../reference/opt_cvxr_values.html">opt_cvxr_values</a></span><span class="op">(</span><span class="va">cv</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      x[1]      x[2] </span></span>
+<span><span class="co">#&gt; 0.6666667 0.3333333</span></span>
+<span><span class="fu"><a href="../reference/opt_value.html">opt_value</a></span><span class="op">(</span><span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, <span class="va">x</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.6666667 0.3333333</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="solver-options">Solver options<a class="anchor" aria-label="anchor" href="#solver-options"></a>
 </h2>
 <p>Options are passed through to the backend; for HiGHS they override
 defaults:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span>, solver <span class="op">=</span> <span class="st">"highs"</span>, options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>presolve <span class="op">=</span> <span class="st">"off"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "optimal"</span></span></code></pre></div>

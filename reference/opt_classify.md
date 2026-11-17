@@ -6,8 +6,16 @@ levels of evidence are distinguished: *syntactic* recognition of the
 class, *structural* proofs (for example a diagonal quadratic form with
 nonnegative entries), *numerical* evidence (eigenvalues compared with a
 tolerance, which is not a formal proof near the boundary), and
-properties that cannot be established automatically (general nonlinear
-expressions are reported as `"unknown"`).
+properties that cannot be established automatically. Nonlinear
+expressions are analyzed by composition rules (disciplined convex
+programming) on the box of variable bounds: for example
+[`exp()`](https://rdrr.io/r/base/Log.html) of a convex expression is
+convex, [`log()`](https://rdrr.io/r/base/Log.html) and
+[`sqrt()`](https://rdrr.io/r/base/MathFun.html) of a concave one are
+concave, and [`sin()`](https://rdrr.io/r/base/Trig.html) is concave
+where its argument lies in \\\[0, \pi\]\\. When the rules prove every
+part, the model is `"convex"`; otherwise it is `"unknown"`, never
+guessed `"nonconvex"`.
 
 ## Usage
 

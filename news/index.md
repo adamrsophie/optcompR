@@ -146,3 +146,28 @@
   differentiates conic solutions through the smooth boundaries of active
   second-order, exponential and power cones, and through the linearized
   complementarity of active PSD constraints; inactive cones drop out.
+- Lowered constraint blocks and objectives are reused across parameter
+  updates when the parameters they use keep their values, and HiGHS
+  restarts LPs from the previous optimal basis. Scalar constraints built
+  in loops are about a quarter faster.
+- SCIP solves polynomial NLP and MINLP models to global optimality:
+  products of degree above two are lifted exactly to quadratic rows with
+  auxiliary variables bounded by interval arithmetic. Nonconvex
+  polynomial models choose SCIP automatically; models with other
+  operators are refused with the reason.
+- [`opt_to_cvxr()`](https://adamrsophie.github.io/optcompR/reference/opt_to_cvxr.md)
+  converts linear, quadratic, mixed-integer and conic models to CVXR
+  problems, and
+  [`opt_cvxr_values()`](https://adamrsophie.github.io/optcompR/reference/opt_cvxr_values.md)
+  reads the solution back by variable name.
+- [`opt_explain_infeasibility()`](https://adamrsophie.github.io/optcompR/reference/opt_explain_infeasibility.md)
+  solves a weighted elastic relaxation of the rows and variable bounds
+  and reports which must move, and by how much, for an infeasible model
+  to become feasible.
+- [`opt_classify()`](https://adamrsophie.github.io/optcompR/reference/opt_classify.md)
+  proves convexity of nonlinear models by composition rules (disciplined
+  convex programming) with interval bounds from the variable bounds, so
+  local solvers and NLP branch and bound report global optima for more
+  models.
+- The IPOPT binding passes sparse Jacobian and Hessian structures
+  derived from the expressions instead of dense ones.

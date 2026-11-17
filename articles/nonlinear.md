@@ -24,8 +24,8 @@ opt_objective(m, (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2)
 opt_classify(m)
 #> <opt_classification: NLP, unknown>
 #>   - syntactic: objective is nonlinear; constraint rows: none
-#>   - unknown: convexity of general nonlinear expressions is not analyzed; solutions from local solvers are local optima
-r <- opt_solve(m)
+#>   - unknown: composition rules cannot prove the objective convex; solutions from local solvers are local optima
+r <- opt_solve(m, solver = "nloptr")
 opt_status(r)
 #> [1] "locally_optimal"
 opt_value(r, x)
@@ -47,7 +47,7 @@ x <- opt_variable(m, "x", dim = 4, lower = 1, upper = 5, start = c(1, 5, 5, 1))
 opt_constraint(m, x[1] * x[2] * x[3] * x[4] >= 25, name = "product")
 opt_constraint(m, sum(x^2) == 40, name = "sphere")
 opt_objective(m, x[1] * x[4] * (x[1] + x[2] + x[3]) + x[3])
-r <- opt_solve(m)
+r <- opt_solve(m, solver = "nloptr")
 opt_objective_value(r)  # reference 17.0140173
 #> [1] 17.01402
 opt_check(r)$kkt
@@ -163,9 +163,40 @@ builds that loss with gradients from modelcompR’s forward sensitivities;
 see
 [`vignette("ode-fitting")`](https://adamrsophie.github.io/optcompR/articles/ode-fitting.md).
 
+## Global solutions of polynomial models with SCIP
+
+Both problems above are polynomial. SCIP solves polynomial models, with
+or without integer variables, to global optimality: optcompR lifts them
+exactly to quadratic rows, giving every product of degree above two
+auxiliary variables (for example w = x^2 in x^4 = w^2) with bounds from
+interval arithmetic. In automatic selection SCIP is preferred for
+nonconvex polynomial models, while convex ones stay with the local NLP
+solvers, whose optima are then global.
+
+``` r
+
+m <- opt_model()
+x <- opt_variable(m, "x", lower = -2, upper = 2)
+opt_objective(m, x^4 - 3 * x^2 + x)  # two local minima
+r <- opt_solve(m)
+r$solver
+#> [1] "scip"
+opt_status(r)
+#> [1] "optimal"
+opt_value(r, x)
+#> [1] -1.300677
+```
+
+Operators other than sums, products, linear maps, division by constants
+and nonnegative integer powers (for example
+[`exp()`](https://rdrr.io/r/base/Log.html) or
+[`sin()`](https://rdrr.io/r/base/Trig.html)) cannot be lifted exactly,
+so SCIP refuses those models and they go to a local solver.
+
 ## Limits
 
-- NLopt SLSQP finds local solutions.
+- NLopt SLSQP and IPOPT find local solutions; for nonconvex models they
+  are global only when SCIP solves a polynomial model.
 - Mixed-integer nonlinear problems (MINLP) are solved by NLP branch and
   bound (`solver = "nlpbb"`); results are global only when the
   continuous relaxation is known to be convex, and labeled local
