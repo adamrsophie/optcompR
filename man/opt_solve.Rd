@@ -30,9 +30,12 @@ in any case, has status \code{"gap_limit"}, not \code{"optimal"}.}
 \item{verbose}{Print the solver log.}
 
 \item{warm_start}{Pass start values set with \code{\link[=opt_set_start]{opt_set_start()}} or
-\code{opt_variable(start = )} to solvers that accept them. Without start
-values, an LP solved again by HiGHS after a parameter update restarts
-from the previous optimal basis.}
+\code{opt_variable(start = )} to solvers that accept them, and reuse the
+native HiGHS solver and OSQP workspace of the previous solve of the
+same model: when only costs, bounds or matrix values changed (for
+example after \code{\link[=opt_set_parameter]{opt_set_parameter()}}), they are updated in place and the
+solver restarts from its last basis or solution. \code{FALSE} builds a new
+native solver.}
 
 \item{options}{Named list of backend options passed through unchanged
 (for HiGHS, any option of \code{\link[highs:highs_control]{highs::highs_control()}}). HiGHS uses one

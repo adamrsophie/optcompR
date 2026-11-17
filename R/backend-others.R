@@ -213,10 +213,28 @@ osqp_solve_sf <- function(sf, cls, control) {
   defaults <- list(verbose = isTRUE(control$verbose), eps_abs = 1e-7,
                    eps_rel = 1e-7, polishing = TRUE, max_iter = 100000L)
   if (is.finite(control$time_limit)) defaults$time_limit <- control$time_limit
-  pars <- do.call(osqp::osqpSettings, utils::modifyList(defaults,
-                                                        control$options))
-  res <- osqp::solve_osqp(P = P, q = s * sf$c, A = A, l = l, u = u,
-                          pars = pars)
+  settings <- utils::modifyList(defaults, control$options)
+  pars <- do.call(osqp::osqpSettings, settings)
+  # the OSQP workspace is kept per model and updated in place (costs,
+  # bounds and matrix values) while the structure, the sparsity patterns
+  # and the settings stay the same; OSQP then warm starts from its last
+  # solution and keeps its factorization when only q, l and u change
+  A <- methods::as(A, "CsparseMatrix")
+  cache <- control$cache
+  data <- list(q = s * sf$c, l = l, u = u, Ax = A@x,
+               Px = if (is.null(P)) numeric() else P@x)
+  sig <- list(key = sf$structure_key, n = n, k = k, fb = fb, Ai = A@i,
+              Ap = A@p, Pi = if (is.null(P)) NULL else P@i,
+              Pp = if (is.null(P)) NULL else P@p, settings = settings)
+  sess <- if (isTRUE(control$warm_start) && is.environment(cache)) cache$osqp
+  reused <- !is.null(sess) && identical(sess$sig, sig) &&
+    osqp_update(sess, data)
+  work <- if (reused) sess$work else
+    osqp::osqp(P = P, q = data$q, A = A, l = l, u = u, pars = pars)
+  if (is.environment(cache)) {
+    cache$osqp <- list(work = work, sig = sig, data = data)
+  }
+  res <- osqp_method(work, "Solve")()
   st <- res$info$status
   term <- switch(st,
     "solved" = "optimal", "solved inaccurate" = "almost_optimal",
@@ -245,8 +263,35 @@ osqp_solve_sf <- function(sf, cls, control) {
        dual_status = if (!is.null(rd)) "feasible_point" else "no_solution",
        x = x, objective = obj, row_dual = rd, col_dual = cd,
        iterations = c(admm = res$info$iter), gap = NA_real_,
-       bound = NA_real_, message = st, local = FALSE, warm_start = FALSE,
-       extra = list(), raw = res)
+       bound = NA_real_, message = st, local = FALSE, warm_start = reused,
+       extra = list(reused = reused), raw = res)
+}
+
+# A method of an OSQP workspace: a property of the S7 object in osqp 1.0,
+# an element of the R6 object before.
+osqp_method <- function(work, name) {
+  if (inherits(work, "S7_object")) {
+    getExportedValue("S7", "prop")(work, name)
+  } else {
+    work[[name]]
+  }
+}
+
+# Pass the changed data to a kept OSQP workspace; FALSE when it cannot be
+# used any more, so a new one is set up.
+osqp_update <- function(sess, data) {
+  old <- sess$data
+  args <- list()
+  if (!identical(old$q, data$q)) args$q <- data$q
+  if (!identical(old$l, data$l)) args$l <- data$l
+  if (!identical(old$u, data$u)) args$u <- data$u
+  if (!identical(old$Ax, data$Ax)) args$Ax <- data$Ax
+  if (!identical(old$Px, data$Px)) args$Px <- data$Px
+  if (!length(args)) return(TRUE)
+  tryCatch({
+    do.call(osqp_method(sess$work, "Update"), args)
+    TRUE
+  }, error = function(e) FALSE)
 }
 
 # ----------------------------------------------------------------- NLopt

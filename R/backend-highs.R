@@ -36,10 +36,6 @@ highs_solve_sf <- function(sf, cls, control) {
   }
   Q <- if (is.null(sf$Q)) NULL else
     methods::as(methods::as(s * sf$Q, "generalMatrix"), "CsparseMatrix")
-  hm <- highs::highs_model(Q = Q, L = s * sf$c, lower = sf$lower,
-                           upper = sf$upper, A = A, lhs = lhs, rhs = rhs,
-                           types = types, maximum = FALSE,
-                           offset = s * sf$offset)
   opts <- control$options
   ctrl_args <- utils::modifyList(
     list(threads = 1L, log_to_console = isTRUE(control$verbose)), opts)
@@ -58,8 +54,33 @@ highs_solve_sf <- function(sf, cls, control) {
   }
   if (is.finite(control$time_limit)) ctrl_args$time_limit <- control$time_limit
   if (!is.null(control$mip_gap)) ctrl_args$mip_rel_gap <- control$mip_gap
-  ctrl <- do.call(highs::highs_control, ctrl_args)
-  solver <- highs::highs_solver(hm, control = ctrl)
+  # the native solver is kept per model and reused while the structure,
+  # the sparsity pattern, Q and the controls stay the same: costs, bounds
+  # and matrix values are then updated in place, and HiGHS restarts from
+  # its last basis
+  cache <- control$cache
+  data <- list(c = s * sf$c, lower = sf$lower, upper = sf$upper,
+               lhs = lhs %||% numeric(), rhs = rhs %||% numeric(),
+               ax = if (is.null(A)) numeric() else A@x, offset = s * sf$offset)
+  sig <- list(key = sf$structure_key, n = n, m = nrow(sf$A), types = types,
+              ai = if (is.null(A)) NULL else A@i,
+              ap = if (is.null(A)) NULL else A@p, Q = Q, ctrl = ctrl_args)
+  sess <- if (isTRUE(control$warm_start) && is.environment(cache)) cache$highs
+  reused <- !is.null(sess) && identical(sess$sig, sig) &&
+    highs_update(sess, data)
+  if (reused) {
+    solver <- sess$solver
+  } else {
+    hm <- highs::highs_model(Q = Q, L = data$c, lower = sf$lower,
+                             upper = sf$upper, A = A, lhs = lhs, rhs = rhs,
+                             types = types, maximum = FALSE,
+                             offset = data$offset)
+    ctrl <- do.call(highs::highs_control, ctrl_args)
+    solver <- highs::highs_solver(hm, control = ctrl)
+  }
+  if (is.environment(cache)) {
+    cache$highs <- list(solver = solver, sig = sig, data = data)
+  }
   start_used <- FALSE
   if (isTRUE(control$warm_start) && any(!is.na(sf$start))) {
     # partial starts are allowed: NA entries are left to HiGHS
@@ -71,7 +92,7 @@ highs_solve_sf <- function(sf, cls, control) {
   cache <- control$cache
   bkey <- paste(sf$structure_key, n, nrow(sf$A))
   basis_used <- FALSE
-  if (!cls$integer && is.null(sf$Q) && isTRUE(control$warm_start) &&
+  if (!reused && !cls$integer && is.null(sf$Q) && isTRUE(control$warm_start) &&
       !start_used && is.environment(cache) &&
       identical(cache$highs_basis_key, bkey)) {
     b <- cache$highs_basis
@@ -103,10 +124,11 @@ highs_solve_sf <- function(sf, cls, control) {
   x <- if (primal == "no_solution") rep(NA_real_, n) else sol$col_value
   rd <- if (!integer && isTRUE(sol$dual_valid)) s * sol$row_dual else NULL
   cd <- if (!integer && isTRUE(sol$dual_valid)) s * sol$col_dual else NULL
-  ranging <- NULL
+  # ranging is computed on request by opt_sensitivity(), from the basis
+  basis <- NULL
   if (cls$class == "LP" && term == "optimal") {
-    ranging <- tryCatch(highs::hi_solver_get_ranging(solver$solver),
-                        error = function(e) NULL)
+    basis <- tryCatch(highs::hi_solver_get_basis(solver$solver),
+                      error = function(e) NULL)
   }
   obj <- if (primal == "no_solution") NA_real_ else
     s * info$objective_function_value
@@ -121,8 +143,8 @@ highs_solve_sf <- function(sf, cls, control) {
                       qp = info$qp_iteration_count,
                       nodes = info$mip_node_count),
        gap = gap, bound = bound, message = solver$status_message(),
-       local = FALSE, warm_start = start_used || basis_used,
-       extra = list(ranging = ranging, sign = s),
+       local = FALSE, warm_start = start_used || basis_used || reused,
+       extra = list(basis = basis, sign = s, reused = reused),
        raw = list(status = code, solution = sol, info = info))
 }
 
@@ -139,4 +161,54 @@ register_highs <- function() {
     features = list(duals = TRUE, ranging = TRUE, warm_start = TRUE,
                     time_limit = TRUE, mip_gap = TRUE, iteration_limit = TRUE),
     solve = highs_solve_sf, version = highs_version, priority = 10L)
+}
+
+# Apply the changed costs, bounds, matrix values and offset to a kept HiGHS
+# solver. FALSE when the solver can no longer be used (for example after the
+# model was serialized), so a new one is built.
+highs_update <- function(sess, data) {
+  old <- sess$data
+  sv <- sess$solver
+  tryCatch({
+    highs::hi_solver_status(sv$solver)
+    d <- which(old$c != data$c)
+    if (length(d)) sv$L(d, data$c[d])
+    d <- which(old$lower != data$lower | old$upper != data$upper)
+    if (length(d)) sv$vbounds(d, data$lower[d], data$upper[d])
+    d <- which(old$lhs != data$lhs | old$rhs != data$rhs)
+    if (length(d)) sv$cbounds(d, data$lhs[d], data$rhs[d])
+    d <- which(old$ax != data$ax)
+    if (length(d)) {
+      # the column of entry k of a column-compressed matrix with pointers p
+      p <- sess$sig$ap
+      jj <- findInterval(d - 1L, p, left.open = FALSE)
+      sv$A(sess$sig$ai[d] + 1L, jj, data$ax[d])
+    }
+    if (!identical(old$offset, data$offset)) {
+      highs::hi_solver_set_offset(sv$solver, data$offset)
+    }
+    TRUE
+  }, error = function(e) FALSE)
+}
+
+# Sensitivity ranging of an optimal HiGHS LP result, from a solver rebuilt
+# from the result's standard form and started at its optimal basis.
+highs_ranging <- function(result) {
+  sf <- result$standard_form
+  b <- result$extra$basis
+  if (is.null(b)) return(NULL)
+  s <- result$extra$sign
+  A <- if (nrow(sf$A)) methods::as(sf$A, "CsparseMatrix") else NULL
+  hm <- highs::highs_model(L = s * sf$c, lower = sf$lower, upper = sf$upper,
+                           A = A, lhs = if (!is.null(A)) sf$row_lower,
+                           rhs = if (!is.null(A)) sf$row_upper,
+                           maximum = FALSE, offset = s * sf$offset)
+  args <- list(threads = .optcompR_state$highs_threads %||% 1L,
+               log_to_console = FALSE)
+  solver <- highs::highs_solver(hm, control = do.call(highs::highs_control, args))
+  tryCatch(highs::hi_solver_set_basis(solver$solver, b$col_status, b$row_status),
+           error = function(e) NULL)
+  solver$solve()
+  tryCatch(highs::hi_solver_get_ranging(solver$solver),
+           error = function(e) NULL)
 }

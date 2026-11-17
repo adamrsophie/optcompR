@@ -44,3 +44,45 @@ test_that("indicator rows are extracted without dense rows", {
   r <- opt_solve(m, solver = "highs")
   expect_equal(opt_objective_value(r), 10 * n)
 })
+
+test_that("kept HiGHS and OSQP workspaces give the answers of fresh solves", {
+  build <- function(bv, qv) {
+    m <- opt_model("max")
+    x <- opt_variable(m, "x", dim = 3, lower = 0, upper = 4)
+    b <- opt_parameter(m, "b", value = bv)
+    q <- opt_parameter(m, "q", value = qv)
+    opt_constraint(m, x[1] + 2 * x[2] + q * x[3] <= b)
+    opt_objective(m, 3 * x[1] + 2 * x[2] + x[3])
+    list(m = m, b = b, q = q)
+  }
+  k <- build(4, 1)
+  r1 <- opt_solve(k$m, solver = "highs")
+  for (v in list(c(6, 1), c(3, 2), c(5, 0.5))) {
+    opt_set_parameter(k$m, k$b, v[1])
+    opt_set_parameter(k$m, k$q, v[2])
+    r <- opt_solve(k$m, solver = "highs")
+    expect_true(r$extra$reused)
+    fresh <- opt_solve(build(v[1], v[2])$m, solver = "highs")
+    expect_equal(opt_objective_value(r), opt_objective_value(fresh),
+                 tolerance = 1e-9)
+  }
+  # ranging is computed on request, from the stored basis
+  s <- opt_sensitivity(r)
+  expect_identical(nrow(s$costs), 3L)
+  # a model read back from a file builds a new native solver
+  f <- tempfile(fileext = ".rds")
+  saveRDS(k$m, f)
+  m2 <- readRDS(f)
+  r2 <- opt_solve(m2, solver = "highs")
+  expect_equal(opt_objective_value(r2), opt_objective_value(r), tolerance = 1e-9)
+  skip_if_not_installed("osqp")
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 4, lower = -1, upper = 1)
+  a <- opt_parameter(m, "a", dim = 4, value = c(0.5, 2, -3, 0))
+  opt_objective(m, sum((x - a)^2))
+  opt_solve(m, solver = "osqp")
+  opt_set_parameter(m, a, c(-0.2, 0.3, 4, -5))
+  r <- opt_solve(m, solver = "osqp")
+  expect_true(r$extra$reused)
+  expect_equal(unname(opt_value(r, x)), c(-0.2, 0.3, 1, -1), tolerance = 1e-5)
+})

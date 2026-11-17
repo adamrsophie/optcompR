@@ -28,6 +28,11 @@
 opt_sensitivity <- function(result) {
   check_result(result)
   rg <- result$extra$ranging
+  if (is.null(rg) && identical(result$solver, "highs") &&
+      identical(result$classification$class, "LP") &&
+      identical(result$termination, "optimal")) {
+    rg <- highs_ranging(result)
+  }
   if (is.null(rg) || !isTRUE(rg$valid)) {
     stop(paste("Sensitivity ranging is available for optimal linear programs",
                "solved with HiGHS."), call. = FALSE)

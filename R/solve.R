@@ -18,9 +18,12 @@
 #'   in any case, has status `"gap_limit"`, not `"optimal"`.
 #' @param verbose Print the solver log.
 #' @param warm_start Pass start values set with [opt_set_start()] or
-#'   `opt_variable(start = )` to solvers that accept them. Without start
-#'   values, an LP solved again by HiGHS after a parameter update restarts
-#'   from the previous optimal basis.
+#'   `opt_variable(start = )` to solvers that accept them, and reuse the
+#'   native HiGHS solver and OSQP workspace of the previous solve of the
+#'   same model: when only costs, bounds or matrix values changed (for
+#'   example after [opt_set_parameter()]), they are updated in place and the
+#'   solver restarts from its last basis or solution. `FALSE` builds a new
+#'   native solver.
 #' @param options Named list of backend options passed through unchanged
 #'   (for HiGHS, any option of [highs::highs_control()]). HiGHS uses one
 #'   thread by default; its thread scheduler is global to the process, so
