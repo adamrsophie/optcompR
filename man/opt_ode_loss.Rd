@@ -48,16 +48,25 @@ A scalar nonlinear \code{opt_expr}.
 Builds the scalar expression
 \eqn{\sum_{t, s} w_{ts} (u_s(t; \theta) - y_{ts})^2} for an
 \code{ODEProblem} of the modelcompR package, with \eqn{\theta} given by
-decision variables. The gradient is the exact derivative of the numerical
-solution up to the integration tolerances; no finite differences are
-used. It comes from forward sensitivities
-(\code{ODEForwardSensitivityProblem()}), whose cost grows with the number of
-parameters times the number of states, or from the adjoint equation
-solved backward in time (\code{adjoint_sensitivities()}), whose cost does not
-grow with the number of parameters. Value and gradient at the same point
-share one solve.
+decision variables. The gradient is the derivative of the numerical
+solution up to the integration tolerances. It comes from forward
+sensitivities (\code{ODEForwardSensitivityProblem()}), which integrate states
+times parameters equations, or from an adjoint through
+\code{solve_gradient()} with \code{InterpolatingAdjoint()}, which integrates about
+twice the states backward in time plus one quadrature per parameter. The
+adjoint includes parameter-dependent initial values and events (such as
+callbacks). Its derivative of the loss with respect to the saved states
+is taken by central differences, which are exact for this quadratic loss
+up to rounding. For a right-hand side given as an R function without a
+Jacobian, modelcompR approximates the Jacobian products the
+sensitivities need by finite differences. Value and gradient at the same
+point share one solve.
 }
 \details{
+Observation times must lie in the integration interval. They may be in
+any order and may repeat; data and weights rows follow their times, and
+a state may be observed by several columns of \code{data}.
+
 The loss is generally not convex, so solves are local: start from a
 sensible \code{start} on the variables.
 }

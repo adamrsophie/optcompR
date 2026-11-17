@@ -5,14 +5,23 @@
 #' Builds the scalar expression
 #' \eqn{\sum_{t, s} w_{ts} (u_s(t; \theta) - y_{ts})^2} for an
 #' `ODEProblem` of the modelcompR package, with \eqn{\theta} given by
-#' decision variables. The gradient is the exact derivative of the numerical
-#' solution up to the integration tolerances; no finite differences are
-#' used. It comes from forward sensitivities
-#' (`ODEForwardSensitivityProblem()`), whose cost grows with the number of
-#' parameters times the number of states, or from the adjoint equation
-#' solved backward in time (`adjoint_sensitivities()`), whose cost does not
-#' grow with the number of parameters. Value and gradient at the same point
-#' share one solve.
+#' decision variables. The gradient is the derivative of the numerical
+#' solution up to the integration tolerances. It comes from forward
+#' sensitivities (`ODEForwardSensitivityProblem()`), which integrate states
+#' times parameters equations, or from an adjoint through
+#' `solve_gradient()` with `InterpolatingAdjoint()`, which integrates about
+#' twice the states backward in time plus one quadrature per parameter. The
+#' adjoint includes parameter-dependent initial values and events (such as
+#' callbacks). Its derivative of the loss with respect to the saved states
+#' is taken by central differences, which are exact for this quadratic loss
+#' up to rounding. For a right-hand side given as an R function without a
+#' Jacobian, modelcompR approximates the Jacobian products the
+#' sensitivities need by finite differences. Value and gradient at the same
+#' point share one solve.
+#'
+#' Observation times must lie in the integration interval. They may be in
+#' any order and may repeat; data and weights rows follow their times, and
+#' a state may be observed by several columns of `data`.
 #'
 #' The loss is generally not convex, so solves are local: start from a
 #' sensible `start` on the variables.
@@ -67,6 +76,31 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
   weights[is.na(data)] <- 0
   data[is.na(data)] <- 0
   alg <- alg %||% modelcompR::Tsit5()
+  # one schedule for every method: the observation times must lie in the
+  # integration interval, and they are sorted in the direction of
+  # integration with data and weights; repeated times share a saved point
+  span <- as.numeric(prob$tspan)
+  lo <- min(span)
+  hi <- max(span)
+  slack <- 1e-12 * max(1, abs(span))
+  if (any(!is.finite(times)) || any(times < lo - slack | times > hi + slack)) {
+    stop(sprintf(paste("Observation times must lie in the integration",
+                       "interval [%s, %s] of `prob`."), fmt_num(lo), fmt_num(hi)),
+         call. = FALSE)
+  }
+  ut <- sort(unique(times), decreasing = span[2L] < span[1L])
+  at <- match(times, ut)
+  nu <- length(prob$u0)
+  if (any(states < 1 | states > nu | states != round(states))) {
+    stop(sprintf("`states` must be indices between 1 and %d.", nu), call. = FALSE)
+  }
+  # the loss and its gradient from states U (one row per saved time) and
+  # their sensitivities S[[k]] (states x parameters) at those times; a
+  # state observed by several columns adds every contribution
+  loss_of <- function(U) {
+    R <- U[at, states, drop = FALSE] - data
+    sum(weights * R^2)
+  }
   np <- as_expr(theta)$len
   if (sensitivity == "auto") {
     # forward sensitivities integrate states x parameters equations, the
@@ -75,24 +109,31 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
     sensitivity <- if (np > 8L && np > 2L * ns0) "adjoint" else "forward"
   }
   cache <- new.env(parent = emptyenv())
+  saved_rows <- function(tt) {
+    # the last saved value at each observation time (after an event there)
+    vapply(ut, function(x) {
+      k <- which(abs(tt - x) <= 1e-12 * max(1, abs(x)))
+      if (!length(k)) NA_integer_ else k[length(k)]
+    }, 1L)
+  }
   adjoint <- function(v) {
     p <- modelcompR::remake(prob, p = v)
-    sol <- solve(p, alg, reltol = reltol, abstol = abstol)
-    U <- do.call(rbind, lapply(times, function(t) as.numeric(sol(t))))
-    if (nrow(U) != length(times) || anyNA(U)) {
-      stop("The ODE solve did not reach every observation time.",
-           call. = FALSE)
+    loss <- function(sol) {
+      k <- saved_rows(as.numeric(sol$t))
+      if (anyNA(k)) {
+        stop("The ODE solve did not reach every observation time.",
+             call. = FALSE)
+      }
+      U <- do.call(rbind, lapply(sol$u[k], as.numeric))
+      loss_of(U)
     }
-    R <- U[, states, drop = FALSE] - data
-    nu <- ncol(U)
-    res <- modelcompR::adjoint_sensitivities(
-      sol, alg, t = times,
-      dgdu_discrete = function(u, p, t, i) {
-        g <- numeric(nu)
-        g[states] <- 2 * weights[i, ] * (u[states] - data[i, ])
-        g
-      }, abstol = abstol, reltol = reltol)
-    list(value = sum(weights * R^2), gradient = as.numeric(res$dp))
+    # modelcompR's solve_gradient composes the adjoint with the
+    # initialization of parameter-dependent initial values and records
+    # events for the backward solve
+    g <- modelcompR::solve_gradient(loss, p, alg, saveat = ut,
+                                    reltol = reltol, abstol = abstol,
+                                    sensealg = modelcompR::InterpolatingAdjoint())
+    list(value = g$value, gradient = as.numeric(g$p))
   }
   evaluate <- function(v) {
     if (identical(cache$at, v)) return(cache$out)
@@ -104,17 +145,16 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
     }
     p <- modelcompR::remake(prob, p = v)
     fs <- solve(modelcompR::ODEForwardSensitivityProblem(p), alg,
-                reltol = reltol, abstol = abstol, saveat = times)
+                reltol = reltol, abstol = abstol, saveat = ut)
     s <- modelcompR::extract_local_sensitivities(fs, asmatrix = TRUE)
-    U <- s$u[, states, drop = FALSE]
-    if (nrow(U) != length(times)) {
+    if (nrow(s$u) != length(ut)) {
       stop("The ODE solve did not reach every observation time.",
            call. = FALSE)
     }
-    R <- U - data
+    R <- s$u[at, states, drop = FALSE] - data
     g <- numeric(length(v))
     for (i in seq_along(times)) {
-      S <- s$du[[i]][states, , drop = FALSE]
+      S <- s$du[[at[i]]][states, , drop = FALSE]
       g <- g + 2 * as.vector(crossprod(S, weights[i, ] * R[i, ]))
     }
     out <- list(value = sum(weights * R^2), gradient = g)
