@@ -113,5 +113,9 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* `opt_classify()` proves convexity of nonlinear models by composition rules
+  (disciplined convex programming) with interval bounds from the variable
+  bounds, so local solvers and NLP branch and bound report global optima for
+  more models.
 * The IPOPT binding passes sparse Jacobian and Hessian structures derived
   from the expressions instead of dense ones.

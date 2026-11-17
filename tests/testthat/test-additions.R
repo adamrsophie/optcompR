@@ -416,3 +416,69 @@ test_that("IPOPT solves a large sparse NLP with sparse structures", {
   expect_true(opt_status(r) %in% c("optimal", "locally_optimal"))
   expect_true(opt_check(r)$kkt$pass)
 })
+
+test_that("composition rules prove convexity of nonlinear models", {
+  cls <- function(build) {
+    m <- opt_model()
+    x <- opt_variable(m, "x", dim = 2, lower = 0.5, upper = 3)
+    build(m, x)
+    opt_classify(m)$convexity
+  }
+  expect_equal(cls(function(m, x) opt_objective(m, sum(exp(x)) - log(x[1]))),
+               "convex")
+  expect_equal(cls(function(m, x) {
+    opt_objective(m, x[1] + x[2])
+    opt_constraint(m, exp(x[1] + 2 * x[2]) <= 10)
+    opt_constraint(m, sqrt(x[1]) + log(x[2]) >= 0.2)
+    opt_constraint(m, 1 / x[1] + x[2]^2 <= 6)
+  }), "convex")
+  # concave objective for maximization
+  expect_equal(cls(function(m, x) {
+    opt_objective(m, log(x[1]) + sqrt(x[2]), sense = "max")
+  }), "convex")
+  # not provable: nonconvex or unknown, never "convex"
+  expect_equal(cls(function(m, x) opt_objective(m, sin(x[1] * x[2]))),
+               "unknown")
+  expect_equal(cls(function(m, x) opt_objective(m, -exp(x[1]))), "unknown")
+  expect_equal(cls(function(m, x) {
+    opt_objective(m, x[1])
+    opt_constraint(m, exp(x[1]) == 2)
+  }), "unknown")
+  # the bound domain matters: sin is concave on [0, pi]
+  expect_equal(cls(function(m, x) opt_objective(m, -sin(x[1]), sense = "min")),
+               "convex")
+  m <- opt_model()
+  y <- opt_variable(m, "y", lower = -4, upper = 4)
+  opt_objective(m, -sin(y))
+  expect_equal(opt_classify(m)$convexity, "unknown")
+})
+
+test_that("curvature intervals bound expression values", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2, lower = c(-1, 0.5), upper = c(2, 3))
+  es <- list(exp(x[1]) * 2 - x[2]^2, log(x[2]) + abs(x[1]), x[1]^3 / x[2],
+             sqrt(x[2]) * x[1], cosh(x[1]) + tanh(x[2]))
+  set.seed(3)
+  pts <- cbind(runif(200, -1, 2), runif(200, 0.5, 3))
+  ns <- n_symbols(m)
+  slo <- c(-1, 0.5)
+  shi <- c(2, 3)
+  for (e in es) {
+    cv <- curvature(e, slo, shi)
+    v <- apply(pts, 1, function(z) eval_expr(e, z))
+    expect_true(all(v >= cv$lo - 1e-12 & v <= cv$hi + 1e-12))
+  }
+})
+
+test_that("NLP branch and bound certifies MINLPs proven convex by composition", {
+  skip_if_not_installed("nloptr")
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0, upper = 5)
+  n <- opt_variable(m, "n", type = "integer", lower = 0, upper = 5)
+  opt_objective(m, exp(x / 2) + (n - 2.6)^2 - x)
+  opt_constraint(m, x + n >= 3)
+  r <- opt_solve(m)
+  expect_equal(r$classification$convexity, "convex")
+  expect_equal(opt_status(r), "optimal")
+  expect_equal(unname(opt_value(r, n)), 3)
+})

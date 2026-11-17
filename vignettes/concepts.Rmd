@@ -41,8 +41,19 @@ opt_objective(m, x[1]^2 + 3 * x[1] * x[2] + x[2]^2)
 opt_classify(m)$convexity
 ```
 
-For general nonlinear expressions convexity is reported as `unknown`; it is
-not guessed. Cone constraints are convex sets by construction, so a model
+Nonlinear expressions are checked by composition rules, as in disciplined
+convex programming: `exp()` of a convex expression is convex, `log()` and
+`sqrt()` of a concave one are concave, and atoms such as `sin()` or `x^3` use
+their curvature on the range implied by the variable bounds. A proof makes
+the model `convex`; when the rules do not apply, convexity is reported as
+`unknown`. It is never guessed.
+
+```{r}
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0.1)
+opt_objective(m, sum(exp(x)) - log(x[1] + x[2]))
+opt_classify(m)
+``` Cone constraints are convex sets by construction, so a model
 whose only nonlinear structure is cones (with a linear or convex quadratic
 objective) is classified as convex `"SOCP"` or `"CONIC"`; see
 `vignette("conic")`.

@@ -24,8 +24,13 @@ levels of evidence are distinguished: \emph{syntactic} recognition of the
 class, \emph{structural} proofs (for example a diagonal quadratic form with
 nonnegative entries), \emph{numerical} evidence (eigenvalues compared with a
 tolerance, which is not a formal proof near the boundary), and properties
-that cannot be established automatically (general nonlinear expressions
-are reported as \code{"unknown"}).
+that cannot be established automatically. Nonlinear expressions are
+analyzed by composition rules (disciplined convex programming) on the box
+of variable bounds: for example \code{exp()} of a convex expression is convex,
+\code{log()} and \code{sqrt()} of a concave one are concave, and \code{sin()} is concave
+where its argument lies in \eqn{[0, \pi]}. When the rules prove every
+part, the model is \code{"convex"}; otherwise it is \code{"unknown"}, never guessed
+\code{"nonconvex"}.
 }
 \details{
 Classes are \code{"LP"}, \code{"MILP"}, \code{"QP"}, \code{"MIQP"}, \code{"QCQP"}, \code{"MIQCQP"},

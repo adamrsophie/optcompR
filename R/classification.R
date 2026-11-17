@@ -59,8 +59,13 @@ psd_check <- function(Q, tol = 1e-9) {
 #' class, *structural* proofs (for example a diagonal quadratic form with
 #' nonnegative entries), *numerical* evidence (eigenvalues compared with a
 #' tolerance, which is not a formal proof near the boundary), and properties
-#' that cannot be established automatically (general nonlinear expressions
-#' are reported as `"unknown"`).
+#' that cannot be established automatically. Nonlinear expressions are
+#' analyzed by composition rules (disciplined convex programming) on the box
+#' of variable bounds: for example `exp()` of a convex expression is convex,
+#' `log()` and `sqrt()` of a concave one are concave, and `sin()` is concave
+#' where its argument lies in \eqn{[0, \pi]}. When the rules prove every
+#' part, the model is `"convex"`; otherwise it is `"unknown"`, never guessed
+#' `"nonconvex"`.
 #'
 #' Classes are `"LP"`, `"MILP"`, `"QP"`, `"MIQP"`, `"QCQP"`, `"MIQCQP"`,
 #' `"NLP"` and `"MINLP"`. A model without an objective is a feasibility
@@ -118,10 +123,11 @@ opt_classify <- function(model, tol = 1e-9) {
   convex <- "convex"
   obj_curv <- NULL
   if (has_nl) {
-    convex <- "unknown"
-    evidence <- c(evidence, paste(
-      "unknown: convexity of general nonlinear expressions is not analyzed;",
-      "solutions from local solvers are local optima"))
+    dcp <- tryCatch(dcp_convexity(sf, tol), error = function(e) NULL)
+    convex <- if (isTRUE(dcp$convex)) "convex" else "unknown"
+    evidence <- c(evidence, dcp$evidence %||% paste(
+      "unknown: convexity of these nonlinear expressions could not be",
+      "analyzed; solutions from local solvers are local optima"))
   } else {
     if (sf$objective_kind == "quadratic") {
       Qo <- if (sf$sense == "max") -sf$Q else sf$Q

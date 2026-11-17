@@ -12,6 +12,9 @@ test_that("classes are recognized", {
   expect_identical(opt_classify(m)$class, "QCQP")
   opt_constraint(m, exp(x) <= 3)
   expect_identical(opt_classify(m)$class, "NLP")
+  # composition rules prove exp(x) <= 3 convex
+  expect_identical(opt_classify(m)$convexity, "convex")
+  opt_constraint(m, sin(x) <= 0.5)
   expect_identical(opt_classify(m)$convexity, "unknown")
 })
 
