@@ -20,6 +20,9 @@ and \code{special}, the violations of cone, indicator and SOS constraints
 SCS the KKT test includes the cone multipliers: stationarity with the
 cone terms, membership of each multiplier in the dual cone, and
 complementarity of each cone; \code{kkt$cones} reports them per cone.
+\code{kkt$pass} holds only when every KKT condition holds, primal
+feasibility and a finite objective included; \code{kkt$dual_pass} reports
+stationarity, dual signs and complementarity alone.
 }
 \description{
 Recomputes, from the original model expressions and not from the solver

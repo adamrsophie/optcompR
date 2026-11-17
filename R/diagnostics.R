@@ -35,6 +35,9 @@
 #'   SCS the KKT test includes the cone multipliers: stationarity with the
 #'   cone terms, membership of each multiplier in the dual cone, and
 #'   complementarity of each cone; `kkt$cones` reports them per cone.
+#'   `kkt$pass` holds only when every KKT condition holds, primal
+#'   feasibility and a finite objective included; `kkt$dual_pass` reports
+#'   stationarity, dual signs and complementarity alone.
 #' @examples
 #' m <- opt_model()
 #' x <- opt_variable(m, "x")
@@ -86,6 +89,14 @@ opt_check <- function(result, tol = 1e-6) {
   sviol <- max(c(special$violation, 0))
   feasible <- max(c(rel, 0)) <= tol && max(c(bviol, 0)) <= tol &&
     max(c(iviol, 0)) <= tol && sviol <= sqrt(tol)
+  if (!is.null(kkt)) {
+    # the KKT conditions include primal feasibility and a finite objective;
+    # dual_pass keeps the stationarity, sign and complementarity part alone
+    kkt$primal_feasibility <- feasible
+    kkt$dual_pass <- kkt$pass
+    kkt$pass <- isTRUE(kkt$pass) && feasible &&
+      is.finite(result$objective_value)
+  }
   structure(list(
     max_row_violation = max(c(rel, 0)),
     max_bound_violation = max(c(bviol, 0)),
