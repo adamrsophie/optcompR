@@ -335,7 +335,7 @@ test_that("indicator switches must stay binary", {
   expect_error(opt_solve(m, solver = "highs"), "binary switch")
 })
 
-test_that("fixed relaxation refuses a changed model", {
+test_that("fixed relaxation of a changed model solves the recorded problem", {
   m <- opt_model()
   x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 5)
   p <- opt_parameter(m, "p", value = 1)
@@ -343,7 +343,9 @@ test_that("fixed relaxation refuses a changed model", {
   opt_objective(m, x)
   r <- opt_solve(m, solver = "highs")
   opt_set_parameter(m, p, 3)
-  expect_error(opt_fixed_relaxation(r), "changed")
+  fr <- opt_fixed_relaxation(r, solver = "highs")
+  expect_equal(opt_objective_value(fr), 1)
+  expect_equal(unname(opt_solve(m, solver = "highs")$x), 3)
 })
 
 test_that("automatic selection skips solvers that cannot reformulate", {
