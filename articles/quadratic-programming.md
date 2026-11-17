@@ -37,7 +37,7 @@ opt_objective_value(r)
 #> [1] 0.06102041
 opt_dual(r, ret)
 #>    return 
-#> 0.7142857
+#> 0.7142861
 ```
 
 The dual of the return constraint is the marginal variance of asking for

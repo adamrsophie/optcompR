@@ -3,13 +3,15 @@
 that supports the class, and returns a standardized result. With
 solver = "auto" the first installed backend (in registry priority order)
 whose R binding supports the model class is used; for nonconvex classes
-backends with global guarantees come first. A model is never transformed
+backends with global guarantees come first, and convex QPs go to the
+Clarabel interior point solver before HiGHS when it is installed. A model is never transformed
 into an approximation to fit a solver: if no installed backend supports
 it, an error lists what is missing.'><meta property="og:description" content='Lowers the model to its standard form, classifies it, selects a solver
 that supports the class, and returns a standardized result. With
 solver = "auto" the first installed backend (in registry priority order)
 whose R binding supports the model class is used; for nonconvex classes
-backends with global guarantees come first. A model is never transformed
+backends with global guarantees come first, and convex QPs go to the
+Clarabel interior point solver before HiGHS when it is installed. A model is never transformed
 into an approximation to fit a solver: if no installed backend supports
 it, an error lists what is missing.'><meta property="og:image" content="https://adamrsophie.github.io/optcompR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -86,7 +88,8 @@ it, an error lists what is missing.'><meta property="og:image" content="https://
 that supports the class, and returns a standardized result. With
 <code>solver = "auto"</code> the first installed backend (in registry priority order)
 whose R binding supports the model class is used; for nonconvex classes
-backends with global guarantees come first. A model is never transformed
+backends with global guarantees come first, and convex QPs go to the
+Clarabel interior point solver before HiGHS when it is installed. A model is never transformed
 into an approximation to fit a solver: if no installed backend supports
 it, an error lists what is missing.</p>
     </div>
@@ -184,7 +187,7 @@ classes it does not declare global unless the model is proven convex.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   problem:     LP (convex)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status:      optimal (primal: feasible_point, dual: feasible_point)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective:   10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.004s (build 0.002s)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.004s (build 0.001s)</span>
 <span class="r-in"><span><span class="fu"><a href="opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 </code></pre></div>

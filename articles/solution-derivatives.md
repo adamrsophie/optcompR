@@ -204,8 +204,6 @@ opt_constraint(m, y[1] + y[2] >= q)
 opt_constraint(m, 2 * y[1] + 2 * y[2] >= 2 * q)
 opt_objective(m, sum(y^2))
 opt_solution_jacobian(suppressWarnings(opt_solve(m)), q)
-#> Warning: Strict complementarity fails at c1 (active with a zero multiplier);
-#> the solution may only have one-sided derivatives.
 #> Error:
 #> ! The KKT matrix on the active set is singular: the active constraint gradients are linearly dependent (LICQ fails) or the second-order sufficient condition fails, so the solution is not differentiable here.
 ```
@@ -221,8 +219,6 @@ s <- opt_parameter(m, "s", value = 1)
 opt_constraint(m, w <= s)
 opt_objective(m, (w - s)^2)
 d <- opt_solution_jacobian(opt_solve(m), s)
-#> Warning: Strict complementarity fails at c1 (active with a zero multiplier);
-#> the solution may only have one-sided derivatives.
 ```
 
 Mixed-integer solutions are piecewise constant in the parameters and are

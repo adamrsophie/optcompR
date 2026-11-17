@@ -140,23 +140,23 @@ and complementarity.</li>
 <span><span class="co">#&gt;   max bound violation (scaled): 0</span></span>
 <span><span class="co">#&gt;   max integrality violation:    0</span></span>
 <span><span class="co">#&gt;   objective recomputation error: 0</span></span>
-<span><span class="co">#&gt;   KKT: stationarity 5e-08, dual feasibility 0, complementarity 0 (pass)</span></span>
+<span><span class="co">#&gt;   KKT: stationarity 9.19744e-14, dual feasibility 1.00721e-09, complementarity 1.61153e-09 (pass)</span></span>
 <span><span class="va">d</span><span class="op">$</span><span class="va">rows</span></span>
-<span><span class="co">#&gt;     row value lower upper violation</span></span>
-<span><span class="co">#&gt; 1 cover     0     0   Inf         0</span></span>
-<span><span class="co">#&gt; 2   mix     1     0   Inf         0</span></span>
+<span><span class="co">#&gt;     row        value lower upper violation</span></span>
+<span><span class="co">#&gt; 1 cover 3.321539e-10     0   Inf         0</span></span>
+<span><span class="co">#&gt; 2   mix 1.000000e+00     0   Inf         0</span></span>
 <span><span class="va">d</span><span class="op">$</span><span class="va">kkt</span></span>
 <span><span class="co">#&gt; $stationarity</span></span>
-<span><span class="co">#&gt; [1] 5e-08</span></span>
+<span><span class="co">#&gt; [1] 9.197436e-14</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $dual_feasibility</span></span>
-<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="co">#&gt; [1] 1.007208e-09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $complementarity</span></span>
-<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="co">#&gt; [1] 1.611532e-09</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $stationarity_residual</span></span>
-<span><span class="co">#&gt; [1] -8.0e-08 -1.6e-07</span></span>
+<span><span class="co">#&gt; [1] -1.471590e-13 -1.342169e-13</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $cones</span></span>
 <span><span class="co">#&gt; NULL</span></span>
@@ -183,8 +183,8 @@ rows and bounds, and says so:</p>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/opt_slack.html">opt_slack</a></span><span class="op">(</span><span class="va">r</span>, <span class="st">"cover"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     row value lower upper slack active</span></span>
-<span><span class="co">#&gt; 1 cover     0     0   Inf     0   TRUE</span></span>
+<span><span class="co">#&gt;     row        value lower upper        slack active</span></span>
+<span><span class="co">#&gt; 1 cover 3.321539e-10     0   Inf 3.321539e-10   TRUE</span></span>
 <span><span class="fu"><a href="../reference/opt_slack.html">opt_slack</a></span><span class="op">(</span><span class="va">r</span>, <span class="st">"mix"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   row value lower upper slack active</span></span>
 <span><span class="co">#&gt; 1 mix     1     0   Inf     1  FALSE</span></span></code></pre></div>

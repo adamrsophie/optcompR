@@ -37,23 +37,23 @@ d
 #>   max bound violation (scaled): 0
 #>   max integrality violation:    0
 #>   objective recomputation error: 0
-#>   KKT: stationarity 5e-08, dual feasibility 0, complementarity 0 (pass)
+#>   KKT: stationarity 9.19744e-14, dual feasibility 1.00721e-09, complementarity 1.61153e-09 (pass)
 d$rows
-#>     row value lower upper violation
-#> 1 cover     0     0   Inf         0
-#> 2   mix     1     0   Inf         0
+#>     row        value lower upper violation
+#> 1 cover 3.321539e-10     0   Inf         0
+#> 2   mix 1.000000e+00     0   Inf         0
 d$kkt
 #> $stationarity
-#> [1] 5e-08
+#> [1] 9.197436e-14
 #> 
 #> $dual_feasibility
-#> [1] 0
+#> [1] 1.007208e-09
 #> 
 #> $complementarity
-#> [1] 0
+#> [1] 1.611532e-09
 #> 
 #> $stationarity_residual
-#> [1] -8.0e-08 -1.6e-07
+#> [1] -1.471590e-13 -1.342169e-13
 #> 
 #> $cones
 #> NULL
@@ -84,8 +84,8 @@ opt_check(r2)$kkt$estimated
 ``` r
 
 opt_slack(r, "cover")
-#>     row value lower upper slack active
-#> 1 cover     0     0   Inf     0   TRUE
+#>     row        value lower upper        slack active
+#> 1 cover 3.321539e-10     0   Inf 3.321539e-10   TRUE
 opt_slack(r, "mix")
 #>   row value lower upper slack active
 #> 1 mix     1     0   Inf     1  FALSE

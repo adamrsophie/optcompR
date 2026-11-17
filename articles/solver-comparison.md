@@ -121,8 +121,11 @@ tells.
 
 `solver = "auto"` picks the highest priority backend that accepts the
 class and convexity of the model. For nonconvex problems global solvers
-come first. When nothing fits, the error explains why each backend was
-rejected:
+come first. Convex QPs go to Clarabel before HiGHS when Clarabel is
+installed: its interior point method scales much better than the HiGHS
+active set QP solver (about 20 times faster at 5,000 variables in
+`benchmarks/run.R`). When nothing fits, the error explains why each
+backend was rejected:
 
 ``` r
 

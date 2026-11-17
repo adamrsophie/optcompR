@@ -71,6 +71,6 @@ opt_check(opt_solve(m))
 #>   max row violation (scaled):   0
 #>   max bound violation (scaled): 0
 #>   max integrality violation:    0
-#>   objective recomputation error: 0
-#>   KKT: stationarity 2.5e-07, dual feasibility 0, complementarity 0 (pass)
+#>   objective recomputation error: 2.66454e-15
+#>   KKT: stationarity 2.14586e-11, dual feasibility 0, complementarity 2.86117e-09 (pass)
 ```
