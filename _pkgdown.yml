@@ -60,17 +60,21 @@ reference:
   - opt_fix
   - opt_set_start
   - opt_set_parameter
+  - opt_copy
 - title: Expressions
   contents:
   - opt_operators
   - opt_expr_shape
   - is_opt_expr
   - opt_function
+  - opt_terms
+  - opt_evaluate
 - title: Constraints and objectives
   contents:
   - opt_constraint
   - opt_constraints
   - opt_delete_constraint
+  - opt_special_constraints
   - opt_objective
 - title: Cones, discrete structure and logic
   contents:

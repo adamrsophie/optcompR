@@ -126,6 +126,9 @@ constraint_block <- function(model, name) {
 #' @export
 opt_delete_constraint <- function(model, constraint) {
   check_model(model)
+  if (inherits(constraint, "opt_special_constraint")) {
+    return(delete_special(model, constraint))
+  }
   if (inherits(constraint, "opt_constraint") &&
       !identical(constraint$model, model)) {
     stop("The constraint belongs to a different model.", call. = FALSE)

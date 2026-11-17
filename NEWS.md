@@ -89,3 +89,8 @@
   becomes a constant power once values are substituted, so `x^p` with
   `p = 2` is a quadratic even for negative `x`; derivatives in the exponent
   are exact for positive bases and refused where they do not exist.
+* `opt_copy()` copies a model. `opt_special_constraints()` lists cones,
+  indicator constraints and special ordered sets, and
+  `opt_delete_constraint()` deletes them. `opt_terms()`, `opt_degree()`,
+  `opt_symbols()` and `opt_evaluate()` expose the structure and values of
+  expressions.

@@ -158,3 +158,51 @@ opt_constraints <- function(model) {
     stringsAsFactors = FALSE
   )
 }
+
+#' Copy a model
+#'
+#' Models have reference semantics, so assigning a model to a new name does
+#' not copy it. `opt_copy()` returns an independent model with the same
+#' variables, parameters, constraints, special constraints, objective and
+#' values; changing one model leaves the other unchanged. Expressions built
+#' from the original still refer to the original, so retrieve the blocks of
+#' the copy with [opt_get()].
+#'
+#' @param model An [opt_model()].
+#' @param name Optional name of the copy; by default the original name.
+#' @return A new `opt_model`.
+#' @examples
+#' m <- opt_model()
+#' x <- opt_variable(m, "x", lower = 0)
+#' opt_objective(m, x)
+#' m2 <- opt_copy(m)
+#' opt_set_bounds(m2, opt_get(m2, "x"), lower = 2)
+#' opt_objective_value(opt_solve(m))   # 0
+#' opt_objective_value(opt_solve(m2))  # 2
+#' @export
+opt_copy <- function(model, name = NULL) {
+  check_model(model)
+  if (!is.null(name)) check_scalar_string(name, "name")
+  out <- new.env(parent = emptyenv())
+  for (k in ls(model, all.names = TRUE)) assign(k, get(k, envir = model), out)
+  out$id <- new_model_id()
+  if (!is.null(name)) out$name <- name
+  out$block_index <- list2env(as.list(model$block_index), parent = emptyenv())
+  out$cons_index <- list2env(as.list(model$cons_index), parent = emptyenv())
+  out$cache <- new.env(parent = emptyenv())
+  class(out) <- "opt_model"
+  # expressions stored in the model point at their model: repoint them
+  relink <- function(x) {
+    if (is.environment(x)) return(if (identical(x, model)) out else x)
+    if (is.list(x)) {
+      at <- attributes(x)
+      x <- lapply(unclass(x), relink)
+      attributes(x) <- at
+    }
+    x
+  }
+  for (k in c("blocks", "cons", "objective", "special")) {
+    if (!is.null(out[[k]])) assign(k, relink(out[[k]]), out)
+  }
+  out
+}

@@ -26,6 +26,90 @@ add_special <- function(model, kind, item, name) {
                       class = "opt_special_constraint"))
 }
 
+delete_special <- function(model, ref) {
+  if (!identical(ref$model, model)) {
+    stop("The constraint belongs to a different model.", call. = FALSE)
+  }
+  items <- model$special[[ref$kind]]
+  k <- match(ref$name, vapply(items %||% list(), `[[`, "", "name"))
+  if (is.na(k)) {
+    stop(sprintf("No %s constraint named '%s'.", ref$kind, ref$name),
+         call. = FALSE)
+  }
+  sp <- model$special
+  sp[[ref$kind]] <- items[-k]
+  if (!length(sp[[ref$kind]])) sp[[ref$kind]] <- NULL
+  model$special <- if (length(sp)) sp else NULL
+  touch_structure(model)
+  invisible(model)
+}
+
+#' List the special constraints of a model
+#'
+#' Cones, indicator constraints and special ordered sets are stored apart
+#' from the constraint rows listed by [opt_constraints()]. Delete one with
+#' [opt_delete_constraint()], passing the reference returned when it was
+#' added or one rebuilt with [opt_special_constraint()].
+#'
+#' @param model An [opt_model()].
+#' @return A data frame with one row per special constraint: `kind`
+#'   (`"cone"`, `"indicator"` or `"sos"`), `type` (for example `"soc"`,
+#'   `"exp"` or `"sos2"`), `name` and `size` (the number of scalar
+#'   arguments).
+#' @examples
+#' m <- opt_model()
+#' x <- opt_variable(m, "x", dim = 3, lower = 0, upper = 1)
+#' s <- opt_sos1(m, x)
+#' opt_special_constraints(m)
+#' opt_delete_constraint(m, s)
+#' nrow(opt_special_constraints(m))
+#' @export
+opt_special_constraints <- function(model) {
+  check_model(model)
+  rows <- list()
+  for (kind in names(model$special)) {
+    for (it in model$special[[kind]]) {
+      type <- switch(kind,
+        cone = it$type,
+        indicator = "indicator",
+        sos = paste0("sos", it$type),
+        kind)
+      size <- if (!is.null(it$sym)) length(it$sym) else
+        if (!is.null(it$expr)) it$expr$len else
+        sum(vapply(it$args, function(a) as_expr(a)$len, 0L))
+      rows <- c(rows, list(data.frame(kind = kind, type = type,
+                                      name = it$name, size = size,
+                                      stringsAsFactors = FALSE)))
+    }
+  }
+  if (!length(rows)) {
+    return(data.frame(kind = character(), type = character(),
+                      name = character(), size = integer(),
+                      stringsAsFactors = FALSE))
+  }
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
+}
+
+#' @rdname opt_special_constraints
+#' @param kind Kind of the special constraint.
+#' @param name Its name, as listed by `opt_special_constraints()`.
+#' @return For `opt_special_constraint()`, a reference usable with
+#'   [opt_delete_constraint()].
+#' @export
+opt_special_constraint <- function(model, kind, name) {
+  check_model(model)
+  kind <- match.arg(kind, c("cone", "indicator", "sos"))
+  check_scalar_string(name, "name")
+  have <- vapply(model$special[[kind]] %||% list(), `[[`, "", "name")
+  if (!name %in% have) {
+    stop(sprintf("No %s constraint named '%s'.", kind, name), call. = FALSE)
+  }
+  structure(list(model = model, kind = kind, name = name),
+            class = "opt_special_constraint")
+}
+
 #' @export
 print.opt_special_constraint <- function(x, ...) {
   cat(sprintf("<opt_special_constraint %s '%s'>\n", x$kind, x$name))
