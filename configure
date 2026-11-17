@@ -10,7 +10,32 @@ if [ -z "$OPTCOMPR_NO_IPOPT" ] && command -v pkg-config >/dev/null 2>&1 &&
     PKG_CPPFLAGS="-DHAVE_IPOPT_314 $PKG_CPPFLAGS"
   fi
   PKG_LIBS="`pkg-config --libs ipopt`"
-  echo "optcompR: building with IPOPT `pkg-config --modversion ipopt`"
+  # pkg-config can describe a library that does not link (a broken or
+  # foreign-architecture install): probe with R's compiler before using it
+  : ${R_HOME=`R RHOME`}
+  CC=`"${R_HOME}/bin/R" CMD config CC`
+  CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+  LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+  probe_dir=`mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/optcompR_probe_$$"`
+  mkdir -p "$probe_dir"
+  cat > "$probe_dir/probe.c" <<'EOC'
+#include <IpStdCInterface.h>
+int main(void) {
+  IpoptProblem p = CreateIpoptProblem(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                      0, 0);
+  if (p) FreeIpoptProblem(p);
+  return 0;
+}
+EOC
+  if $CC $CFLAGS $PKG_CPPFLAGS "$probe_dir/probe.c" -o "$probe_dir/probe" \
+     $LDFLAGS $PKG_LIBS >/dev/null 2>&1; then
+    echo "optcompR: building with IPOPT `pkg-config --modversion ipopt`"
+  else
+    echo "optcompR: IPOPT found by pkg-config but a test program did not link; building without it"
+    PKG_CPPFLAGS=""
+    PKG_LIBS=""
+  fi
+  rm -rf "$probe_dir"
 else
   echo "optcompR: IPOPT not found by pkg-config; building without it"
 fi
