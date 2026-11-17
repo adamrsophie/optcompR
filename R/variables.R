@@ -25,7 +25,7 @@ register_block <- function(model, name, kind, labels, dims) {
     stop(sprintf("The model already has a variable or parameter named '%s'.",
                  name), call. = FALSE)
   }
-  clash <- labels[labels %in% model$sym_name | duplicated(labels)]
+  clash <- labels[duplicated(labels) | name_used(model, labels)]
   if (length(clash)) {
     stop(sprintf("The element name '%s' is already used in this model.",
                  clash[1L]), call. = FALSE)
@@ -33,13 +33,52 @@ register_block <- function(model, name, kind, labels, dims) {
   n0 <- n_symbols(model)
   sym <- n0 + seq_len(dims$len)
   bid <- length(model$blocks) + 1L
-  model$blocks[[bid]] <- list(name = name, kind = kind, sym = sym,
-                              dim = dims$dim, dimnames = dims$dimnames)
+  grow_field(model, "blocks", bid, list(list(
+    name = name, kind = kind, sym = sym, dim = dims$dim,
+    dimnames = dims$dimnames)))
   model$block_index[[name]] <- bid
-  model$sym_kind <- c(model$sym_kind, rep.int(kind, dims$len))
-  model$sym_name <- c(model$sym_name, labels)
-  model$sym_block <- c(model$sym_block, rep.int(bid, dims$len))
+  grow_field(model, "sym_kind", sym, rep.int(kind, dims$len))
+  grow_field(model, "sym_name", sym, labels)
+  grow_field(model, "sym_block", sym, rep.int(bid, dims$len))
   sym
+}
+
+# Write into a field of the model in place. Inside a function,
+# `model$f[i] <- v` copies the whole vector; with the binding removed first
+# the vector has one reference and R changes or extends it without a copy, so
+# adding symbols one at a time stays linear.
+grow_field <- function(model, field, idx, value) {
+  force(value)
+  v <- model[[field]]
+  model[[field]] <- NULL
+  v[idx] <- value
+  model[[field]] <- v
+  invisible()
+}
+
+# Element names in use, through an index from name to symbol kept beside the
+# model. An entry counts only when it still matches sym_name, so entries left
+# by a rollback are harmless; a copied model or one whose names the index
+# does not cover rebuilds it.
+name_used <- function(model, labels) {
+  ix <- model$sym_index
+  nm <- model$sym_name
+  if (is.null(ix) || !identical(ix$id, model$id) || ix$n > length(nm)) {
+    ix <- list(id = model$id, n = 0L, env = new.env(parent = emptyenv()))
+  }
+  if (ix$n < length(nm)) {
+    k <- seq.int(ix$n + 1L, length(nm))
+    list2env(stats::setNames(as.list(k), nm[k]), ix$env)
+    ix$n <- length(nm)
+    model$sym_index <- ix
+  }
+  # no closures here: one would keep this frame, and with it a second
+  # reference to sym_name, alive and make the next append copy it
+  pos <- unlist(mget(labels, envir = ix$env,
+                     ifnotfound = list(NA_integer_)), use.names = FALSE)
+  ok <- !is.na(pos) & pos <= length(nm)
+  ok[ok] <- nm[pos[ok]] == labels[ok]
+  ok
 }
 
 symbol_expr <- function(model, sym, dim) {
@@ -128,11 +167,11 @@ opt_variable <- function(model, name, dim = 1L,
   st <- if (is.null(start)) rep(NA_real_, n) else
     recycle_to(as.numeric(start), n, "start")
   sym <- register_block(model, name, "var", labels, dims)
-  model$lower <- c(model$lower, lower)
-  model$upper <- c(model$upper, upper)
-  model$type <- c(model$type, types)
-  model$start <- c(model$start, st)
-  model$value <- c(model$value, rep(NA_real_, n))
+  grow_field(model, "lower", sym, lower)
+  grow_field(model, "upper", sym, upper)
+  grow_field(model, "type", sym, types)
+  grow_field(model, "start", sym, st)
+  grow_field(model, "value", sym, rep(NA_real_, n))
   touch_structure(model)
   out <- symbol_expr(model, sym, dims$expr_dim)
   out$dimnames <- dims$dimnames
@@ -173,11 +212,11 @@ opt_parameter <- function(model, name, value, dim = NULL, dimnames = NULL) {
   labels <- element_labels(name, n, if (n > 1L) dims$dim else NULL,
                            dims$dimnames)
   sym <- register_block(model, name, "par", labels, dims)
-  model$lower <- c(model$lower, rep(NA_real_, n))
-  model$upper <- c(model$upper, rep(NA_real_, n))
-  model$type <- c(model$type, rep(NA_character_, n))
-  model$start <- c(model$start, rep(NA_real_, n))
-  model$value <- c(model$value, value)
+  grow_field(model, "lower", sym, rep(NA_real_, n))
+  grow_field(model, "upper", sym, rep(NA_real_, n))
+  grow_field(model, "type", sym, rep(NA_character_, n))
+  grow_field(model, "start", sym, rep(NA_real_, n))
+  grow_field(model, "value", sym, value)
   touch_structure(model)
   touch_parameters(model)
   out <- symbol_expr(model, sym, dims$expr_dim)
@@ -247,7 +286,7 @@ opt_set_parameter <- function(model, x, value) {
                                    call. = FALSE)
   # setting the current values changes nothing, and keeps every cache
   if (identical(model$value[sym], value)) return(invisible(model))
-  model$value[sym] <- value
+  grow_field(model, "value", sym, value)
   touch_parameters(model)
   invisible(model)
 }
@@ -277,8 +316,8 @@ opt_set_bounds <- function(model, x, lower = NULL, upper = NULL) {
   if (identical(model$lower[sym], lo) && identical(model$upper[sym], up)) {
     return(invisible(model))
   }
-  model$lower[sym] <- lo
-  model$upper[sym] <- up
+  grow_field(model, "lower", sym, lo)
+  grow_field(model, "upper", sym, up)
   touch_parameters(model)
   invisible(model)
 }
@@ -326,9 +365,9 @@ opt_set_type <- function(model, x, type = c("continuous", "integer", "binary")) 
     up <- pmin(up, 1)
   }
   check_bounds(lo, up, rep.int(type, length(sym)), model$sym_name[sym])
-  model$type[sym] <- type
-  model$lower[sym] <- lo
-  model$upper[sym] <- up
+  grow_field(model, "type", sym, type)
+  grow_field(model, "lower", sym, lo)
+  grow_field(model, "upper", sym, up)
   touch_structure(model)
   invisible(model)
 }
@@ -351,7 +390,7 @@ opt_set_start <- function(model, x, value) {
   sym <- resolve_symbols(model, x, "var")
   value <- recycle_to(as.numeric(value), length(sym), "value")
   if (identical(model$start[sym], value)) return(invisible(model))
-  model$start[sym] <- value
+  grow_field(model, "start", sym, value)
   touch_parameters(model)
   invisible(model)
 }

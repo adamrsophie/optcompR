@@ -114,3 +114,17 @@ test_that("derivative-free NLopt algorithms get values only", {
   expect_identical(opt_status(r2), "locally_optimal")
   expect_equal(opt_value(r2, x), opt_value(r1, x), tolerance = 1e-4)
 })
+
+test_that("element names stay unique through copies and rollbacks", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2)
+  expect_error(opt_variable(m, "x[1]"), "already used")
+  m2 <- opt_copy(m)
+  opt_variable(m2, "w")
+  expect_silent(opt_variable(m, "w"))
+  expect_error(opt_variable(m2, "x[2]"), "already used")
+  # a failed robust constraint rolls back; its names are free again
+  expect_error(opt_robust_constraint(m, x, rhs = 1, uncertainty = "box",
+                                     gamma = -1))
+  expect_silent(opt_variable(m, "q"))
+})
