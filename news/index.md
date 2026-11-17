@@ -71,7 +71,8 @@ independently checked results.
   native indicator and SOS constraints), Clarabel and SCS (LP, convex QP
   and conic programs, with cone multipliers), OSQP (convex QP), NLopt
   (local NLP), IPOPT with exact sparse Hessians (compiled in when
-  available), NLP branch and bound for MINLP, and ROI plugins.
+  available), NLP branch and bound for MINLP with outer approximation
+  bounds certified by weak duality, and ROI plugins.
 - [`opt_register_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
   makes the backend contract public, so other solvers can be connected
   without changing optcompR.
@@ -82,7 +83,9 @@ independently checked results.
   optimality, local optimality, early stops (including `"gap_limit"`
   with its gap and a valid bound) and infeasibility certificates.
 - Every returned point is checked against the model before it is
-  reported feasible.
+  reported feasible, at tolerances that follow the accuracy requested
+  from the solver and are stored in the result; a point where the
+  objective is not defined is not a solution.
 - Duals are derivatives of the optimal value with a documented sign
   convention;
   [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md)
@@ -129,7 +132,9 @@ independently checked results.
 
 - ODE least squares losses for modelcompR models with forward or adjoint
   gradients
-  ([`opt_ode_loss()`](https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.md)).
+  ([`opt_ode_loss()`](https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.md)),
+  both covering parameter-dependent initial values, events and
+  observations in any order.
 - Conversion to and from symcompR expressions, to CVXR problems
   ([`opt_to_cvxr()`](https://adamrsophie.github.io/optcompR/reference/opt_to_cvxr.md)),
   and export to MPS and LP files.

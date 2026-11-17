@@ -23,14 +23,20 @@ opt_sensitivity(result)
 
 A list of two data frames: `costs` (variable, coefficient, lowest and
 highest coefficient keeping the basis optimal, and the objective at
-those values) and `rows` (row, active bound, dual, lowest and highest
-bound value and the objective there).
+those values) and `rows` (row, its bounds, the side whose range is
+reported, dual, lowest and highest value of that bound keeping the basis
+optimal, and the objective there).
 
 ## Details
 
 Row bounds are reported in standard-form terms
 (`row_lower <= a'x <= row_upper`, constants moved to the bounds), so for
-`a'x + c <= b` the bound is `b - c`.
+`a'x + c <= b` the bound is `b - c`. Each row reports the range of one
+bound, named in `side`: the active bound of an active row, the upper
+bound of an inactive row with a finite upper bound, and its lower bound
+otherwise. An inactive bound can move from the row's activity to
+infinity (an upper bound) or from minus infinity to the activity (a
+lower bound) without changing the optimal value.
 
 ## Examples
 
@@ -48,9 +54,9 @@ opt_sensitivity(opt_solve(m))
 #> 2        y           2     0     3                  6                 12
 #> 
 #> $rows
-#>   row row_lower row_upper dual bound_lower bound_upper objective_at_lower
-#> 1  c1      -Inf         4    2           2         Inf                  6
-#> 2  c2      -Inf         2    1           0           4                  8
+#>   row row_lower row_upper  side dual bound_lower bound_upper objective_at_lower
+#> 1  c1      -Inf         4 upper    2           2         Inf                  6
+#> 2  c2      -Inf         2 upper    1           0           4                  8
 #>   objective_at_upper
 #> 1                Inf
 #> 2                 12

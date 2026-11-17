@@ -167,11 +167,18 @@ session and a different value is an error.</p></dd>
 original expressions, bounds, integrality, cones, indicators and SOS
 constraints), each side scaled by <code>max(1, |bound|)</code>, with the backend's
 feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
-first-order solvers OSQP and SCS). A point that fails is labelled
+first-order solvers OSQP and SCS); cones, indicators and SOS
+constraints are checked at its square root. When <code>options</code> request a
+stricter accuracy from OSQP or SCS (<code>eps_abs</code>, <code>eps_rel</code>), the tolerance
+becomes 100 times the strictest request, so the check matches the
+accuracy asked for. The resolved tolerances are stored in
+<code>result$validation</code>. A point that fails is labelled
 <code>"infeasible_point"</code>, a claimed optimum then becomes
 <code>"locally_infeasible"</code> (local solvers) or <code>"numerical_error"</code>, and a
-warning gives the violation. A backend is treated as local for the
-classes it does not declare global unless the model is proven convex.</p>
+warning gives the violation. An objective that is not finite at the
+point (for example <code>log(0)</code>) also makes it <code>"infeasible_point"</code>. A
+backend is treated as local for the classes it does not declare global
+unless the model is continuous and proven convex.</p>
     </div>
 
     <div class="section level2">
@@ -188,7 +195,7 @@ classes it does not declare global unless the model is proven convex.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   problem:     LP (convex)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status:      optimal (primal: feasible_point, dual: feasible_point)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective:   10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.005s (build 0.001s)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.006s (build 0.002s)</span>
 <span class="r-in"><span><span class="fu"><a href="opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 </code></pre></div>

@@ -49,7 +49,10 @@ diff(f$objective) / 0.01
 ## Ranging
 
 For LPs solved by HiGHS, ranging gives the interval over which each cost
-coefficient or row bound can move with the same optimal basis.
+coefficient or row bound can move with the same optimal basis. Each row
+reports the bound named in `side`. For an inactive row, whose dual is
+zero, the range is where that bound can go without the row becoming
+active: from the row’s current value up to infinity for an upper bound.
 
 ``` r
 
@@ -59,9 +62,9 @@ s$costs
 #> 1        x           3     2   Inf                  8                Inf
 #> 2        y           2     0     3                  6                 12
 s$rows
-#>   row row_lower row_upper dual bound_lower bound_upper objective_at_lower
-#> 1 lim      -Inf         2    1           0           4                  8
-#> 2 cap      -Inf         4    2           2         Inf                  6
+#>   row row_lower row_upper  side dual bound_lower bound_upper objective_at_lower
+#> 1 lim      -Inf         2 upper    1           0           4                  8
+#> 2 cap      -Inf         4 upper    2           2         Inf                  6
 #>   objective_at_upper
 #> 1                 12
 #> 2                Inf

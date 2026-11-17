@@ -256,6 +256,8 @@ one SOS1 pair per element:</p>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"b"</span>, lower <span class="op">=</span> <span class="fl">0</span>, upper <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_constraint.html">opt_constraint</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">a</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">b</span> <span class="op">&lt;=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_sos1.html">opt_complementarity</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">a</span>, <span class="va">b</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [[1]]</span></span>
+<span><span class="co">#&gt; &lt;opt_special_constraint sos 'complementarity1[1]'&gt;</span></span>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">a</span> <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">b</span><span class="op">)</span></span>
 <span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span><span class="op">)</span></span>
@@ -315,8 +317,11 @@ reformulation:</p>
 </h2>
 <p>The same constructs combine with nonlinear objectives. Mixed-integer
 nonlinear models are solved by <code>"nlpbb"</code>, a branch and bound
-over NLopt relaxations. When the continuous relaxation is convex,
-pruning by bound is valid and the search proves global optimality. When
+over NLopt relaxations. NLopt stops on tolerances, so its objective is
+never used as a bound. When the continuous relaxation is convex, each
+node is bounded by supporting hyperplanes of the objective (an outer
+approximation whose bound is checked by weak duality), pruning by these
+bounds is valid, and a completed search proves global optimality. When
 it is not known to be convex, every node is a local solve and the result
 is labeled <code>"locally_optimal"</code>: a heuristic, not a
 certificate. Polynomial models are the exception: SCIP solves them

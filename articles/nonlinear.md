@@ -61,7 +61,7 @@ opt_check(r)$kkt
 #> [1] 1.405089e-11
 #> 
 #> $stationarity_residual
-#> [1]  2.220446e-16  6.597087e-09 -8.619240e-09  1.192852e-09
+#> [1]  1.554312e-15  6.597086e-09 -8.619240e-09  1.192852e-09
 #> 
 #> $cones
 #> NULL
@@ -70,6 +70,12 @@ opt_check(r)$kkt
 #> [1] TRUE
 #> 
 #> $estimated
+#> [1] TRUE
+#> 
+#> $primal_feasibility
+#> [1] TRUE
+#> 
+#> $dual_pass
 #> [1] TRUE
 ```
 

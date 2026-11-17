@@ -112,7 +112,10 @@ and <code>special</code>, the violations of cone, indicator and SOS constraints
 (cones pass at <code>sqrt(tol)</code>). For conic models solved by Clarabel or
 SCS the KKT test includes the cone multipliers: stationarity with the
 cone terms, membership of each multiplier in the dual cone, and
-complementarity of each cone; <code>kkt$cones</code> reports them per cone.</p>
+complementarity of each cone; <code>kkt$cones</code> reports them per cone.
+<code>kkt$pass</code> holds only when every KKT condition holds, primal
+feasibility and a finite objective included; <code>kkt$dual_pass</code> reports
+stationarity, dual signs and complementarity alone.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

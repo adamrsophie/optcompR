@@ -110,9 +110,12 @@
 <code>benchmarks</code> GitHub Actions workflow on one clean Ubuntu
 runner for the release and for an earlier commit (<code>base</code>),
 one after the other. Times are medians of three runs in seconds (one run
-for the slowest tasks); memory is what one run allocates in R, measured
-with <code><a href="https://bench.r-lib.org/reference/bench_memory.html" class="external-link">bench::bench_memory()</a></code>. Solvers run with one thread.
-Run the script yourself with <code>Rscript benchmarks/run.R</code>.</p>
+for the slowest tasks); memory is what one run allocates in R, in MiB,
+measured with <code><a href="https://bench.r-lib.org/reference/bench_memory.html" class="external-link">bench::bench_memory()</a></code>: not peak memory, and
+native solver allocations are not included. The script also records the
+status and objective of each result outside the timed runs. Solvers run
+with one thread. Run the script yourself with
+<code>Rscript benchmarks/run.R</code>.</p>
 <p>R 4.6.2, x86_64-pc-linux-gnu, optcompR 0.1.0.</p>
 <div class="section level2">
 <h2 id="building-models">Building models<a class="anchor" aria-label="anchor" href="#building-models"></a>
@@ -122,15 +125,15 @@ concatenation, indicator constraints, quadratic rows (stored as one
 triplet table) and variables added one at a time no longer copy what is
 already there, and a sparse coefficient matrix stays sparse in
 <code>A %*% x</code>.</p>
-<table style="width:100%;" class="table">
+<table class="table">
 <colgroup>
-<col width="35%">
+<col width="34%">
 <col width="6%">
 <col width="10%">
 <col width="10%">
 <col width="7%">
 <col width="9%">
-<col width="12%">
+<col width="13%">
 <col width="7%">
 </colgroup>
 <thead><tr class="header">
@@ -140,8 +143,8 @@ already there, and a sparse coefficient matrix stays sparse in
 <th align="right">s (base)</th>
 <th align="right">s</th>
 <th align="right">speedup</th>
-<th align="right">MB (base)</th>
-<th align="right">MB</th>
+<th align="right">MiB (base)</th>
+<th align="right">MiB</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -261,7 +264,7 @@ of building, classifying and checking the model.</p>
 <col width="10%">
 <col width="7%">
 <col width="9%">
-<col width="12%">
+<col width="13%">
 <col width="6%">
 </colgroup>
 <thead><tr class="header">
@@ -271,8 +274,8 @@ of building, classifying and checking the model.</p>
 <th align="right">s (base)</th>
 <th align="right">s</th>
 <th align="right">speedup</th>
-<th align="right">MB (base)</th>
-<th align="right">MB</th>
+<th align="right">MiB (base)</th>
+<th align="right">MiB</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -444,7 +447,7 @@ of building, classifying and checking the model.</p>
 <p>Automatic selection sends convex QPs to Clarabel: the HiGHS active
 set QP solver needs thousands of iterations at a few thousand
 variables.</p>
-<table style="width:100%;" class="table">
+<table class="table">
 <colgroup>
 <col width="20%">
 <col width="6%">
@@ -452,7 +455,7 @@ variables.</p>
 <col width="11%">
 <col width="10%">
 <col width="10%">
-<col width="12%">
+<col width="13%">
 <col width="6%">
 </colgroup>
 <thead><tr class="header">
@@ -462,8 +465,8 @@ variables.</p>
 <th align="right">s (base)</th>
 <th align="right">s</th>
 <th align="right">speedup</th>
-<th align="right">MB (base)</th>
-<th align="right">MB</th>
+<th align="right">MiB (base)</th>
+<th align="right">MiB</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -607,15 +610,15 @@ parameters did not change are reused, and the HiGHS solver and OSQP
 workspace of the previous solve are updated in place. For the QP below,
 setting up a new OSQP workspace is cheap next to the rest of each solve,
 so keeping it gains nothing measurable.</p>
-<table class="table">
+<table style="width:100%;" class="table">
 <colgroup>
-<col width="35%">
+<col width="34%">
 <col width="8%">
-<col width="19%">
+<col width="18%">
 <col width="8%">
 <col width="5%">
 <col width="7%">
-<col width="9%">
+<col width="10%">
 <col width="5%">
 </colgroup>
 <thead><tr class="header">
@@ -625,8 +628,8 @@ so keeping it gains nothing measurable.</p>
 <th align="right">s (base)</th>
 <th align="right">s</th>
 <th align="right">speedup</th>
-<th align="right">MB (base)</th>
-<th align="right">MB</th>
+<th align="right">MiB (base)</th>
+<th align="right">MiB</th>
 </tr></thead>
 <tbody>
 <tr class="odd">

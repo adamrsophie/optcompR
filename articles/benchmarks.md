@@ -4,9 +4,11 @@ These timings come from `benchmarks/run.R`, run by the `benchmarks`
 GitHub Actions workflow on one clean Ubuntu runner for the release and
 for an earlier commit (`base`), one after the other. Times are medians
 of three runs in seconds (one run for the slowest tasks); memory is what
-one run allocates in R, measured with
-[`bench::bench_memory()`](https://bench.r-lib.org/reference/bench_memory.html).
-Solvers run with one thread. Run the script yourself with
+one run allocates in R, in MiB, measured with
+[`bench::bench_memory()`](https://bench.r-lib.org/reference/bench_memory.html):
+not peak memory, and native solver allocations are not included. The
+script also records the status and objective of each result outside the
+timed runs. Solvers run with one thread. Run the script yourself with
 `Rscript benchmarks/run.R`.
 
 R 4.6.2, x86_64-pc-linux-gnu, optcompR 0.1.0.
@@ -18,7 +20,7 @@ indicator constraints, quadratic rows (stored as one triplet table) and
 variables added one at a time no longer copy what is already there, and
 a sparse coefficient matrix stays sparse in `A %*% x`.
 
-| task | size | way | s (base) | s | speedup | MB (base) | MB |
+| task | size | way | s (base) | s | speedup | MiB (base) | MiB |
 |:---|:---|:---|---:|---:|---:|---:|---:|
 | scalar constraints in a loop | 1000 | optcompR | 0.123 | 0.121 | 1.0 | 8.2 | 8.2 |
 | one vector constraint | 1000 | optcompR | 0.001 | 0.002 | 0.5 | 0.5 | 0.5 |
@@ -37,7 +39,7 @@ The same model solved through optcompR, through the solver’s own R
 package and through ROI. The difference to the direct call is the cost
 of building, classifying and checking the model.
 
-| task | size | way | s (base) | s | speedup | MB (base) | MB |
+| task | size | way | s (base) | s | speedup | MiB (base) | MiB |
 |:---|:---|:---|---:|---:|---:|---:|---:|
 | build | 1000 x 10000 | optcompR | 0.177 | 0.010 | 17.7 | 156.7 | 3.9 |
 | build and solve | 1000 x 10000 | optcompR highs | 0.180 | 0.030 | 6.0 | 167.5 | 13.8 |
@@ -61,21 +63,21 @@ of building, classifying and checking the model.
 Automatic selection sends convex QPs to Clarabel: the HiGHS active set
 QP solver needs thousands of iterations at a few thousand variables.
 
-| task            | size | way               | s (base) |       s | speedup | MB (base) |   MB |
-|:----------------|:-----|:------------------|---------:|--------:|--------:|----------:|-----:|
-| build           | 1000 | optcompR          |    0.031 |   0.011 |     2.8 |      65.2 |  7.7 |
-| solve           | 1000 | optcompR highs    |    0.427 |   0.396 |     1.1 |      21.2 | 21.4 |
-| solve           | 1000 | optcompR osqp     |    0.085 |   0.058 |     1.5 |      21.2 | 21.5 |
-| solve           | 1000 | optcompR clarabel |    0.115 |   0.114 |     1.0 |      21.3 | 21.6 |
-| solve           | 1000 | osqp direct       |    0.010 |   0.010 |     1.0 |       0.3 |  0.3 |
-| build           | 5000 | optcompR          |    1.229 |   0.039 |    31.5 |    1451.5 | 19.5 |
-| solve           | 5000 | optcompR highs    |  101.174 | 100.649 |     1.0 |      27.7 | 29.0 |
-| solve           | 5000 | optcompR osqp     |    1.752 |   0.909 |     1.9 |      27.8 | 29.1 |
-| solve           | 5000 | optcompR clarabel |    5.606 |   5.591 |     1.0 |      28.3 | 29.6 |
-| solve           | 5000 | osqp direct       |    0.473 |   0.473 |     1.0 |       1.3 |  1.3 |
-| build and solve | 50   | optcompR ipopt    |    0.132 |   0.098 |     1.3 |       2.4 |  1.7 |
-| build and solve | 50   | optcompR nloptr   |    0.312 |   0.277 |     1.1 |      15.0 | 12.5 |
-| build and solve | 400  | optcompR ipopt    |    0.402 |   0.257 |     1.6 |      22.7 | 14.1 |
+| task            | size | way               | s (base) |       s | speedup | MiB (base) |  MiB |
+|:----------------|:-----|:------------------|---------:|--------:|--------:|-----------:|-----:|
+| build           | 1000 | optcompR          |    0.031 |   0.011 |     2.8 |       65.2 |  7.7 |
+| solve           | 1000 | optcompR highs    |    0.427 |   0.396 |     1.1 |       21.2 | 21.4 |
+| solve           | 1000 | optcompR osqp     |    0.085 |   0.058 |     1.5 |       21.2 | 21.5 |
+| solve           | 1000 | optcompR clarabel |    0.115 |   0.114 |     1.0 |       21.3 | 21.6 |
+| solve           | 1000 | osqp direct       |    0.010 |   0.010 |     1.0 |        0.3 |  0.3 |
+| build           | 5000 | optcompR          |    1.229 |   0.039 |    31.5 |     1451.5 | 19.5 |
+| solve           | 5000 | optcompR highs    |  101.174 | 100.649 |     1.0 |       27.7 | 29.0 |
+| solve           | 5000 | optcompR osqp     |    1.752 |   0.909 |     1.9 |       27.8 | 29.1 |
+| solve           | 5000 | optcompR clarabel |    5.606 |   5.591 |     1.0 |       28.3 | 29.6 |
+| solve           | 5000 | osqp direct       |    0.473 |   0.473 |     1.0 |        1.3 |  1.3 |
+| build and solve | 50   | optcompR ipopt    |    0.132 |   0.098 |     1.3 |        2.4 |  1.7 |
+| build and solve | 50   | optcompR nloptr   |    0.312 |   0.277 |     1.1 |       15.0 | 12.5 |
+| build and solve | 400  | optcompR ipopt    |    0.402 |   0.257 |     1.6 |       22.7 | 14.1 |
 
 ## Repeated solves and derivatives
 
@@ -86,7 +88,7 @@ solver and OSQP workspace of the previous solve are updated in place.
 For the QP below, setting up a new OSQP workspace is cheap next to the
 rest of each solve, so keeping it gains nothing measurable.
 
-| task | size | way | s (base) | s | speedup | MB (base) | MB |
+| task | size | way | s (base) | s | speedup | MiB (base) | MiB |
 |:---|:---|:---|---:|---:|---:|---:|---:|
 | 20 solves after parameter updates | 40 x 500 | optcompR parameters | 0.198 | 0.155 | 1.3 | 91.7 | 93.6 |
 | 20 solves after parameter updates | 40 x 500 | rebuild each time | 0.371 | 0.348 | 1.1 | 133.5 | 128.2 |

@@ -96,11 +96,15 @@ rbind(sensitivities = unname(g), finite_differences = num)
 
 Forward sensitivities integrate one equation per state and parameter, so
 their cost grows with the number of parameters. The adjoint method
-solves one backward equation for the states and one quadrature per
-parameter instead, which pays off when parameters outnumber states.
+solves backward equations for the states and one quadrature per
+parameter instead, which pays off when parameters outnumber states; its
+total cost still grows with the parameters through those quadratures.
 `sensitivity = "adjoint"` selects it; the default `"auto"` uses it when
 there are more than eight parameters and more than twice as many
-parameters as states. Both give the same gradient:
+parameters as states. The adjoint goes through modelcompR’s
+`solve_gradient()`, so initial values that depend on parameters and
+events such as callbacks are differentiated as in the forward method.
+Both give the same gradient:
 
 ``` r
 
@@ -121,7 +125,7 @@ g_fwd <- opt_gradient(m4, at)
 opt_objective(m4, adj)
 g_adj <- opt_gradient(m4, at)
 max(abs(g_fwd - g_adj))
-#> [1] 1.13072e-12
+#> [1] 8.170912e-13
 ```
 
 ## Partial observations and weights

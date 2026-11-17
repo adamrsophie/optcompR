@@ -106,13 +106,19 @@ value is piecewise linear rather than following the dual.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of two data frames: <code>costs</code> (variable, coefficient, lowest
 and highest coefficient keeping the basis optimal, and the objective
-at those values) and <code>rows</code> (row, active bound, dual, lowest and highest
-bound value and the objective there).</p>
+at those values) and <code>rows</code> (row, its bounds, the side whose range is
+reported, dual, lowest and highest value of that bound keeping the
+basis optimal, and the objective there).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Row bounds are reported in standard-form terms (<code>row_lower &lt;= a'x &lt;= row_upper</code>, constants moved to the bounds), so for <code>a'x + c &lt;= b</code> the
-bound is <code>b - c</code>.</p>
+bound is <code>b - c</code>. Each row reports the range of one bound, named in
+<code>side</code>: the active bound of an active row, the upper bound of an
+inactive row with a finite upper bound, and its lower bound otherwise.
+An inactive bound can move from the row's activity to infinity (an
+upper bound) or from minus infinity to the activity (a lower bound)
+without changing the optimal value.</p>
     </div>
 
     <div class="section level2">
@@ -130,9 +136,9 @@ bound is <code>b - c</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2        y           2     0     3                  6                 12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $rows</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   row row_lower row_upper dual bound_lower bound_upper objective_at_lower</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  c1      -Inf         4    2           2         Inf                  6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  c2      -Inf         2    1           0           4                  8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   row row_lower row_upper  side dual bound_lower bound_upper objective_at_lower</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  c1      -Inf         4 upper    2           2         Inf                  6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  c2      -Inf         2 upper    1           0           4                  8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective_at_upper</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1                Inf</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2                 12</span>

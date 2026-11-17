@@ -188,12 +188,12 @@ receives: constants are moved to the bounds and every row is <span class="math i
 <span><span class="co">#&gt; 2     x[2]           2   1.0     5               10.0               28.0</span></span>
 <span><span class="co">#&gt; 3     x[3]           3   1.5   Inf               14.5               14.5</span></span>
 <span><span class="va">s</span><span class="op">$</span><span class="va">rows</span></span>
-<span><span class="co">#&gt;       row row_lower row_upper dual bound_lower bound_upper objective_at_lower</span></span>
-<span><span class="co">#&gt; 1   total        10        10  1.5           1         Inf                1.0</span></span>
-<span><span class="co">#&gt; 2 balance        -1         1 -0.5          -1          10               15.5</span></span>
-<span><span class="co">#&gt;   objective_at_upper</span></span>
-<span><span class="co">#&gt; 1                Inf</span></span>
-<span><span class="co">#&gt; 2                 10</span></span></code></pre></div>
+<span><span class="co">#&gt;       row row_lower row_upper  side dual bound_lower bound_upper</span></span>
+<span><span class="co">#&gt; 1   total        10        10  both  1.5           1         Inf</span></span>
+<span><span class="co">#&gt; 2 balance        -1         1 upper -0.5          -1          10</span></span>
+<span><span class="co">#&gt;   objective_at_lower objective_at_upper</span></span>
+<span><span class="co">#&gt; 1                1.0                Inf</span></span>
+<span><span class="co">#&gt; 2               15.5                 10</span></span></code></pre></div>
 <p>The cost ranges say how far each objective coefficient can move
 before the optimal basis changes; the row ranges say the same for the
 bounds.</p>
@@ -208,7 +208,7 @@ tools:</p>
 <span><span class="fu"><a href="../reference/opt_write_model.html">opt_write_model</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">f</span><span class="op">)</span></span>
 <span><span class="co">#&gt; WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0</span></span>
 <span><span class="co">#&gt; WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0</span></span>
-<span><span class="co">#&gt; Writing the model to /tmp/RtmpGRPfvC/file24cc111f248e.mps</span></span>
+<span><span class="co">#&gt; Writing the model to /tmp/RtmpEvsXPn/file27205965194c.mps</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "NAME        " "ROWS"         " N  Obj     " " E  r0      " " L  r1      "</span></span>
 <span><span class="co">#&gt; [6] "COLUMNS"</span></span></code></pre></div>

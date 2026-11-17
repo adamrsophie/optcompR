@@ -94,12 +94,12 @@ s$costs
 #> 2     x[2]           2   1.0     5               10.0               28.0
 #> 3     x[3]           3   1.5   Inf               14.5               14.5
 s$rows
-#>       row row_lower row_upper dual bound_lower bound_upper objective_at_lower
-#> 1   total        10        10  1.5           1         Inf                1.0
-#> 2 balance        -1         1 -0.5          -1          10               15.5
-#>   objective_at_upper
-#> 1                Inf
-#> 2                 10
+#>       row row_lower row_upper  side dual bound_lower bound_upper
+#> 1   total        10        10  both  1.5           1         Inf
+#> 2 balance        -1         1 upper -0.5          -1          10
+#>   objective_at_lower objective_at_upper
+#> 1                1.0                Inf
+#> 2               15.5                 10
 ```
 
 The cost ranges say how far each objective coefficient can move before
@@ -115,7 +115,7 @@ f <- tempfile(fileext = ".mps")
 opt_write_model(m2, f)
 #> WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0
 #> WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0
-#> Writing the model to /tmp/RtmpGRPfvC/file24cc111f248e.mps
+#> Writing the model to /tmp/RtmpEvsXPn/file27205965194c.mps
 head(readLines(f))
 #> [1] "NAME        " "ROWS"         " N  Obj     " " E  r0      " " L  r1      "
 #> [6] "COLUMNS"

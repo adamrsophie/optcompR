@@ -89,14 +89,14 @@
 </ul></div>
 <div class="section level3">
 <h3 id="backends-0-1-0">Backends<a class="anchor" aria-label="anchor" href="#backends-0-1-0"></a></h3>
-<ul><li>HiGHS (LP, MILP, convex QP, sensitivity ranging, warm starts and in-place updates across repeated solves), SCIP (global MIQCQP, MISOCP and polynomial NLP and MINLP by exact lifting to quadratic rows, native indicator and SOS constraints), Clarabel and SCS (LP, convex QP and conic programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP), IPOPT with exact sparse Hessians (compiled in when available), NLP branch and bound for MINLP, and ROI plugins.</li>
+<ul><li>HiGHS (LP, MILP, convex QP, sensitivity ranging, warm starts and in-place updates across repeated solves), SCIP (global MIQCQP, MISOCP and polynomial NLP and MINLP by exact lifting to quadratic rows, native indicator and SOS constraints), Clarabel and SCS (LP, convex QP and conic programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP), IPOPT with exact sparse Hessians (compiled in when available), NLP branch and bound for MINLP with outer approximation bounds certified by weak duality, and ROI plugins.</li>
 <li>
 <code><a href="../reference/opt_register_solver.html">opt_register_solver()</a></code> makes the backend contract public, so other solvers can be connected without changing optcompR.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="results-and-diagnostics-0-1-0">Results and diagnostics<a class="anchor" aria-label="anchor" href="#results-and-diagnostics-0-1-0"></a></h3>
 <ul><li>Standardized termination and point statuses that separate proven optimality, local optimality, early stops (including <code>"gap_limit"</code> with its gap and a valid bound) and infeasibility certificates.</li>
-<li>Every returned point is checked against the model before it is reported feasible.</li>
+<li>Every returned point is checked against the model before it is reported feasible, at tolerances that follow the accuracy requested from the solver and are stored in the result; a point where the objective is not defined is not a solution.</li>
 <li>Duals are derivatives of the optimal value with a documented sign convention; <code><a href="../reference/opt_check.html">opt_check()</a></code> recomputes feasibility and the Karush Kuhn Tucker conditions, including conic ones, from the original expressions.</li>
 <li>Exact gradients, Jacobians and Lagrangian Hessians.</li>
 <li>
@@ -116,7 +116,7 @@
 </ul></div>
 <div class="section level3">
 <h3 id="integrations-0-1-0">Integrations<a class="anchor" aria-label="anchor" href="#integrations-0-1-0"></a></h3>
-<ul><li>ODE least squares losses for modelcompR models with forward or adjoint gradients (<code><a href="../reference/opt_ode_loss.html">opt_ode_loss()</a></code>).</li>
+<ul><li>ODE least squares losses for modelcompR models with forward or adjoint gradients (<code><a href="../reference/opt_ode_loss.html">opt_ode_loss()</a></code>), both covering parameter-dependent initial values, events and observations in any order.</li>
 <li>Conversion to and from symcompR expressions, to CVXR problems (<code><a href="../reference/opt_to_cvxr.html">opt_to_cvxr()</a></code>), and export to MPS and LP files.</li>
 </ul></div>
 <div class="section level3">

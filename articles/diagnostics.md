@@ -63,6 +63,12 @@ d$kkt
 #> 
 #> $estimated
 #> [1] FALSE
+#> 
+#> $primal_feasibility
+#> [1] TRUE
+#> 
+#> $dual_pass
+#> [1] TRUE
 ```
 
 ## Results without multipliers

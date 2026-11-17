@@ -27,7 +27,9 @@ opt_fixed_relaxation(result, ...)
 ## Value
 
 An `opt_result` for the continuous problem. The original model is not
-changed.
+changed. When the model was changed after `result` was computed, the
+problem is rebuilt from the snapshot stored in `result`, and the
+returned result refers to that separate model.
 
 ## Examples
 

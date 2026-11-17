@@ -89,11 +89,17 @@ The point a backend returns is checked against the model (rows from the
 original expressions, bounds, integrality, cones, indicators and SOS
 constraints), each side scaled by `max(1, |bound|)`, with the backend's
 feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
-first-order solvers OSQP and SCS). A point that fails is labelled
-`"infeasible_point"`, a claimed optimum then becomes
-`"locally_infeasible"` (local solvers) or `"numerical_error"`, and a
-warning gives the violation. A backend is treated as local for the
-classes it does not declare global unless the model is proven convex.
+first-order solvers OSQP and SCS); cones, indicators and SOS constraints
+are checked at its square root. When `options` request a stricter
+accuracy from OSQP or SCS (`eps_abs`, `eps_rel`), the tolerance becomes
+100 times the strictest request, so the check matches the accuracy asked
+for. The resolved tolerances are stored in `result$validation`. A point
+that fails is labelled `"infeasible_point"`, a claimed optimum then
+becomes `"locally_infeasible"` (local solvers) or `"numerical_error"`,
+and a warning gives the violation. An objective that is not finite at
+the point (for example `log(0)`) also makes it `"infeasible_point"`. A
+backend is treated as local for the classes it does not declare global
+unless the model is continuous and proven convex.
 
 ## Examples
 
@@ -110,7 +116,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.005s (build 0.001s)
+#>   time:        0.006s (build 0.002s)
 opt_value(r, x)
 #> [1] 2
 ```

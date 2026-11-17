@@ -109,7 +109,9 @@ is labeled with <code>fixed_relaxation = TRUE</code>.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An <code>opt_result</code> for the continuous problem. The original model is
-not changed.</p>
+not changed. When the model was changed after <code>result</code> was computed,
+the problem is rebuilt from the snapshot stored in <code>result</code>, and the
+returned result refers to that separate model.</p>
     </div>
 
     <div class="section level2">

@@ -129,6 +129,8 @@ a <- opt_variable(m, "a", lower = 0, upper = 5)
 b <- opt_variable(m, "b", lower = 0, upper = 5)
 opt_constraint(m, a + 2 * b <= 4)
 opt_complementarity(m, a, b)
+#> [[1]]
+#> <opt_special_constraint sos 'complementarity1[1]'>
 opt_objective(m, a + 1.5 * b)
 r <- opt_solve(m)
 opt_value(r, c(a, b))
@@ -195,12 +197,15 @@ opt_check(opt_solve(m))$special
 
 The same constructs combine with nonlinear objectives. Mixed-integer
 nonlinear models are solved by `"nlpbb"`, a branch and bound over NLopt
-relaxations. When the continuous relaxation is convex, pruning by bound
-is valid and the search proves global optimality. When it is not known
-to be convex, every node is a local solve and the result is labeled
-`"locally_optimal"`: a heuristic, not a certificate. Polynomial models
-are the exception: SCIP solves them globally after an exact lifting to
-quadratic rows (see
+relaxations. NLopt stops on tolerances, so its objective is never used
+as a bound. When the continuous relaxation is convex, each node is
+bounded by supporting hyperplanes of the objective (an outer
+approximation whose bound is checked by weak duality), pruning by these
+bounds is valid, and a completed search proves global optimality. When
+it is not known to be convex, every node is a local solve and the result
+is labeled `"locally_optimal"`: a heuristic, not a certificate.
+Polynomial models are the exception: SCIP solves them globally after an
+exact lifting to quadratic rows (see
 [`vignette("nonlinear")`](https://adamrsophie.github.io/optcompR/articles/nonlinear.md)).
 Here composition rules prove the relaxation convex, so branch and bound
 certifies the optimum.

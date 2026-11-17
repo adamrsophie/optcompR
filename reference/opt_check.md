@@ -33,6 +33,9 @@ and `special`, the violations of cone, indicator and SOS constraints
 the KKT test includes the cone multipliers: stationarity with the cone
 terms, membership of each multiplier in the dual cone, and
 complementarity of each cone; `kkt$cones` reports them per cone.
+`kkt$pass` holds only when every KKT condition holds, primal feasibility
+and a finite objective included; `kkt$dual_pass` reports stationarity,
+dual signs and complementarity alone.
 
 ## Details
 

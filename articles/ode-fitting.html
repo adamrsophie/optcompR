@@ -191,11 +191,15 @@ differences to the integration tolerances:</p>
 </h2>
 <p>Forward sensitivities integrate one equation per state and parameter,
 so their cost grows with the number of parameters. The adjoint method
-solves one backward equation for the states and one quadrature per
-parameter instead, which pays off when parameters outnumber states.
+solves backward equations for the states and one quadrature per
+parameter instead, which pays off when parameters outnumber states; its
+total cost still grows with the parameters through those quadratures.
 <code>sensitivity = "adjoint"</code> selects it; the default
 <code>"auto"</code> uses it when there are more than eight parameters
-and more than twice as many parameters as states. Both give the same
+and more than twice as many parameters as states. The adjoint goes
+through modelcompR’s <code>solve_gradient()</code>, so initial values
+that depend on parameters and events such as callbacks are
+differentiated as in the forward method. Both give the same
 gradient:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># a forcing term with 20 coefficients drives a two state system</span></span>
@@ -215,7 +219,7 @@ gradient:</p>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">adj</span><span class="op">)</span></span>
 <span><span class="va">g_adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_gradient.html">opt_gradient</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">at</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">g_fwd</span> <span class="op">-</span> <span class="va">g_adj</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 1.13072e-12</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 8.170912e-13</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="partial-observations-and-weights">Partial observations and weights<a class="anchor" aria-label="anchor" href="#partial-observations-and-weights"></a>

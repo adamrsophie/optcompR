@@ -147,7 +147,11 @@ answered by duals, ranging and re-solving.</li>
 <h2 id="ranging">Ranging<a class="anchor" aria-label="anchor" href="#ranging"></a>
 </h2>
 <p>For LPs solved by HiGHS, ranging gives the interval over which each
-cost coefficient or row bound can move with the same optimal basis.</p>
+cost coefficient or row bound can move with the same optimal basis. Each
+row reports the bound named in <code>side</code>. For an inactive row,
+whose dual is zero, the range is where that bound can go without the row
+becoming active: from the row’s current value up to infinity for an
+upper bound.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_sensitivity.html">opt_sensitivity</a></span><span class="op">(</span><span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">s</span><span class="op">$</span><span class="va">costs</span></span>
@@ -155,9 +159,9 @@ cost coefficient or row bound can move with the same optimal basis.</p>
 <span><span class="co">#&gt; 1        x           3     2   Inf                  8                Inf</span></span>
 <span><span class="co">#&gt; 2        y           2     0     3                  6                 12</span></span>
 <span><span class="va">s</span><span class="op">$</span><span class="va">rows</span></span>
-<span><span class="co">#&gt;   row row_lower row_upper dual bound_lower bound_upper objective_at_lower</span></span>
-<span><span class="co">#&gt; 1 lim      -Inf         2    1           0           4                  8</span></span>
-<span><span class="co">#&gt; 2 cap      -Inf         4    2           2         Inf                  6</span></span>
+<span><span class="co">#&gt;   row row_lower row_upper  side dual bound_lower bound_upper objective_at_lower</span></span>
+<span><span class="co">#&gt; 1 lim      -Inf         2 upper    1           0           4                  8</span></span>
+<span><span class="co">#&gt; 2 cap      -Inf         4 upper    2           2         Inf                  6</span></span>
 <span><span class="co">#&gt;   objective_at_upper</span></span>
 <span><span class="co">#&gt; 1                 12</span></span>
 <span><span class="co">#&gt; 2                Inf</span></span></code></pre></div>
