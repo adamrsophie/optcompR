@@ -38,7 +38,9 @@ constraints; this is not a proof of infeasibility;
 certified by the solver; HiGHS may report infeasible or unbounded
 without deciding which;
 \item \code{"time_limit"}, \code{"iteration_limit"}, \code{"node_limit"}, \code{"solution_limit"},
-\code{"objective_limit"}, \code{"memory_limit"}, \code{"interrupted"}: the solver
+\code{"objective_limit"}, \code{"memory_limit"}, \code{"interrupted"}, and
+\code{"gap_limit"} (a mixed-integer solve stopped at the relative gap given
+in \code{mip_gap} with a gap above zero): the solver
 stopped early; a feasible point may still exist, see
 \code{opt_primal_status()};
 \item \code{"numerical_error"}, \code{"invalid_model"}, \code{"unknown"}.

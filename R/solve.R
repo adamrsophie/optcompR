@@ -12,7 +12,8 @@
 #' @param solver Backend name from [opt_solvers()], or `"auto"`.
 #' @param time_limit Wall-clock limit in seconds, for solvers that accept it.
 #' @param mip_gap Relative optimality gap for mixed-integer solvers. `NULL`
-#'   keeps the solver default.
+#'   keeps the solver default. A solve that stops at this gap with a gap
+#'   above zero has status `"gap_limit"`, not `"optimal"`.
 #' @param verbose Print the solver log.
 #' @param warm_start Pass start values set with [opt_set_start()] or
 #'   `opt_variable(start = )` to solvers that accept them.
@@ -99,6 +100,11 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
   if (!is.null(res$col_dual)) names(res$col_dual) <- sf$col_names
   term <- res$termination
   if (term == "optimal" && isTRUE(res$local)) term <- "locally_optimal"
+  # a stop at the user's MIP gap is not a proof of optimality
+  if (term == "optimal" && !is.null(control$mip_gap) && cls$integer &&
+      is.finite(res$gap %||% NA_real_) && res$gap > 1e-9) {
+    term <- "gap_limit"
+  }
   fd <- unique(unlist(lapply(c(list(model$objective),
                                lapply(model$cons, `[[`, "expr")),
                              function(e) if (is.null(e)) NULL else expr_fd_nodes(e))))

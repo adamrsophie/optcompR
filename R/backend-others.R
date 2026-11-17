@@ -24,12 +24,24 @@ row_terms <- function(A) {
 
 scip_termination <- function(s) {
   switch(s,
-    optimal = "optimal", gaplimit = "optimal", infeasible = "infeasible",
+    optimal = "optimal", gaplimit = "gap_limit", infeasible = "infeasible",
     unbounded = "unbounded", infeasible_or_unbounded = "infeasible_or_unbounded",
     inforunbd = "infeasible_or_unbounded", timelimit = "time_limit",
     nodelimit = , stallnodelimit = , totalnodelimit = "node_limit",
     sollimit = , bestsollimit = "solution_limit", memlimit = "memory_limit",
     userinterrupt = "interrupted", "unknown")
+}
+
+# SCIP reports the gap |p - d| / min(|p|, |d|) but not the dual bound d;
+# invert it when p and d have the same sign (otherwise the gap is infinite).
+scip_dual_bound <- function(p, gap, sense) {
+  if (!is.finite(p) || !is.finite(gap %||% NA_real_) || gap >= 1e19) {
+    return(NA_real_)
+  }
+  if (gap == 0) return(p)
+  # minimization: d <= p; maximization: d >= p
+  toward_zero <- (sense == "min") == (p > 0)
+  if (toward_zero) p / (1 + gap) else p * (1 + gap)
 }
 
 scip_solve_sf <- function(sf, cls, control) {
@@ -104,7 +116,10 @@ scip_solve_sf <- function(sf, cls, control) {
        dual_status = "not_available", x = x, objective = obj,
        row_dual = NULL, col_dual = NULL,
        iterations = c(lp = info$iterations, nodes = info$nodes),
-       gap = info$gap, bound = NA_real_, message = st, local = FALSE,
+       gap = info$gap,
+       bound = if (has) scip_dual_bound(obj - sf$offset, info$gap, sf$sense) +
+         sf$offset else NA_real_,
+       message = st, local = FALSE,
        warm_start = FALSE,
        warnings = if (warn_start)
          "The scip R package has no start solution interface; start values were not used."

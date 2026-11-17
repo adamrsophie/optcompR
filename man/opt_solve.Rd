@@ -22,7 +22,8 @@ opt_solve(
 \item{time_limit}{Wall-clock limit in seconds, for solvers that accept it.}
 
 \item{mip_gap}{Relative optimality gap for mixed-integer solvers. \code{NULL}
-keeps the solver default.}
+keeps the solver default. A solve that stops at this gap with a gap
+above zero has status \code{"gap_limit"}, not \code{"optimal"}.}
 
 \item{verbose}{Print the solver log.}
 

@@ -94,3 +94,6 @@
   `opt_delete_constraint()` deletes them. `opt_terms()`, `opt_degree()`,
   `opt_symbols()` and `opt_evaluate()` expose the structure and values of
   expressions.
+* A mixed-integer solve that stops at a user `mip_gap` with a positive gap
+  reports `"gap_limit"` instead of `"optimal"`. SCIP results carry the dual
+  bound recovered from SCIP's gap.

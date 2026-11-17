@@ -95,3 +95,39 @@ test_that("expression introspection reports terms, degrees and symbols", {
   expect_equal(opt_evaluate(x[1]^2 + p * x[2], c(2, 1)), 6)
   expect_equal(opt_evaluate(x, c("x[2]" = 5, "x[1]" = 4)), c(4, 5))
 })
+
+test_that("a stop at the user MIP gap has its own status", {
+  set.seed(3)
+  n <- 40
+  w <- sample(20:60, n, TRUE)
+  v <- w + sample(0:9, n, TRUE)
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", dim = n, type = "binary")
+  for (k in 1:3) opt_constraint(m, sum(sample(1:5, n, TRUE) * x) <= 3 * n)
+  opt_constraint(m, sum(w * x) <= sum(w) / 2)
+  opt_objective(m, sum(v * x))
+  r <- opt_solve(m, solver = "highs", mip_gap = 0.2)
+  if (opt_gap(r) > 1e-9) {
+    expect_equal(opt_status(r), "gap_limit")
+    expect_equal(opt_primal_status(r), "feasible_point")
+  } else {
+    expect_equal(opt_status(r), "optimal")
+  }
+  expect_equal(opt_status(opt_solve(m, solver = "highs")), "optimal")
+})
+
+test_that("SCIP dual bounds are recovered from the reported gap", {
+  expect_equal(scip_dual_bound(110, 0.1, "min"), 100)
+  expect_equal(scip_dual_bound(-100, 0.1, "min"), -110)
+  expect_equal(scip_dual_bound(100, 0.1, "max"), 110)
+  expect_equal(scip_dual_bound(-110, 0.1, "max"), -100)
+  expect_equal(scip_dual_bound(5, 0, "min"), 5)
+  expect_true(is.na(scip_dual_bound(5, 1e20, "min")))
+  skip_if_not_installed("scip")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", dim = 2, type = "integer", lower = 0, upper = 10)
+  opt_constraint(m, 2 * x[1] + 3 * x[2] <= 12.5)
+  opt_objective(m, x[1] + x[2])
+  r <- opt_solve(m, solver = "scip")
+  expect_equal(unname(opt_objective_bound(r)), unname(opt_objective_value(r)))
+})
