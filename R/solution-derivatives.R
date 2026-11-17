@@ -150,6 +150,14 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   K <- rbind(cbind(H[free, free, drop = FALSE], -t(JA[, free, drop = FALSE])),
              cbind(JA[, free, drop = FALSE], matrix(0, na, na)))
   rhs <- -rbind(H[free, ps, drop = FALSE], JA[, ps, drop = FALSE])
+  bad <- ps[colSums(!is.finite(rhs)) > 0 |
+              !is.finite(colSums(J[, ps, drop = FALSE]))]
+  if (length(bad)) {
+    stop(sprintf(paste("The model is not differentiable in %s at this",
+                       "solution (for example a parameter exponent of a",
+                       "negative base)."),
+                 paste(model$sym_name[bad], collapse = ", ")), call. = FALSE)
+  }
   # second-order sufficiency: the Lagrangian Hessian (negated for a
   # maximum) is positive definite on the null space of the active rows
   if (nf) {

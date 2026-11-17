@@ -7,7 +7,7 @@
 
 need_symcompR <- function() {
   if (!requireNamespace("symcompR", quietly = TRUE)) {
-    stop("This function needs the symcompR package (remotes::install_github('adamrsophie/symcompR')).",
+    stop("This function needs the symcompR package (install.packages('symcompR', repos = c('https://adamrsophie.r-universe.dev', getOption('repos')))).",
          call. = FALSE)
   }
 }
@@ -141,6 +141,7 @@ to_sym_node <- function(e, k) {
     "*" = arg(e$args[[1L]]) * arg(e$args[[2L]]),
     "/" = arg(e$args[[1L]]) / arg(e$args[[2L]]),
     "^" = arg(e$args[[1L]])^sym_num(rep_len(e$data$p, e$len)[k]),
+    powp = arg(e$args[[1L]])^arg(e$args[[2L]]),
     linmap = {
       row <- e$data$M[k, ]
       out <- sym_num(0)

@@ -54,6 +54,7 @@ format_nl <- function(e, k) {
     "/" = paste0(arg(e$args[[1L]]), " / ", arg(e$args[[2L]])),
     "^" = paste0(arg(e$args[[1L]]), "^",
                  fmt_num(rep_len(e$data$p, e$len)[k])),
+    powp = paste0(arg(e$args[[1L]]), "^", arg(e$args[[2L]])),
     linmap = {
       M <- e$data$M
       row <- M[k, ]

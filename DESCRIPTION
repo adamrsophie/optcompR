@@ -43,6 +43,7 @@ Suggests:
     testthat (>= 3.0.0),
     z3r
 VignetteBuilder: knitr
+Additional_repositories: https://adamrsophie.r-universe.dev
 SystemRequirements: IPOPT (optional, found with pkg-config at installation)
 Remotes:
     adamrsophie/symcompR,

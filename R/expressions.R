@@ -273,6 +273,14 @@ expr_div <- function(a, b) {
 expr_pow <- function(a, p) {
   a <- as_expr(a)
   if (is_expr(p) && !is_constant_poly(p)) {
+    # an exponent made of parameters only stays a power node and becomes a
+    # constant power when the parameters are substituted, so x^p with
+    # p = 2 is an ordinary square even for negative x
+    kind <- p$model$sym_kind
+    if (!is.null(kind) && all(kind[expr_symbols(p)] == "par")) {
+      ld <- join_len_dim(a, p)
+      return(new_nl(join_models(a, p), ld$len, ld$dim, "powp", list(a, p)))
+    }
     # a^p with a variable exponent is exp(p * log(a)), defined for a > 0
     return(expr_unary("exp", expr_mul(p, expr_unary("log", a))))
   }

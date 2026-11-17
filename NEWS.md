@@ -85,3 +85,7 @@
   controls a backend ignores are reported in the result warnings.
 * `opt_z3_certify()` also proves that the reported value is attained, and
   `opt_z3_check()` works with nonlinear objectives.
+* A power whose exponent is a parameter expression stays a power node and
+  becomes a constant power once values are substituted, so `x^p` with
+  `p = 2` is a quadratic even for negative `x`; derivatives in the exponent
+  are exact for positive bases and refused where they do not exist.

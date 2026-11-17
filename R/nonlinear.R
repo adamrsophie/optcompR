@@ -63,6 +63,7 @@ eval_expr <- function(e, z) {
     "*" = rep_len(args[[1L]] * args[[2L]], n),
     "/" = rep_len(args[[1L]] / args[[2L]], n),
     "^" = rep_len(args[[1L]]^e$data$p, n),
+    powp = rep_len(args[[1L]], n)^rep_len(args[[2L]], n),
     linmap = as.vector(e$data$M %*% args[[1L]]),
     fn = e$data$f(args[[1L]]),
     match.fun(e$op)(args[[1L]]))
@@ -118,6 +119,10 @@ jac_expr <- function(e, z, ns) {
   bv <- rep_len(b$val, n)
   Ja <- rep_rows(a$J, n)
   Jb <- rep_rows(b$J, n)
+  if (e$op == "powp") {
+    return(list(val = av^bv, J = diag_mul(pow_d1(av, bv), Ja) +
+                  diag_mul(powp_dp(av, bv), Jb)))
+  }
   switch(e$op,
     "+" = list(val = av + bv, J = Ja + Jb),
     "*" = list(val = av * bv, J = diag_mul(bv, Ja) + diag_mul(av, Jb)),
@@ -184,6 +189,18 @@ hess_expr <- function(e, z, ns, w) {
   b <- jac_expr(B, z, ns)
   av <- rep_len(a$val, n)
   bv <- rep_len(b$val, n)
+  if (e$op == "powp") {
+    # f(a, p) = a^p: f_aa, f_ap and f_pp blocks plus the chain terms
+    fap <- ifelse(av > 0, av^(bv - 1) * (1 + bv * log(av)),
+                  ifelse(av == 0 & bv > 1, 0, NaN))
+    fpp <- ifelse(av > 0, av^bv * log(av)^2, ifelse(av == 0 & bv > 0, 0, NaN))
+    H <- cross(a$J, a$J, w * pow_d2(av, bv)) +
+      cross(a$J, b$J, w * fap) + cross(b$J, a$J, w * fap) +
+      cross(b$J, b$J, w * fpp) +
+      hess_expr(A, z, ns, agg(A, w * pow_d1(av, bv))) +
+      hess_expr(B, z, ns, agg(B, w * powp_dp(av, bv)))
+    return(H)
+  }
   if (e$op == "*") {
     H <- hess_expr(A, z, ns, agg(A, w * bv)) +
       hess_expr(B, z, ns, agg(B, w * av)) +
@@ -237,6 +254,7 @@ lower_expr <- function(e, is_par, pval) {
     "*" = expr_mul(args[[1L]], args[[2L]]),
     "/" = expr_div(args[[1L]], args[[2L]]),
     "^" = expr_pow(args[[1L]], e$data$p),
+    powp = expr_pow(args[[1L]], args[[2L]]),
     linmap = expr_linmap(e$data$M, args[[1L]]),
     fn = new_nl(e$model, 1L, NULL, "fn", args, e$data),
     expr_unary(e$op, args[[1L]]))
@@ -259,4 +277,10 @@ pow_d1 <- function(g, p) {
 }
 pow_d2 <- function(g, p) {
   ifelse(p == 0 | p == 1, 0, ifelse(p == 2, 2, p * (p - 1) * g^(p - 2)))
+}
+
+# Derivative of a^p in the exponent p. It exists for a > 0, and is 0 at
+# a = 0 with p > 0; a negative base has no power for nearby real p.
+powp_dp <- function(a, p) {
+  ifelse(a > 0, a^p * log(a), ifelse(a == 0 & p > 0, 0, NaN))
 }

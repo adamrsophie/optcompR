@@ -7,7 +7,7 @@
 
 need_z3r <- function() {
   if (!requireNamespace("z3r", quietly = TRUE)) {
-    stop("This function needs the z3r package (remotes::install_github('adamrsophie/z3r')).",
+    stop("This function needs the z3r package (install.packages('z3r', repos = c('https://adamrsophie.r-universe.dev', getOption('repos')))).",
          call. = FALSE)
   }
 }

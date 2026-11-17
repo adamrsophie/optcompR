@@ -46,7 +46,12 @@ length-one operands are recycled; other length mismatches are errors.
 The comparisons \code{<=}, \code{>=} and \code{==} build constraint relations for
 \code{\link[=opt_constraint]{opt_constraint()}}; they never return \code{TRUE} or \code{FALSE}. Strict
 inequalities \code{<} and \code{>} and \code{!=} are rejected because they do not define
-closed feasible sets. Logical operators are not overloaded; R's \code{&&} and
+closed feasible sets. A power \code{x^p} whose exponent is an expression of
+parameters only stays a power node and becomes an ordinary constant power
+when the parameter values are substituted, so \code{x^p} with \code{p = 2} is a
+square even for negative \code{x}; an exponent containing decision variables
+is rewritten as \code{exp(p * log(x))}, defined for positive \code{x}. Logical
+operators are not overloaded; R's \code{&&} and
 \code{||} cannot be overloaded at all, and logical constraints between
 expressions are not supported.
 }
