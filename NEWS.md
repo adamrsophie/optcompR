@@ -102,4 +102,6 @@
 * `opt_register_solver()` and `opt_unregister_solver()` make the backend
   contract public; what a backend returns is validated.
 * SCS is a second conic backend (`solver = "scs"`). Clarabel and SCS
-  results carry cone multipliers by cone in `extra$cone_dual`.
+  results carry cone multipliers by cone in `extra$cone_dual`, and
+  `opt_check()` verifies the conic KKT conditions with them (stationarity,
+  dual cone membership and complementarity per cone).

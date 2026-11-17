@@ -15,7 +15,7 @@ test_that("second-order cones match the analytic distance and dual", {
   expect_equal(unname(opt_dual(r, line)), 1 / sqrt(2), tolerance = 1e-6)
   d <- opt_check(r)
   expect_true(d$feasible)
-  expect_null(d$kkt)
+  expect_true(d$kkt$pass)
   skip_if_not_installed("scip")
   expect_equal(opt_objective_value(opt_solve(m, solver = "scip")), sqrt(2),
                tolerance = 1e-6)

@@ -211,3 +211,28 @@ test_that("SCS agrees with Clarabel on cone programs and their duals", {
   })
   expect_equal(psd_lower_order(3), c(1L, 2L, 4L, 3L, 5L, 6L))
 })
+
+test_that("opt_check() verifies conic KKT conditions with cone multipliers", {
+  skip_if_not_installed("clarabel")
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", lower = 0)
+  y <- opt_variable(m, "y", lower = 0)
+  z <- opt_variable(m, "z")
+  opt_constraint(m, x + y <= 2)
+  opt_pow_cone(m, x, y, z, 0.3, name = "pc")
+  opt_objective(m, z)
+  r <- opt_solve(m, solver = "clarabel")
+  k <- opt_check(r)$kkt
+  expect_true(k$pass)
+  expect_equal(k$cones$cone, "pc")
+  bad <- r
+  bad$extra$cone_dual$pc <- -bad$extra$cone_dual$pc
+  expect_false(opt_check(bad)$kkt$pass)
+  m2 <- opt_model()
+  X <- opt_sym_variable(m2, "X", 2)
+  opt_psd_constraint(m2, X, name = "P")
+  opt_constraint(m2, X[1, 1] + X[2, 2] == 1)
+  opt_objective(m2, 2 * X[1, 1] + X[2, 2] + 2 * X[1, 2])
+  r2 <- opt_solve(m2, solver = "clarabel")
+  expect_true(opt_check(r2)$kkt$pass)
+})

@@ -27,8 +27,10 @@
 #'   `max_bound_violation`, `max_integrality_violation`, `objective_error`,
 #'   `kkt` (or `NULL`), `feasible`, `rows`, a data frame of row residuals,
 #'   and `special`, the violations of cone, indicator and SOS constraints
-#'   (cones pass at `sqrt(tol)`). KKT conditions are not checked for conic
-#'   models, whose multipliers live in the dual cones.
+#'   (cones pass at `sqrt(tol)`). For conic models solved by Clarabel or
+#'   SCS the KKT test includes the cone multipliers: stationarity with the
+#'   cone terms, membership of each multiplier in the dual cone, and
+#'   complementarity of each cone; `kkt$cones` reports them per cone.
 #' @examples
 #' m <- opt_model()
 #' x <- opt_variable(m, "x")
@@ -68,8 +70,13 @@ opt_check <- function(result, tol = 1e-6) {
                      violation = viol, stringsAsFactors = FALSE)
   special <- special_violations(sf, x, tol)
   kkt <- NULL
-  # conic KKT conditions involve cone multipliers and are not checked here
-  if (!result$classification$integer && !length(sf$cones)) {
+  cone_z <- result$extra$cone_dual
+  conic_ok <- !length(sf$cones) ||
+    (!is.null(cone_z) && all(vapply(sf$cones, function(cn)
+      !is.null(cone_z[[cn$name]]), logical(1))))
+  # conic KKT conditions use the cone multipliers of Clarabel or SCS
+  if (!result$classification$integer && conic_ok &&
+      (!length(sf$cones) || !is.null(result$row_dual))) {
     if (!is.null(result$row_dual) && !is.null(result$col_dual)) {
       kkt <- kkt_check(result, v, lo, up, tol)
       kkt$estimated <- FALSE
@@ -162,9 +169,10 @@ kkt_check <- function(result, v, lo, up, tol) {
     }))
     Jty <- as.vector(Matrix::crossprod(J, y))
   }
-  stat <- g - Jty - zc
-  stat_rel <- max(c(abs(stat) / pmax(1, abs(g)), 0))
   s <- if (result$sense == "max") -1 else 1
+  cone <- conic_kkt_terms(result, x, s)
+  stat <- g - Jty - zc - cone$grad
+  stat_rel <- max(c(abs(stat) / pmax(1, abs(g)), 0))
   # row dual signs: at upper bound y*s <= 0, at lower y*s >= 0
   at_lo <- is.finite(lo) & abs(v - lo) <= sqrt(tol) * pmax(1, abs(lo))
   at_up <- is.finite(up) & abs(v - up) <= sqrt(tol) * pmax(1, abs(up))
@@ -182,14 +190,75 @@ kkt_check <- function(result, v, lo, up, tol) {
                                      ifelse(bl, pmax(-zs, 0), abs(zs))))
   bslack <- pmin(abs(x - sf$lower), abs(sf$upper - x))
   bcomp <- abs(zc) * ifelse(is.finite(bslack), bslack, 0)
+  dscale <- max(1, abs(c(y, zc, cone$z, 0)))
+  dmax <- max(c(dviol, zviol, cone$dual_violation, 0))
+  cmax <- max(c(comp, bcomp, cone$complementarity, 0))
   list(stationarity = stat_rel,
-       dual_feasibility = max(c(dviol, zviol, 0)) /
-         max(1, abs(c(y, zc, 0))),
-       complementarity = max(c(comp, bcomp, 0)),
+       dual_feasibility = dmax / dscale,
+       complementarity = cmax,
        stationarity_residual = stat,
-       pass = stat_rel <= sqrt(tol) &&
-         max(c(dviol, zviol, 0)) <= sqrt(tol) * max(1, abs(c(y, zc, 0))) &&
-         max(c(comp, bcomp, 0)) <= sqrt(tol))
+       cones = cone$table,
+       pass = stat_rel <= sqrt(tol) && dmax <= sqrt(tol) * dscale &&
+         cmax <= sqrt(tol))
+}
+
+# Cone parts of the KKT conditions from the conic dual z of
+# A x + s = b, s in K (Clarabel and SCS, minimization form): the
+# stationarity term s * sum_c M_c' z_c, the distance of each z_c from the
+# dual cone, and the complementarity s_c' z_c with s_c = M_c x + const.
+# PSD blocks are scaled svec vectors (off-diagonals times sqrt(2)).
+conic_kkt_terms <- function(result, x, s) {
+  sf <- result$standard_form
+  n <- length(x)
+  out <- list(grad = numeric(n), dual_violation = 0, complementarity = 0,
+              z = numeric(), table = NULL)
+  if (!length(sf$cones)) return(out)
+  zs <- result$extra$cone_dual
+  rows <- list()
+  for (cn in sf$cones) {
+    z <- zs[[cn$name]]
+    w <- if (cn$type == "psd") svec_scale(cn$k) else rep(1, nrow(cn$M))
+    sv <- w * (as.vector(cn$M %*% x) + cn$const)
+    out$grad <- out$grad + s * as.vector(Matrix::crossprod(cn$M, w * z))
+    dv <- dual_cone_violation(cn, z)
+    cp <- abs(sum(sv * z))
+    out$dual_violation <- c(out$dual_violation, dv)
+    out$complementarity <- c(out$complementarity, cp)
+    out$z <- c(out$z, z)
+    rows <- c(rows, list(data.frame(cone = cn$name, type = cn$type,
+                                    dual_violation = dv,
+                                    complementarity = cp,
+                                    stringsAsFactors = FALSE)))
+  }
+  out$table <- do.call(rbind, rows)
+  out
+}
+
+# Distance-like violation of z from the dual cone K*.
+dual_cone_violation <- function(cn, z) {
+  switch(cn$type,
+    soc = max(0, sqrt(sum(z[-1L]^2)) - z[1L]),
+    exp = {
+      # K*_exp = cl{(u, v, w): u < 0, -u exp(v / u) <= e w}
+      u <- z[1L]; v <- z[2L]; w <- z[3L]
+      if (u < 0) max(0, -u * exp(min(v / u, 700)) - exp(1) * w) else
+        max(u, -v, -w, 0)
+    },
+    pow = {
+      a <- cn$alpha
+      u <- z[1L]; v <- z[2L]
+      max(-u, -v, abs(z[3L]) - (max(u, 0) / a)^a * (max(v, 0) / (1 - a))^(1 - a),
+          0)
+    },
+    psd = {
+      k <- cn$k
+      Z <- matrix(0, k, k)
+      up <- upper.tri(Z, diag = TRUE)
+      Z[up] <- z / svec_scale(k)
+      Z[lower.tri(Z)] <- t(Z)[lower.tri(Z)]
+      max(0, -min(eigen(Z, symmetric = TRUE, only.values = TRUE)$values))
+    },
+    0)
 }
 
 #' @export
