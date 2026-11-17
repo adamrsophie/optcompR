@@ -305,6 +305,9 @@ register_nlpbb <- function() {
     "nlpbb", "nloptr",
     "NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)",
     classes = c("MINLP", "MIQCQP", "MIQP"), convex_only = character(),
+    # a global search whose results mark themselves local when the
+    # relaxation is not convex or the search is incomplete
+    global = c("MINLP", "MIQCQP", "MIQP"),
     features = list(time_limit = TRUE, mip_gap = TRUE, warm_start = TRUE),
     solve = nlpbb_solve_sf, version = pkg_version("nloptr"), priority = 80L)
 }

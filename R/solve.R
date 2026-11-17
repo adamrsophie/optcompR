@@ -118,17 +118,23 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
   z[sf$var_sym] <- if (has_x) res$x else NA_real_
   names(res$x) <- sf$col_names
   obj <- NA_real_
+  obj_warn <- character()
   if (has_x) {
-    obj <- if (is.null(model$objective)) 0 else
-      eval_expr(model$objective, z)
+    obj <- if (is.null(model$objective)) 0 else withCallingHandlers(
+      eval_expr(model$objective, z), warning = function(w) {
+        obj_warn <<- c(obj_warn, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      })
   }
   if (!is.null(res$row_dual)) names(res$row_dual) <- sf$row_names
   if (!is.null(res$col_dual)) names(res$col_dual) <- sf$col_names
   term <- res$termination
   # a backend is local for the classes it does not declare global, unless
-  # the model is proven convex, where a local optimum is global
-  local <- isTRUE(res$local) ||
-    (!cls$class %in% entry$global && cls$convexity != "convex")
+  # the model is continuous and proven convex, where a local optimum is
+  # global; for a mixed-integer model the convexity is the relaxation's,
+  # which does not make a local search global
+  local <- isTRUE(res$local) || (!cls$class %in% entry$global &&
+    (cls$integer || cls$convexity != "convex"))
   # the returned point is checked against the model: a backend's
   # feasibility claim is not trusted on its own
   if (has_x && res$primal_status %in% c("feasible_point", "unknown")) {
@@ -146,6 +152,22 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
     } else if (res$primal_status == "unknown") {
       res$primal_status <- "feasible_point"
     }
+  }
+  # the objective must be defined at a usable point: log(0) or sqrt(-1)
+  # is a domain failure, not an optimum; the point is kept for diagnosis
+  if (has_x && !is.finite(obj) &&
+      res$primal_status %in% c("feasible_point", "unknown")) {
+    res$primal_status <- "infeasible_point"
+    warnings <- c(warnings, sprintf(paste(
+      "The objective is %s at the point %s returned%s; it is labelled",
+      "infeasible_point."), format(obj), entry$name,
+      if (length(obj_warn)) sprintf(" (%s)", paste(unique(obj_warn), collapse = "; ")) else ""))
+    if (term %in% c("optimal", "locally_optimal", "almost_optimal")) {
+      term <- "numerical_error"
+    }
+  } else if (length(obj_warn)) {
+    warnings <- c(warnings, sprintf("Evaluating the objective warned: %s",
+                                    paste(unique(obj_warn), collapse = "; ")))
   }
   if (term == "optimal" && local) term <- "locally_optimal"
   # a stop at a relative gap is not a proof of optimality: a mixed-integer
