@@ -40,7 +40,7 @@ f <- tempfile(fileext = ".mps")
 opt_write_model(m, f)
 #> WARNING: Column names are not present, or contain duplicates: using names with prefix "c", beginning with suffix 0
 #> WARNING: Row    names are not present, or contain duplicates: using names with prefix "r", beginning with suffix 0
-#> Writing the model to /tmp/RtmpfhD0cs/file20cc229ad9c7.mps
+#> Writing the model to /tmp/RtmpJqJQfr/file1e697f480a2.mps
 head(readLines(f))
 #> [1] "NAME        " "OBJSENSE"     "  MAX"        "ROWS"         " N  Obj     "
 #> [6] " L  r0      "
