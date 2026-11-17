@@ -453,7 +453,7 @@ check_binary_literal <- function(model, e, what) {
     all(ifelse(nterm == 0L, const %in% c(0, 1),
                nterm == 1L & ((coef == 1 & const == 0) |
                                 (coef == -1 & const == 1))))
-  if (!ok || !length(sym)) {
+  if (!ok) {
     stop(sprintf(paste("`%s` must be Boolean literals: binary variables x,",
                        "their negations 1 - x, or the constants 0 and 1."),
                  what), call. = FALSE)

@@ -295,3 +295,25 @@ test_that("infinite right-hand sides become bounds", {
   z <- opt_variable(m, "z", type = "binary")
   expect_error(opt_indicator(m, z, x[1] <= Inf), "finite")
 })
+
+test_that("constant Boolean literals are accepted alone", {
+  m <- opt_model()
+  b <- opt_variable(m, "b", type = "binary")
+  expect_silent(opt_implies(m, 0, b))
+  expect_silent(opt_implies(m, b, 1))
+  expect_error(opt_implies(m, 2, b), "Boolean literals")
+})
+
+test_that("a backend returning too many columns is rejected", {
+  name <- "test_long_x"
+  opt_register_solver(name, function(sf, cls, control) {
+    list(termination = "optimal", primal_status = "feasible_point",
+         dual_status = "not_available", x = rep(0, length(sf$c) + 1L),
+         objective = 0)
+  }, classes = "LP", version = "test")
+  on.exit(opt_unregister_solver(name), add = TRUE)
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0)
+  opt_objective(m, x)
+  expect_error(opt_solve(m, solver = name), "length 2 for 1 columns")
+})

@@ -127,7 +127,9 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
   zc <- numeric(n)
   if (any(act) || any(bact)) {
     # only the active rows and the unit columns of active bounds enter: the
-    # system is n by (active rows + active bounds), never n by n
+    # system is n by (active rows + active bounds)
+    # ponytail: the least-squares solve below is dense QR, which reaches
+    # n by n when every bound is active; a sparse QR is the upgrade path
     J <- if (length(result$cons)) do.call(rbind, lapply(result$cons,
       function(b) jac_expr(b$expr, z, ns)$J[, cols, drop = FALSE])) else
       sparse_zero(0L, n)

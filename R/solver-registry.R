@@ -333,7 +333,7 @@ check_backend_result <- function(res, entry, sf) {
   }
   n <- length(sf$c)
   if (is.null(res$x)) res$x <- rep(NA_real_, n)
-  if (!is.numeric(res$x) || length(res$x) < n) {
+  if (!is.numeric(res$x) || length(res$x) != n) {
     fail(sprintf("`x` of length %d for %d columns", length(res$x), n))
   }
   if (is.null(res$objective)) res$objective <- NA_real_
