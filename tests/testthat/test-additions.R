@@ -131,3 +131,39 @@ test_that("SCIP dual bounds are recovered from the reported gap", {
   r <- opt_solve(m, solver = "scip")
   expect_equal(unname(opt_objective_bound(r)), unname(opt_objective_value(r)))
 })
+
+test_that("user backends can be registered, used and removed", {
+  calls <- 0L
+  lp <- function(sf, cls, control) {
+    calls <<- calls + 1L
+    s <- if (sf$sense == "max") -1 else 1
+    r <- highs::highs_solve(L = s * sf$c, lower = sf$lower, upper = sf$upper,
+                            A = sf$A, lhs = sf$row_lower, rhs = sf$row_upper)
+    list(termination = "optimal", primal_status = "feasible_point",
+         dual_status = "not_available", x = r$primal_solution,
+         objective = s * r$objective_value + sf$offset)
+  }
+  opt_register_solver("test_lp", lp, classes = "LP", package = "highs",
+                      priority = 1L)
+  on.exit(opt_unregister_solver("test_lp"))
+  expect_true("test_lp" %in% opt_solvers()$solver)
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", lower = 0, upper = 3)
+  opt_constraint(m, x <= 2)
+  opt_objective(m, 2 * x + 1)
+  r <- opt_solve(m)
+  expect_equal(r$solver, "test_lp")
+  expect_equal(unname(opt_objective_value(r)), 5)
+  expect_true(opt_check(r)$feasible)
+  expect_true(opt_check(r)$kkt$pass)
+  bad <- function(sf, cls, control) list(termination = "done")
+  opt_register_solver("test_bad", bad, classes = "LP")
+  on.exit(opt_unregister_solver("test_bad"), add = TRUE)
+  expect_error(opt_solve(m, solver = "test_bad"), "unknown termination")
+  expect_error(opt_register_solver("x", lp, classes = "LPX"), "subset")
+  expect_error(opt_register_solver("x", lp, classes = "LP",
+                                   features = list(fast = TRUE)),
+               "Unknown feature")
+  expect_true(opt_unregister_solver("test_bad"))
+  expect_false(opt_unregister_solver("test_bad"))
+})

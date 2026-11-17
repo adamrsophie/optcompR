@@ -61,7 +61,8 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
       sf_solver$reformulated$added_columns, sf_solver$reformulated$added_rows))
   }
   res <- withCallingHandlers(
-    trim_result(entry$solve(sf_solver, cls, control), sf),
+    trim_result(check_backend_result(entry$solve(sf_solver, cls, control),
+                                     entry, sf_solver), sf),
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
       invokeRestart("muffleWarning")

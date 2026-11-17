@@ -99,3 +99,5 @@
   bound recovered from SCIP's gap.
 * `configure` links a test program before enabling IPOPT, and Windows
   builds use IPOPT from a COIN-OR binary release named by `IPOPT_HOME`.
+* `opt_register_solver()` and `opt_unregister_solver()` make the backend
+  contract public; what a backend returns is validated.
