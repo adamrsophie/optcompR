@@ -128,3 +128,22 @@ test_that("element names stay unique through copies and rollbacks", {
                                      gamma = -1))
   expect_silent(opt_variable(m, "q"))
 })
+
+test_that("sparse matrix products stay sparse", {
+  n <- 20000
+  A <- Matrix::sparseMatrix(i = c(1, 2, 2), j = c(1, 5, n), x = c(2, 3, 4),
+                            dims = c(2, n))
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = n)
+  ax <- A %*% x
+  expect_equal(as.vector(opt_evaluate(ax, seq_len(n))), c(2, 15 + 4 * n))
+  X <- opt_variable(m, "X", dim = c(3, 2))
+  B <- Matrix::Matrix(c(1, 0, 2, 0, 0, 3), 2, 3, sparse = TRUE)
+  v <- seq_len(n + 6)
+  expect_equal(as.vector(opt_evaluate(B %*% X, v)),
+               as.vector(as.matrix(B) %*% matrix(v[n + 1:6], 3)))
+  expect_equal(as.vector(opt_evaluate(X %*% B, v)),
+               as.vector(matrix(v[n + 1:6], 3) %*% as.matrix(B)))
+  skip_if_not_installed("bench")
+  expect_lt(as.numeric(bench::bench_memory(A %*% x)$mem_alloc), 50 * 2^20)
+})

@@ -175,14 +175,24 @@ expr_matmul <- function(x, y) {
     return(expr_linmap(M, prod, dim = c(dx[1L], dy[2L])))
   }
   if (is_expr(y)) {
-    A <- matrix(as.vector(x), dx[1L], dx[2L])
-    M <- Matrix::kronecker(Matrix::Diagonal(dy[2L]), Matrix::Matrix(A, sparse = TRUE, doDiag = FALSE))
-    return(expr_linmap(M, y, dim = c(nrow(A), dy[2L])))
+    A <- as_sparse_dims(x, dx)
+    M <- if (dy[2L] == 1L) A else
+      Matrix::kronecker(Matrix::Diagonal(dy[2L]), A)
+    return(expr_linmap(M, y, dim = c(dx[1L], dy[2L])))
   }
-  B <- matrix(as.vector(y), dy[1L], dy[2L])
-  M <- Matrix::kronecker(Matrix::t(Matrix::Matrix(B, sparse = TRUE, doDiag = FALSE)),
-                         Matrix::Diagonal(dx[1L]))
-  expr_linmap(M, x, dim = c(dx[1L], ncol(B)))
+  Bt <- Matrix::t(as_sparse_dims(y, dy))
+  M <- if (dx[1L] == 1L) Bt else Matrix::kronecker(Bt, Matrix::Diagonal(dx[1L]))
+  expr_linmap(M, x, dim = c(dx[1L], dy[2L]))
+}
+
+# A numeric vector, matrix or Matrix as a sparse matrix of the given shape.
+# A sparse Matrix is never made dense on the way.
+as_sparse_dims <- function(a, d) {
+  if (methods::is(a, "Matrix")) {
+    return(methods::as(methods::as(a, "generalMatrix"), "CsparseMatrix"))
+  }
+  Matrix::Matrix(matrix(as.vector(a), d[1L], d[2L]), sparse = TRUE,
+                 doDiag = FALSE)
 }
 
 #' Shape and indexing of expressions
