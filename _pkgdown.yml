@@ -126,6 +126,8 @@ reference:
   - opt_z3_certify
   - opt_from_sym
   - opt_to_sym
+  - opt_to_cvxr
+  - opt_cvxr_values
   - opt_ode_loss
 - title: Package
   contents:

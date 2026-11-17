@@ -113,6 +113,9 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* `opt_to_cvxr()` converts linear, quadratic, mixed-integer and conic models
+  to CVXR problems, and `opt_cvxr_values()` reads the solution back by
+  variable name.
 * `opt_explain_infeasibility()` solves a weighted elastic relaxation of the
   rows and variable bounds and reports which must move, and by how much, for
   an infeasible model to become feasible.

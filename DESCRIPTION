@@ -28,6 +28,7 @@ Imports:
     utils
 Suggests:
     clarabel,
+    CVXR,
     jaxR,
     knitr,
     modelcompR,

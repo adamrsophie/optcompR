@@ -97,6 +97,23 @@ The ROI adapter passes linear rows only and returns no duals. A time limit
 is sent as `tm_limit` in milliseconds, the control GLPK reads; other plugins
 may name their limit differently, so pass it in `options` for them.
 
+## Exporting to CVXR
+
+`opt_to_cvxr()` writes a linear, quadratic, mixed-integer or conic model as
+a CVXR problem, so it can be solved with any CVXR solver or checked by
+CVXR's own disciplined convex programming rules:
+
+```{r, eval = requireNamespace("CVXR", quietly = TRUE)}
+m <- opt_model()
+x <- opt_variable(m, "x", dim = 2, lower = 0)
+opt_constraint(m, x[1] + x[2] >= 1)
+opt_objective(m, x[1]^2 + 2 * x[2]^2)
+cv <- opt_to_cvxr(m)
+CVXR::psolve(cv$problem)
+opt_cvxr_values(cv)
+opt_value(opt_solve(m), x)
+```
+
 ## Solver options
 
 Options are passed through to the backend; for HiGHS they override defaults:
