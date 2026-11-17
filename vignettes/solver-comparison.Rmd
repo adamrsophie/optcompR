@@ -34,6 +34,7 @@ opt_solver_capabilities("highs")
 |---|---|---|---|---|---|
 | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
 | clarabel | LP, convex QP, SOCP, CONIC | all of these | yes | no | no |
+| scs | LP, convex QP, SOCP, CONIC (first order) | all of these | yes | no | yes |
 | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by `opt_check()` | no | start point |

@@ -9,6 +9,7 @@ NULL
   register_highs()
   register_builtin_backends()
   register_clarabel()
+  register_scs()
   register_nlpbb()
   register_ipopt()
   invisible()

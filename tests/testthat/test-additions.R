@@ -167,3 +167,47 @@ test_that("user backends can be registered, used and removed", {
   expect_true(opt_unregister_solver("test_bad"))
   expect_false(opt_unregister_solver("test_bad"))
 })
+
+test_that("SCS agrees with Clarabel on cone programs and their duals", {
+  skip_if_not_installed("scs")
+  skip_if_not_installed("clarabel")
+  tight <- list(eps_abs = 1e-9, eps_rel = 1e-9, max_iters = 100000L)
+  both <- function(build) {
+    a <- opt_solve(build(), solver = "clarabel")
+    b <- opt_solve(build(), solver = "scs", options = tight)
+    expect_equal(opt_status(b), "optimal")
+    expect_equal(opt_objective_value(b), opt_objective_value(a),
+                 tolerance = 1e-5)
+    expect_equal(unname(b$row_dual), unname(a$row_dual), tolerance = 1e-4)
+    expect_equal(lapply(b$extra$cone_dual, unname),
+                 lapply(a$extra$cone_dual, unname), tolerance = 1e-4)
+  }
+  both(function() {
+    m <- opt_model()
+    x <- opt_variable(m, "x", dim = 2)
+    t <- opt_variable(m, "t")
+    opt_constraint(m, sum(x) == 2)
+    opt_soc_constraint(m, x, t)
+    opt_objective(m, t)
+    m
+  })
+  both(function() {
+    m <- opt_model("max")
+    x <- opt_variable(m, "x")
+    y <- opt_variable(m, "y")
+    opt_constraint(m, y <= 1)
+    opt_exp_cone(m, x, y, 2)
+    opt_objective(m, x)
+    m
+  })
+  both(function() {
+    m <- opt_model()
+    X <- opt_sym_variable(m, "X", 3)
+    opt_psd_constraint(m, X)
+    C <- matrix(c(2, 1, 0, 1, 2, 1, 0, 1, 2), 3)
+    opt_constraint(m, X[1, 1] + X[2, 2] + X[3, 3] == 1)
+    opt_objective(m, sum(C * X))
+    m
+  })
+  expect_equal(psd_lower_order(3), c(1L, 2L, 4L, 3L, 5L, 6L))
+})

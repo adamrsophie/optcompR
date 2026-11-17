@@ -75,6 +75,7 @@ opt_check(r)           # independent feasibility and KKT checks
 |---|---|---|---|---|---|---|
 | highs | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
 | clarabel | clarabel | LP, convex QP, SOCP, CONIC (SOC, PSD, exp, power) | all of these | yes | no | no |
+| scs | scs | LP, convex QP, SOCP, CONIC (first order, moderate accuracy) | all of these | yes | no | yes |
 | scip | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated | no | start point |
