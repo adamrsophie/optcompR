@@ -94,7 +94,7 @@ are checked at its square root. When `options` request a stricter
 accuracy from OSQP or SCS (`eps_abs`, `eps_rel`), the tolerance becomes
 100 times the strictest request, so the check matches the accuracy asked
 for. The resolved tolerances are stored in `result$validation`. A point
-that fails is labelled `"infeasible_point"`, a claimed optimum then
+that fails is labeled `"infeasible_point"`, a claimed optimum then
 becomes `"locally_infeasible"` (local solvers) or `"numerical_error"`,
 and a warning gives the violation. An objective that is not finite at
 the point (for example `log(0)`) also makes it `"infeasible_point"`. A
@@ -116,7 +116,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.006s (build 0.002s)
+#>   time:        0.004s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```

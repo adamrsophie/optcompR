@@ -172,7 +172,7 @@ constraints are checked at its square root. When <code>options</code> request a
 stricter accuracy from OSQP or SCS (<code>eps_abs</code>, <code>eps_rel</code>), the tolerance
 becomes 100 times the strictest request, so the check matches the
 accuracy asked for. The resolved tolerances are stored in
-<code>result$validation</code>. A point that fails is labelled
+<code>result$validation</code>. A point that fails is labeled
 <code>"infeasible_point"</code>, a claimed optimum then becomes
 <code>"locally_infeasible"</code> (local solvers) or <code>"numerical_error"</code>, and a
 warning gives the violation. An objective that is not finite at the
@@ -195,7 +195,7 @@ unless the model is continuous and proven convex.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   problem:     LP (convex)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status:      optimal (primal: feasible_point, dual: feasible_point)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective:   10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.006s (build 0.002s)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.004s (build 0.001s)</span>
 <span class="r-in"><span><span class="fu"><a href="opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 </code></pre></div>
