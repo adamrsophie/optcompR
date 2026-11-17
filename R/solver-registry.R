@@ -7,7 +7,8 @@
 # classification proves (or numerically supports) convexity.
 register_solver <- function(name, package, description, classes,
                             convex_only = character(), global = character(),
-                            features = list(), solve, version, priority = 50L) {
+                            features = list(), solve, version, priority = 50L,
+                            check = NULL) {
   .solver_registry[[name]] <- list(
     name = name, package = package, description = description,
     classes = classes, convex_only = convex_only, global = global,
@@ -16,7 +17,7 @@ register_solver <- function(name, package, description, classes,
       time_limit = FALSE, mip_gap = FALSE, iteration_limit = FALSE,
       cones = character(), special = character()),
       features),
-    solve = solve, version = version, priority = priority)
+    solve = solve, version = version, priority = priority, check = check)
 }
 
 solver_available <- function(entry) {
@@ -109,6 +110,9 @@ select_solver <- function(cls, solver, sf = NULL) {
                    solver, paste(e$package, collapse = ", ")), call. = FALSE)
     }
     why <- solver_refusal(e, cls)
+    if (is.null(why) && is.function(e$check) && !is.null(sf)) {
+      why <- e$check(sf, cls, FALSE)
+    }
     if (!is.null(why)) stop(why, ".", call. = FALSE)
     return(e)
   }
@@ -122,6 +126,9 @@ select_solver <- function(cls, solver, sf = NULL) {
   }
   for (e in ent) {
     why <- solver_refusal(e, cls)
+    if (is.null(why) && is.function(e$check) && !is.null(sf)) {
+      why <- e$check(sf, cls, TRUE)
+    }
     if (!is.null(why)) {
       reasons <- c(reasons, why)
       next

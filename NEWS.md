@@ -113,6 +113,11 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* SCIP solves polynomial NLP and MINLP models to global optimality: products
+  of degree above two are lifted exactly to quadratic rows with auxiliary
+  variables bounded by interval arithmetic. Nonconvex polynomial models
+  choose SCIP automatically; models with other operators are refused with
+  the reason.
 * `opt_to_cvxr()` converts linear, quadratic, mixed-integer and conic models
   to CVXR problems, and `opt_cvxr_values()` reads the solution back by
   variable name.

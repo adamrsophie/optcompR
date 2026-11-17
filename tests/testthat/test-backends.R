@@ -97,7 +97,8 @@ test_that("NLopt solves smooth NLPs and labels local optima", {
   x <- opt_variable(m, "x", start = -1)
   y <- opt_variable(m, "y", start = 1)
   opt_objective(m, (1 - x)^2 + 100 * (y - x^2)^2)
-  r <- opt_solve(m)
+  # polynomial models go to SCIP automatically when it is installed
+  r <- opt_solve(m, solver = "nloptr")
   expect_identical(r$solver, "nloptr")
   expect_identical(opt_status(r), "locally_optimal")
   expect_equal(c(opt_value(r, x), opt_value(r, y)), c(1, 1), tolerance = 1e-4)

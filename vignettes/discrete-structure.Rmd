@@ -182,7 +182,10 @@ nonlinear models are solved by `"nlpbb"`, a branch and bound over NLopt
 relaxations. When the continuous relaxation is convex, pruning by bound is
 valid and the search proves global optimality. When it is not known to be
 convex, every node is a local solve and the result is labeled
-`"locally_optimal"`: a heuristic, not a certificate.
+`"locally_optimal"`: a heuristic, not a certificate. Polynomial models are
+the exception: SCIP solves them globally after an exact lifting to quadratic
+rows (see `vignette("nonlinear")`). Here composition rules prove the
+relaxation convex, so branch and bound certifies the optimum.
 
 ```{r, eval = has_nloptr}
 m <- opt_model()

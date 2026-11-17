@@ -53,7 +53,9 @@ m <- opt_model()
 x <- opt_variable(m, "x", dim = 2, lower = 0.1)
 opt_objective(m, sum(exp(x)) - log(x[1] + x[2]))
 opt_classify(m)
-``` Cone constraints are convex sets by construction, so a model
+```
+
+Cone constraints are convex sets by construction, so a model
 whose only nonlinear structure is cones (with a linear or convex quadratic
 objective) is classified as convex `"SOCP"` or `"CONIC"`; see
 `vignette("conic")`.

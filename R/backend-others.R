@@ -45,6 +45,12 @@ scip_dual_bound <- function(p, gap, sense) {
 }
 
 scip_solve_sf <- function(sf, cls, control) {
+  n_model <- length(sf$c)
+  if (cls$class %in% c("NLP", "MINLP")) {
+    why <- lift_refusal(sf)
+    if (!is.null(why)) stop(why, ".", call. = FALSE)
+    sf <- lift_sf(sf)
+  }
   n <- length(sf$c)
   vt <- ifelse(sf$type == "binary", "B", ifelse(sf$type == "integer", "I", "C"))
   quad_obj <- !is.null(sf$Q)
@@ -111,6 +117,8 @@ scip_solve_sf <- function(sf, cls, control) {
     if (quad_obj) sum(sf$c * x) + 0.5 * sum(x * as.vector(sf$Q %*% x)) +
       sf$offset else sol$objval + sf$offset
   } else NA_real_
+  # lifted auxiliary variables are not model variables
+  x <- x[seq_len(n_model)]
   list(termination = term,
        primal_status = if (has) "feasible_point" else "no_solution",
        dual_status = "not_available", x = x, objective = obj,
@@ -125,6 +133,17 @@ scip_solve_sf <- function(sf, cls, control) {
          "The scip R package has no start solution interface; start values were not used."
        else character(),
        extra = list(), raw = list(status = st, info = info, solution = sol))
+}
+
+# SCIP takes nonlinear models only when they lift exactly to quadratic
+# rows. In automatic selection, convex nonlinear models go to the local NLP
+# solvers, whose optima are then global.
+scip_check <- function(sf, cls, auto) {
+  if (!cls$class %in% c("NLP", "MINLP")) return(NULL)
+  if (auto && cls$convexity == "convex") {
+    return("scip is not chosen automatically for convex nonlinear models")
+  }
+  lift_refusal(sf)
 }
 
 # Cones, indicators and SOS constraints for SCIP. `nvars` counts the
@@ -416,12 +435,15 @@ roi_version <- function() {
 register_builtin_backends <- function() {
   register_solver(
     "scip", "scip",
-    "SCIP: branch and bound with spatial branching, global for nonconvex quadratic models",
-    classes = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP"),
-    global = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP"),
+    "SCIP: branch and bound with spatial branching, global for nonconvex quadratic and polynomial models",
+    classes = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP",
+                "NLP", "MINLP"),
+    global = c("LP", "MILP", "QP", "MIQP", "QCQP", "MIQCQP", "SOCP", "MISOCP",
+               "NLP", "MINLP"),
     features = list(time_limit = TRUE, mip_gap = TRUE, cones = "soc",
                     special = c("indicator", "sos")),
-    solve = scip_solve_sf, version = pkg_version("scip"), priority = 20L)
+    solve = scip_solve_sf, version = pkg_version("scip"), priority = 20L,
+    check = scip_check)
   register_solver(
     "osqp", "osqp",
     "OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)",
