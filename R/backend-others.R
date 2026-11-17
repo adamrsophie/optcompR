@@ -287,6 +287,13 @@ osqp_update <- function(sess, data) {
   if (!identical(old$u, data$u)) args$u <- data$u
   if (!identical(old$Ax, data$Ax)) args$Ax <- data$Ax
   if (!identical(old$Px, data$Px)) args$Px <- data$Px
+  # a workspace restored from a saved model has a dead native pointer;
+  # probe it even when nothing changed
+  live <- tryCatch({
+    osqp_method(sess$work, "GetDims")()
+    TRUE
+  }, error = function(e) FALSE)
+  if (!live) return(FALSE)
   if (!length(args)) return(TRUE)
   tryCatch({
     do.call(osqp_method(sess$work, "Update"), args)
