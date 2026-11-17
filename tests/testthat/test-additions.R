@@ -317,3 +317,102 @@ test_that("active PSD derivatives match finite differences with parameters in th
                (opt_objective_value(r1) - opt_objective_value(r0)) / (2 * h),
                tolerance = 1e-4)
 })
+
+test_that("lowering is reused across parameter updates", {
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", dim = 2, lower = 0)
+  p <- opt_parameter(m, "p", value = 1)
+  opt_constraint(m, x[1] + x[2] <= 4, name = "fixed")
+  opt_constraint(m, x[1] <= 2 * p, name = "moving")
+  opt_objective(m, x[1] + 2 * x[2])
+  sf1 <- opt_standard_form(m)
+  lc1 <- m$cache$lowered
+  opt_set_parameter(m, p, 1.5)
+  sf2 <- opt_standard_form(m)
+  lc2 <- m$cache$lowered
+  expect_identical(lc2$cons[[1]], lc1$cons[[1]])
+  expect_false(identical(lc2$cons[[2]]$pv, lc1$cons[[2]]$pv))
+  expect_equal(sf2$row_upper, c(4, 3))
+  expect_equal(unname(opt_value(opt_solve(m), x)), c(0, 4))
+  opt_constraint(m, x[2] <= 3, name = "new")
+  expect_equal(opt_standard_form(m)$row_upper, c(4, 3, 3))
+  expect_equal(m$cache$lowered$structure, m$structure_version)
+})
+
+test_that("scalar fast paths keep expression semantics", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 3)
+  expect_equal(format(2 * x[2]), format(x[2] * 2))
+  expect_equal(opt_terms(3 * x[3])$linear$coef, 3)
+  expect_equal(opt_evaluate(x[2] * 2 + x[3], c(1, 2, 3)), 7)
+  y <- x[2:3]
+  expect_equal(opt_symbols(y[2]), "x[3]")
+})
+
+test_that("HiGHS restarts LPs from the previous basis after parameter updates", {
+  set.seed(7)
+  n <- 60
+  A <- matrix(runif(40 * n), 40)
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", dim = n, lower = 0, upper = 1)
+  b <- opt_parameter(m, "b", dim = 40, value = rep(10, 40))
+  opt_constraint(m, A %*% x <= b)
+  opt_objective(m, sum(runif(n) * x))
+  r1 <- opt_solve(m, solver = "highs")
+  expect_false(r1$warm_start)
+  opt_set_parameter(m, b, rep(10.5, 40))
+  r2 <- opt_solve(m, solver = "highs")
+  expect_true(r2$warm_start)
+  cold <- opt_solve(opt_copy(m), solver = "highs")
+  expect_false(cold$warm_start)
+  expect_equal(opt_objective_value(r2), opt_objective_value(cold),
+               tolerance = 1e-8)
+  expect_lte(r2$iterations[["simplex"]], cold$iterations[["simplex"]])
+  r3 <- opt_solve(m, solver = "highs", warm_start = FALSE)
+  expect_false(r3$warm_start)
+})
+
+test_that("sparsity patterns contain every Jacobian and Hessian nonzero", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 4)
+  p <- opt_parameter(m, "p", value = 1.5)
+  fx <- opt_function(function(v) sum(v^2) * v[1], x[2:4], name = "f",
+                    gradient = function(v) c(sum(v^2) + 2 * v[1]^2,
+                                             2 * v[1] * v[-1]),
+                    hessian = function(v) {
+                      H <- 2 * v[1] * diag(length(v))
+                      H[1, ] <- H[1, ] + 2 * v
+                      H[, 1] <- H[, 1] + 2 * v
+                      H[1, 1] <- 6 * v[1]
+                      H
+                    })
+  es <- list(c(exp(x[1]) * x[2], x[3] / (1 + x[4]^2), sin(x[2]) + x[1]^3,
+               x[4]^p, sum(x^2), fx),
+             cumsum(log1p(x^2)), 3 * x + 1)
+  ns <- n_symbols(m)
+  set.seed(1)
+  z <- c(runif(4, 0.5, 2), 1.5)
+  for (e in es) {
+    J <- as.matrix(jac_expr(e, z, ns)$J) != 0
+    PJ <- as.matrix(jac_pattern(e, ns)) > 0
+    expect_true(all(PJ[J]))
+    H <- as.matrix(hess_expr(e, z, ns, runif(e$len) + 0.5)) != 0
+    PH <- as.matrix(hess_pattern(e, ns)) > 0
+    expect_true(all(PH[H]))
+  }
+  # separable sums stay diagonal
+  PH <- as.matrix(hess_pattern(sum(exp(x)), ns))
+  expect_equal(sum(PH > 0), 4L)
+})
+
+test_that("IPOPT solves a large sparse NLP with sparse structures", {
+  skip_if_not(opt_ipopt_available(), "optcompR was built without IPOPT")
+  n <- 400
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = n, lower = -5, upper = 5)
+  opt_constraint(m, x[-1] - x[-n]^2 == 0)
+  opt_objective(m, sum((x - 1)^2) + sum(exp(x / 10)))
+  r <- opt_solve(m, solver = "ipopt")
+  expect_true(opt_status(r) %in% c("optimal", "locally_optimal"))
+  expect_true(opt_check(r)$kkt$pass)
+})

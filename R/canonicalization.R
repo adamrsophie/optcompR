@@ -65,10 +65,27 @@ build_standard_form <- function(model) {
   n <- length(vs)
   col <- rep(NA_integer_, ns)
   col[vs] <- seq_len(n)
+  # lowered expressions are reused across parameter updates: an entry is
+  # valid while the structure is unchanged and the values of the
+  # parameters the expression uses are the same
+  lc <- model$cache$lowered
+  if (is.null(lc) || !identical(lc$structure, model$structure_version)) {
+    lc <- list(structure = model$structure_version, obj = NULL,
+               cons = vector("list", length(model$cons)))
+  }
+  lower_cached <- function(entry, e) {
+    if (!is.null(entry) && identical(pval[entry$ps], entry$pv)) return(entry)
+    ps <- expr_symbols(e)
+    ps <- ps[is_par[ps]]
+    low <- lower_expr(e, is_par, pval)
+    if (low$type == "poly" && length(low$qv)) low <- compact_poly(low)
+    list(ps = ps, pv = pval[ps], low = low)
+  }
 
   # objective
   obj <- model$objective
-  obj_low <- if (is.null(obj)) as_expr(0) else lower_expr(obj, is_par, pval)
+  if (!is.null(obj)) lc$obj <- lower_cached(lc$obj, obj)
+  obj_low <- if (is.null(obj)) as_expr(0) else lc$obj$low
   cvec <- numeric(n)
   Q <- NULL
   offset <- 0
@@ -94,12 +111,12 @@ build_standard_form <- function(model) {
   off <- 0L
   for (b in seq_len(nb)) {
     blk <- model$cons[[b]]
-    e <- lower_expr(blk$expr, is_par, pval)
+    lc$cons[[b]] <- lower_cached(lc$cons[[b]], blk$expr)
+    e <- lc$cons[[b]]$low
     cons_low[[b]] <- e
     m <- e$len
     kind <- rep.int("linear", m)
     if (e$type == "poly") {
-      if (length(e$qv)) e <- compact_poly(e)
       parts[[b]] <- list(i = off + e$li, j = col[e$lj], v = e$lv,
                          lo = blk$lower - e$const, hi = blk$upper - e$const)
       if (length(e$qv)) {
@@ -138,6 +155,7 @@ build_standard_form <- function(model) {
   }), use.names = FALSE) %||% character()
 
   special <- lower_special(model, is_par, pval, col, n)
+  model$cache$lowered <- lc
 
   structure(list(
     sense = model$sense, c = cvec, Q = Q, offset = offset,
@@ -155,7 +173,8 @@ build_standard_form <- function(model) {
     n_sym = ns, objective_lowered = obj_low, cons_lowered = cons_low,
     parameter_values = pval,
     cones = special$cones, indicators = special$indicators, sos = special$sos,
-    key = paste(model$structure_version, model$parameter_version, sep = ":")
+    key = paste(model$structure_version, model$parameter_version, sep = ":"),
+    structure_key = paste(model$id, model$structure_version, sep = ":")
   ), class = "opt_standard_form")
 }
 

@@ -16,7 +16,9 @@
 #'   above zero has status `"gap_limit"`, not `"optimal"`.
 #' @param verbose Print the solver log.
 #' @param warm_start Pass start values set with [opt_set_start()] or
-#'   `opt_variable(start = )` to solvers that accept them.
+#'   `opt_variable(start = )` to solvers that accept them. Without start
+#'   values, an LP solved again by HiGHS after a parameter update restarts
+#'   from the previous optimal basis.
 #' @param options Named list of backend options passed through unchanged
 #'   (for HiGHS, any option of [highs::highs_control()]). HiGHS uses one
 #'   thread by default; its thread scheduler is global to the process, so
@@ -49,9 +51,14 @@ opt_solve <- function(model, solver = "auto", time_limit = Inf, mip_gap = NULL,
   cls <- opt_classify(sf)
   t1 <- proc.time()[["elapsed"]]
   entry <- select_solver(cls, solver, sf)
+  # per model and backend scratch space, for example a basis to restart from
+  if (is.null(model$cache$backend)) model$cache$backend <- new.env(parent = emptyenv())
+  if (is.null(model$cache$backend[[entry$name]])) {
+    model$cache$backend[[entry$name]] <- new.env(parent = emptyenv())
+  }
   control <- list(time_limit = time_limit, mip_gap = mip_gap,
                   verbose = verbose, warm_start = warm_start,
-                  options = options)
+                  options = options, cache = model$cache$backend[[entry$name]])
   warnings <- unsupported_controls(entry, control, sf)
   sf_solver <- reformulate_special(sf, entry)
   if (!is.null(sf_solver$reformulated)) {

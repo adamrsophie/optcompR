@@ -162,8 +162,11 @@ select_solver <- function(cls, solver, sf = NULL) {
 #' backend does not list in `special`, already reformulated with binary
 #' columns and rows), the [opt_classify()] result `cls`, and `control`, a
 #' list with `time_limit` (seconds, `Inf` for none), `mip_gap` (`NULL` for
-#' the solver default), `verbose`, `warm_start` and `options` (the
-#' `options` list given to [opt_solve()]). The objective is
+#' the solver default), `verbose`, `warm_start`, `options` (the
+#' `options` list given to [opt_solve()]) and `cache`, an environment kept
+#' per model and backend in which a backend may store state, such as a
+#' basis, for the next solve of the same model. `sf$structure_key` changes
+#' whenever the model structure does. The objective is
 #' `0.5 x'Qx + c'x + offset` in the sense `sf$sense`, or, when
 #' `sf$objective_kind` is `"nonlinear"`, the lowered expression
 #' `sf$objective_lowered`, which [opt_gradient()] and the other derivative

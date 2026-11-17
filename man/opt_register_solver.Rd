@@ -66,8 +66,11 @@ model (parameters substituted; for indicator and SOS constraints that the
 backend does not list in \code{special}, already reformulated with binary
 columns and rows), the \code{\link[=opt_classify]{opt_classify()}} result \code{cls}, and \code{control}, a
 list with \code{time_limit} (seconds, \code{Inf} for none), \code{mip_gap} (\code{NULL} for
-the solver default), \code{verbose}, \code{warm_start} and \code{options} (the
-\code{options} list given to \code{\link[=opt_solve]{opt_solve()}}). The objective is
+the solver default), \code{verbose}, \code{warm_start}, \code{options} (the
+\code{options} list given to \code{\link[=opt_solve]{opt_solve()}}) and \code{cache}, an environment kept
+per model and backend in which a backend may store state, such as a
+basis, for the next solve of the same model. \code{sf$structure_key} changes
+whenever the model structure does. The objective is
 \verb{0.5 x'Qx + c'x + offset} in the sense \code{sf$sense}, or, when
 \code{sf$objective_kind} is \code{"nonlinear"}, the lowered expression
 \code{sf$objective_lowered}, which \code{\link[=opt_gradient]{opt_gradient()}} and the other derivative

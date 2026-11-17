@@ -109,3 +109,7 @@
   smooth boundaries of active second-order, exponential and power cones,
   and through the linearized complementarity of active PSD constraints;
   inactive cones drop out.
+* Lowered constraint blocks and objectives are reused across parameter
+  updates when the parameters they use keep their values, and HiGHS
+  restarts LPs from the previous optimal basis. Scalar constraints built
+  in loops are about a quarter faster.

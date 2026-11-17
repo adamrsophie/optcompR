@@ -66,8 +66,32 @@ highs_solve_sf <- function(sf, cls, control) {
     highs::hi_solver_set_start(solver$solver, sf$start)
     start_used <- TRUE
   }
+  # an LP re-solved after a parameter update starts from the previous
+  # optimal basis when the structure (and so the basis size) is unchanged
+  cache <- control$cache
+  bkey <- paste(sf$structure_key, n, nrow(sf$A))
+  basis_used <- FALSE
+  if (!cls$integer && is.null(sf$Q) && isTRUE(control$warm_start) &&
+      !start_used && is.environment(cache) &&
+      identical(cache$highs_basis_key, bkey)) {
+    b <- cache$highs_basis
+    ok <- tryCatch({
+      highs::hi_solver_set_basis(solver$solver, b$col_status, b$row_status)
+      TRUE
+    }, error = function(e) FALSE)
+    basis_used <- isTRUE(ok)
+  }
   solver$solve()
   code <- solver$status()
+  if (!cls$integer && is.null(sf$Q) && is.environment(cache) &&
+      highs_termination(code) == "optimal") {
+    b <- tryCatch(highs::hi_solver_get_basis(solver$solver),
+                  error = function(e) NULL)
+    if (isTRUE(b$valid)) {
+      cache$highs_basis <- b
+      cache$highs_basis_key <- bkey
+    }
+  }
   sol <- solver$solution()
   info <- solver$info()
   integer <- cls$integer
@@ -97,7 +121,7 @@ highs_solve_sf <- function(sf, cls, control) {
                       qp = info$qp_iteration_count,
                       nodes = info$mip_node_count),
        gap = gap, bound = bound, message = solver$status_message(),
-       local = FALSE, warm_start = start_used,
+       local = FALSE, warm_start = start_used || basis_used,
        extra = list(ranging = ranging, sign = s),
        raw = list(status = code, solution = sol, info = info))
 }

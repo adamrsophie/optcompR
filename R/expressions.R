@@ -130,6 +130,13 @@ compact_poly <- function(e) {
 # Select (and possibly repeat) elements of an expression.
 expr_subset <- function(e, idx, dim = NULL) {
   idx <- as.integer(idx)
+  if (length(idx) == 1L && e$type == "poly" && !is.na(idx) && idx >= 1L &&
+      idx <= e$len && length(e$li) == e$len && !length(e$qi) &&
+      identical(e$li, seq_len(e$len))) {
+    # one element of a plain variable block
+    return(new_poly(e$model, 1L, dim, const = e$const[idx], li = 1L,
+                    lj = e$lj[idx], lv = e$lv[idx]))
+  }
   if (anyNA(idx) || any(idx < 1L | idx > e$len)) {
     stop("Expression index out of bounds.", call. = FALSE)
   }
@@ -230,6 +237,15 @@ poly_product <- function(a, b, model, n, dim) {
 }
 
 expr_mul <- function(a, b) {
+  # fast path for a scalar times a polynomial, common in scalar loops
+  if (is.numeric(a) && length(a) == 1L && is.null(dim(a)) && !is.na(a) &&
+      is_expr(b) && b$type == "poly") {
+    return(expr_scale(b, a))
+  }
+  if (is.numeric(b) && length(b) == 1L && is.null(dim(b)) && !is.na(b) &&
+      is_expr(a) && a$type == "poly") {
+    return(expr_scale(a, b))
+  }
   a <- as_expr(a)
   b <- as_expr(b)
   model <- join_models(a, b)
