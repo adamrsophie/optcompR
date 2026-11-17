@@ -105,6 +105,17 @@
 <li>Indicator switches must stay binary. <code><a href="../reference/opt_fixed_relaxation.html">opt_fixed_relaxation()</a></code> refuses a result whose model changed since the solve. Automatic selection skips solvers that cannot reformulate indicator or SOS constraints, and controls a backend ignores are reported in the result warnings.</li>
 <li>
 <code><a href="../reference/opt_z3_certify.html">opt_z3_certify()</a></code> also proves that the reported value is attained, and <code><a href="../reference/opt_z3_check.html">opt_z3_check()</a></code> works with nonlinear objectives.</li>
+<li>A power whose exponent is a parameter expression stays a power node and becomes a constant power once values are substituted, so <code>x^p</code> with <code>p = 2</code> is a quadratic even for negative <code>x</code>; derivatives in the exponent are exact for positive bases and refused where they do not exist.</li>
+<li>
+<code><a href="../reference/opt_copy.html">opt_copy()</a></code> copies a model. <code><a href="../reference/opt_special_constraints.html">opt_special_constraints()</a></code> lists cones, indicator constraints and special ordered sets, and <code><a href="../reference/opt_delete_constraint.html">opt_delete_constraint()</a></code> deletes them. <code><a href="../reference/opt_terms.html">opt_terms()</a></code>, <code><a href="../reference/opt_terms.html">opt_degree()</a></code>, <code><a href="../reference/opt_terms.html">opt_symbols()</a></code> and <code><a href="../reference/opt_evaluate.html">opt_evaluate()</a></code> expose the structure and values of expressions.</li>
+<li>A mixed-integer solve that stops at a user <code>mip_gap</code> with a positive gap reports <code>"gap_limit"</code> instead of <code>"optimal"</code>. SCIP results carry the dual bound recovered from SCIP’s gap.</li>
+<li>
+<code>configure</code> links a test program before enabling IPOPT, and Windows builds use IPOPT from a COIN-OR binary release named by <code>IPOPT_HOME</code>.</li>
+<li>
+<code><a href="../reference/opt_register_solver.html">opt_register_solver()</a></code> and <code><a href="../reference/opt_register_solver.html">opt_unregister_solver()</a></code> make the backend contract public; what a backend returns is validated.</li>
+<li>SCS is a second conic backend (<code>solver = "scs"</code>). Clarabel and SCS results carry cone multipliers by cone in <code>extra$cone_dual</code>, and <code><a href="../reference/opt_check.html">opt_check()</a></code> verifies the conic KKT conditions with them (stationarity, dual cone membership and complementarity per cone).</li>
+<li>
+<code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code> differentiates conic solutions through the smooth boundaries of active second-order, exponential and power cones, and through the linearized complementarity of active PSD constraints; inactive cones drop out.</li>
 </ul></div>
   </main></div>
 

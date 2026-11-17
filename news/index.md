@@ -111,3 +111,38 @@
   also proves that the reported value is attained, and
   [`opt_z3_check()`](https://adamrsophie.github.io/optcompR/reference/opt_z3_check.md)
   works with nonlinear objectives.
+- A power whose exponent is a parameter expression stays a power node
+  and becomes a constant power once values are substituted, so `x^p`
+  with `p = 2` is a quadratic even for negative `x`; derivatives in the
+  exponent are exact for positive bases and refused where they do not
+  exist.
+- [`opt_copy()`](https://adamrsophie.github.io/optcompR/reference/opt_copy.md)
+  copies a model.
+  [`opt_special_constraints()`](https://adamrsophie.github.io/optcompR/reference/opt_special_constraints.md)
+  lists cones, indicator constraints and special ordered sets, and
+  [`opt_delete_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_delete_constraint.md)
+  deletes them.
+  [`opt_terms()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md),
+  [`opt_degree()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md),
+  [`opt_symbols()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md)
+  and
+  [`opt_evaluate()`](https://adamrsophie.github.io/optcompR/reference/opt_evaluate.md)
+  expose the structure and values of expressions.
+- A mixed-integer solve that stops at a user `mip_gap` with a positive
+  gap reports `"gap_limit"` instead of `"optimal"`. SCIP results carry
+  the dual bound recovered from SCIP’s gap.
+- `configure` links a test program before enabling IPOPT, and Windows
+  builds use IPOPT from a COIN-OR binary release named by `IPOPT_HOME`.
+- [`opt_register_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
+  and
+  [`opt_unregister_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
+  make the backend contract public; what a backend returns is validated.
+- SCS is a second conic backend (`solver = "scs"`). Clarabel and SCS
+  results carry cone multipliers by cone in `extra$cone_dual`, and
+  [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md)
+  verifies the conic KKT conditions with them (stationarity, dual cone
+  membership and complementarity per cone).
+- [`opt_solution_jacobian()`](https://adamrsophie.github.io/optcompR/reference/opt_solution_jacobian.md)
+  differentiates conic solutions through the smooth boundaries of active
+  second-order, exponential and power cones, and through the linearized
+  complementarity of active PSD constraints; inactive cones drop out.

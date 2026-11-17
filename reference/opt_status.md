@@ -44,8 +44,10 @@ A string.
 
 - `"time_limit"`, `"iteration_limit"`, `"node_limit"`,
   `"solution_limit"`, `"objective_limit"`, `"memory_limit"`,
-  `"interrupted"`: the solver stopped early; a feasible point may still
-  exist, see `opt_primal_status()`;
+  `"interrupted"`, and `"gap_limit"` (a mixed-integer solve stopped at
+  the relative gap given in `mip_gap` with a gap above zero): the solver
+  stopped early; a feasible point may still exist, see
+  `opt_primal_status()`;
 
 - `"numerical_error"`, `"invalid_model"`, `"unknown"`.
 

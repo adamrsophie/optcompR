@@ -42,7 +42,8 @@ opt_solve(
 - mip_gap:
 
   Relative optimality gap for mixed-integer solvers. `NULL` keeps the
-  solver default.
+  solver default. A solve that stops at this gap with a gap above zero
+  has status `"gap_limit"`, not `"optimal"`.
 
 - verbose:
 
@@ -88,7 +89,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.005s (build 0.001s)
+#>   time:        0.004s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```

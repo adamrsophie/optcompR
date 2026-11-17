@@ -33,10 +33,12 @@
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_classify.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_constraint.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_constraints.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_copy.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_cvar.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_delete_constraint.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_dual.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_epsilon_constraint.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_evaluate.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_expr_shape.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_fix.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_fixed_relaxation.html</loc></url>
@@ -54,6 +56,7 @@
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_ode_loss.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_operators.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_parameter.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_register_solver.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_robust_constraint.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_scenarios.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_sensitivity.html</loc></url>
@@ -69,9 +72,11 @@
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_solver_capabilities.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_solvers.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_sos1.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_special_constraints.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_standard_form.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_status.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_sym_variable.html</loc></url>
+<url><loc>https://adamrsophie.github.io/optcompR/reference/opt_terms.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_to_sym.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_value.html</loc></url>
 <url><loc>https://adamrsophie.github.io/optcompR/reference/opt_variable.html</loc></url>

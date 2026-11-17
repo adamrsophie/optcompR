@@ -55,6 +55,9 @@ d$kkt
 #> $stationarity_residual
 #> [1] -8.0e-08 -1.6e-07
 #> 
+#> $cones
+#> NULL
+#> 
 #> $pass
 #> [1] TRUE
 #> 

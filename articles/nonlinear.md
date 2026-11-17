@@ -61,7 +61,10 @@ opt_check(r)$kkt
 #> [1] 1.405089e-11
 #> 
 #> $stationarity_residual
-#> [1]  1.554312e-15  6.597086e-09 -8.619240e-09  1.192852e-09
+#> [1]  2.220446e-16  6.597087e-09 -8.619240e-09  1.192852e-09
+#> 
+#> $cones
+#> NULL
 #> 
 #> $pass
 #> [1] TRUE
@@ -75,8 +78,9 @@ opt_check(r)$kkt
 [IPOPT](https://coin-or.github.io/Ipopt/) is an interior point solver
 for large nonlinear programs. optcompR binds to its C interface when
 IPOPT is found with `pkg-config` at installation (`brew install ipopt`
-on macOS, `apt install coinor-libipopt-dev` on Debian and Ubuntu), and
-then
+on macOS, `apt install coinor-libipopt-dev` on Debian and Ubuntu), or on
+Windows from a COIN-OR binary release named by `IPOPT_HOME` at
+installation (with its `bin` folder on `PATH`), and then
 [`opt_ipopt_available()`](https://adamrsophie.github.io/optcompR/reference/opt_ipopt_available.md)
 is `TRUE`. IPOPT receives the exact gradient, Jacobian and Hessian of
 the Lagrangian; for external functions without a Hessian it uses a

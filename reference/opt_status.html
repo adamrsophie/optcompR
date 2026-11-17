@@ -111,7 +111,9 @@ constraints; this is not a proof of infeasibility;</p></li>
 certified by the solver; HiGHS may report infeasible or unbounded
 without deciding which;</p></li>
 <li><p><code>"time_limit"</code>, <code>"iteration_limit"</code>, <code>"node_limit"</code>, <code>"solution_limit"</code>,
-<code>"objective_limit"</code>, <code>"memory_limit"</code>, <code>"interrupted"</code>: the solver
+<code>"objective_limit"</code>, <code>"memory_limit"</code>, <code>"interrupted"</code>, and
+<code>"gap_limit"</code> (a mixed-integer solve stopped at the relative gap given
+in <code>mip_gap</code> with a gap above zero): the solver
 stopped early; a feasible point may still exist, see
 <code>opt_primal_status()</code>;</p></li>
 <li><p><code>"numerical_error"</code>, <code>"invalid_model"</code>, <code>"unknown"</code>.</p></li>

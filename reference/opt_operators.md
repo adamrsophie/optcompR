@@ -6,10 +6,14 @@ length-one operands are recycled; other length mismatches are errors.
 The comparisons `<=`, `>=` and `==` build constraint relations for
 [`opt_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_constraint.md);
 they never return `TRUE` or `FALSE`. Strict inequalities `<` and `>` and
-`!=` are rejected because they do not define closed feasible sets.
-Logical operators are not overloaded; R's `&&` and `||` cannot be
-overloaded at all, and logical constraints between expressions are not
-supported.
+`!=` are rejected because they do not define closed feasible sets. A
+power `x^p` whose exponent is an expression of parameters only stays a
+power node and becomes an ordinary constant power when the parameter
+values are substituted, so `x^p` with `p = 2` is a square even for
+negative `x`; an exponent containing decision variables is rewritten as
+`exp(p * log(x))`, defined for positive `x`. Logical operators are not
+overloaded; R's `&&` and `||` cannot be overloaded at all, and logical
+constraints between expressions are not supported.
 
 ## Usage
 

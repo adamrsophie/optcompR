@@ -19,19 +19,21 @@ opt_solvers()
 #> 2 clarabel  clarabel      TRUE                        LP QP SOCP CONIC  TRUE
 #> 3     scip      scip      TRUE LP MILP QP MIQP QCQP MIQCQP SOCP MISOCP FALSE
 #> 4     osqp      osqp      TRUE                                   LP QP  TRUE
-#> 5   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE
-#> 6    ipopt                TRUE                          NLP QCQP QP LP  TRUE
-#> 7      roi ROI, slam      TRUE                              LP MILP QP FALSE
-#> 8    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE
-#>                                                                                    description
-#> 1               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
-#> 2 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs
-#> 3         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
-#> 4               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
-#> 5                            NLopt SLSQP (default): local gradient-based nonlinear programming
-#> 6                     IPOPT: interior point for nonlinear programs with exact Hessians (local)
-#> 7               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
-#> 8   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)
+#> 5      scs       scs      TRUE                        LP QP SOCP CONIC  TRUE
+#> 6   nloptr    nloptr      TRUE                          NLP QCQP QP LP FALSE
+#> 7    ipopt                TRUE                          NLP QCQP QP LP  TRUE
+#> 8      roi ROI, slam      TRUE                              LP MILP QP FALSE
+#> 9    nlpbb    nloptr      TRUE                       MINLP MIQCQP MIQP FALSE
+#>                                                                                                                    description
+#> 1                                               HiGHS: dual simplex, interior point and branch and bound (LP, convex QP, MILP)
+#> 2                                 Clarabel: interior point for LP, convex QP and SOC, PSD, exponential and power cone programs
+#> 3                                         SCIP: branch and bound with spatial branching, global for nonconvex quadratic models
+#> 4                                               OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)
+#> 5 SCS: operator splitting for LP, convex QP and SOC, PSD, exponential and power cone programs (first-order, moderate accuracy)
+#> 6                                                            NLopt SLSQP (default): local gradient-based nonlinear programming
+#> 7                                                     IPOPT: interior point for nonlinear programs with exact Hessians (local)
+#> 8                                               ROI: R Optimization Infrastructure with installed plugins (options$roi_solver)
+#> 9                                   NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)
 opt_solver_capabilities("highs")
 #> $name
 #> [1] "highs"
@@ -90,6 +92,7 @@ opt_solver_capabilities("highs")
 |----|----|----|----|----|----|
 | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
 | clarabel | LP, convex QP, SOCP, CONIC | all of these | yes | no | no |
+| scs | LP, convex QP, SOCP, CONIC (first order) | all of these | yes | no | yes |
 | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated by [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md) | no | start point |
@@ -121,7 +124,7 @@ opt_exp_cone(m, x, 0 * x + 1, t)
 opt_objective(m, t)
 opt_solve(m)
 #> Error:
-#> ! No installed solver supports this MICONIC (convex). highs does not support MICONIC problems; clarabel does not support MICONIC problems; scip does not support MICONIC problems; osqp does not support MICONIC problems; nloptr does not support MICONIC problems; ipopt does not support MICONIC problems; roi does not support MICONIC problems; nlpbb does not support MICONIC problems.
+#> ! No installed solver supports this MICONIC (convex). highs does not support MICONIC problems; clarabel does not support MICONIC problems; scip does not support MICONIC problems; osqp does not support MICONIC problems; scs does not support MICONIC problems; nloptr does not support MICONIC problems; ipopt does not support MICONIC problems; roi does not support MICONIC problems; nlpbb does not support MICONIC problems.
 ```
 
 ## Comparing backends on one model

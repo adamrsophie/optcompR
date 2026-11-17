@@ -63,6 +63,7 @@ opt_check(r)           # independent feasibility and KKT checks
 |----|----|----|----|----|----|----|
 | highs | highs | LP, MILP, convex QP | all of these | LP, QP | LP | yes |
 | clarabel | clarabel | LP, convex QP, SOCP, CONIC (SOC, PSD, exp, power) | all of these | yes | no | no |
+| scs | scs | LP, convex QP, SOCP, CONIC (first order, moderate accuracy) | all of these | yes | no | yes |
 | scip | scip | LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP | all, including nonconvex | no | no | no |
 | osqp | osqp | convex QP, LP | convex problems | yes | no | no |
 | nloptr | nloptr | NLP, QCQP, QP, LP (SLSQP) | convex problems | estimated | no | start point |
@@ -72,7 +73,10 @@ opt_check(r)           # independent feasibility and KKT checks
 
 HiGHS is required; the others are optional. The IPOPT backend is
 compiled in when `pkg-config` finds IPOPT at installation
-(`brew install ipopt`, `apt install coinor-libipopt-dev`); check with
+(`brew install ipopt`, `apt install coinor-libipopt-dev`). On Windows,
+unpack a COIN-OR binary release (`Ipopt-3.14.x-win64-msvs2022-md.zip`),
+set `IPOPT_HOME` to its folder before installing, and keep its `bin`
+folder on `PATH`. Check with
 [`opt_ipopt_available()`](https://adamrsophie.github.io/optcompR/reference/opt_ipopt_available.md).
 
 ## Installation

@@ -163,7 +163,10 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 <span><span class="co">#&gt; [1] 1.405089e-11</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $stationarity_residual</span></span>
-<span><span class="co">#&gt; [1]  1.554312e-15  6.597086e-09 -8.619240e-09  1.192852e-09</span></span>
+<span><span class="co">#&gt; [1]  2.220446e-16  6.597087e-09 -8.619240e-09  1.192852e-09</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $cones</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $pass</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -178,12 +181,15 @@ x_3</span> subject to <span class="math inline">x_1 x_2 x_3 x_4 \ge
 point solver for large nonlinear programs. optcompR binds to its C
 interface when IPOPT is found with <code>pkg-config</code> at
 installation (<code>brew install ipopt</code> on macOS,
-<code>apt install coinor-libipopt-dev</code> on Debian and Ubuntu), and
-then <code><a href="../reference/opt_ipopt_available.html">opt_ipopt_available()</a></code> is <code>TRUE</code>. IPOPT
-receives the exact gradient, Jacobian and Hessian of the Lagrangian; for
-external functions without a Hessian it uses a limited-memory
-quasi-Newton approximation. Unlike SLSQP it returns multipliers, so
-duals and the KKT check use solver values rather than estimates.</p>
+<code>apt install coinor-libipopt-dev</code> on Debian and Ubuntu), or
+on Windows from a COIN-OR binary release named by
+<code>IPOPT_HOME</code> at installation (with its <code>bin</code>
+folder on <code>PATH</code>), and then
+<code><a href="../reference/opt_ipopt_available.html">opt_ipopt_available()</a></code> is <code>TRUE</code>. IPOPT receives
+the exact gradient, Jacobian and Hessian of the Lagrangian; for external
+functions without a Hessian it uses a limited-memory quasi-Newton
+approximation. Unlike SLSQP it returns multipliers, so duals and the KKT
+check use solver values rather than estimates.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_solve.html">opt_solve</a></span><span class="op">(</span><span class="va">m</span>, solver <span class="op">=</span> <span class="st">"ipopt"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_status.html">opt_status</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span>

@@ -22,6 +22,8 @@
   : Set start values for variables
 - [`opt_set_parameter()`](https://adamrsophie.github.io/optcompR/reference/opt_set_parameter.md)
   : Change parameter values
+- [`opt_copy()`](https://adamrsophie.github.io/optcompR/reference/opt_copy.md)
+  : Copy a model
 
 ## Expressions
 
@@ -45,6 +47,12 @@
   : Test whether an object is an optimization expression
 - [`opt_function()`](https://adamrsophie.github.io/optcompR/reference/opt_function.md)
   : Wrap an R function as a nonlinear expression
+- [`opt_terms()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md)
+  [`opt_degree()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md)
+  [`opt_symbols()`](https://adamrsophie.github.io/optcompR/reference/opt_terms.md)
+  : Inspect the terms of an expression
+- [`opt_evaluate()`](https://adamrsophie.github.io/optcompR/reference/opt_evaluate.md)
+  : Evaluate an expression at given values
 
 ## Constraints and objectives
 
@@ -54,6 +62,9 @@
   : List the constraint blocks of a model
 - [`opt_delete_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_delete_constraint.md)
   : Delete a constraint block
+- [`opt_special_constraints()`](https://adamrsophie.github.io/optcompR/reference/opt_special_constraints.md)
+  [`opt_special_constraint()`](https://adamrsophie.github.io/optcompR/reference/opt_special_constraints.md)
+  : List the special constraints of a model
 - [`opt_objective()`](https://adamrsophie.github.io/optcompR/reference/opt_objective.md)
   : Set the objective of a model
 
@@ -96,6 +107,9 @@
   : Available optimization solvers
 - [`opt_solver_capabilities()`](https://adamrsophie.github.io/optcompR/reference/opt_solver_capabilities.md)
   : Capabilities of one solver backend
+- [`opt_register_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
+  [`opt_unregister_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
+  : Register a solver backend
 - [`opt_ipopt_available()`](https://adamrsophie.github.io/optcompR/reference/opt_ipopt_available.md)
   : Is the IPOPT backend available?
 - [`opt_classify()`](https://adamrsophie.github.io/optcompR/reference/opt_classify.md)

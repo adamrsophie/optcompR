@@ -17,8 +17,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Unified Mathematical Optimization and Computational Modeling in R">
-<meta name="description" content="A solver independent modeling layer for mathematical optimization. Decision variables, parameters, expressions, constraints and objectives are written with ordinary R operators; models are classified (linear, quadratic, mixed integer, nonlinear) with recorded evidence, lowered to sparse standard forms, and solved by installed backends such as HiGHS through the highs package, OSQP, NLopt, SCIP, and ROI plugins. Results carry standardized termination statuses, duals with a documented sign convention, independent feasibility and Karush Kuhn Tucker diagnostics, exact derivatives, sensitivity reports and reproducibility metadata. The design follows JuMP and MathOptInterface &lt;https://jump.dev&gt;.">
-<meta property="og:description" content="A solver independent modeling layer for mathematical optimization. Decision variables, parameters, expressions, constraints and objectives are written with ordinary R operators; models are classified (linear, quadratic, mixed integer, nonlinear) with recorded evidence, lowered to sparse standard forms, and solved by installed backends such as HiGHS through the highs package, OSQP, NLopt, SCIP, and ROI plugins. Results carry standardized termination statuses, duals with a documented sign convention, independent feasibility and Karush Kuhn Tucker diagnostics, exact derivatives, sensitivity reports and reproducibility metadata. The design follows JuMP and MathOptInterface &lt;https://jump.dev&gt;.">
+<meta name="description" content="A solver independent modeling layer for mathematical optimization. Decision variables, parameters, expressions, constraints and objectives are written with ordinary R operators; models are classified (linear, quadratic, mixed integer, nonlinear) with recorded evidence, lowered to sparse standard forms, and solved by installed backends such as HiGHS through the highs package, OSQP, NLopt, SCIP, Clarabel, SCS, and ROI plugins. Results carry standardized termination statuses, duals with a documented sign convention, independent feasibility and Karush Kuhn Tucker diagnostics, exact derivatives, sensitivity reports and reproducibility metadata. The design follows JuMP and MathOptInterface &lt;https://jump.dev&gt;.">
+<meta property="og:description" content="A solver independent modeling layer for mathematical optimization. Decision variables, parameters, expressions, constraints and objectives are written with ordinary R operators; models are classified (linear, quadratic, mixed integer, nonlinear) with recorded evidence, lowered to sparse standard forms, and solved by installed backends such as HiGHS through the highs package, OSQP, NLopt, SCIP, Clarabel, SCS, and ROI plugins. Results carry standardized termination statuses, duals with a documented sign convention, independent feasibility and Karush Kuhn Tucker diagnostics, exact derivatives, sensitivity reports and reproducibility metadata. The design follows JuMP and MathOptInterface &lt;https://jump.dev&gt;.">
 <meta property="og:image" content="https://adamrsophie.github.io/optcompR/logo.svg">
 </head>
 <body>
@@ -101,6 +101,8 @@
 </div>
 <!-- badges: start -->
 
+<!-- badges: start -->
+
 <p>Unified mathematical optimization and computational modeling in R.</p>
 <p>optcompR is a solver independent modeling layer. Variables, parameters, constraints and objectives are written with ordinary R operators; models are classified (LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, CONIC, NLP, MINLP) with recorded convexity evidence, lowered to sparse standard forms and solved by installed backends. Results carry standardized statuses, duals with one documented sign convention, and diagnostics recomputed independently from the model.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -181,6 +183,15 @@
 <td>no</td>
 </tr>
 <tr>
+<td>scs</td>
+<td>scs</td>
+<td>LP, convex QP, SOCP, CONIC (first order, moderate accuracy)</td>
+<td>all of these</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
 <td>scip</td>
 <td>scip</td>
 <td>LP, MILP, QP, MIQP, QCQP, MIQCQP, SOCP, MISOCP</td>
@@ -236,7 +247,7 @@
 </tr>
 </tbody>
 </table>
-<p>HiGHS is required; the others are optional. The IPOPT backend is compiled in when <code>pkg-config</code> finds IPOPT at installation (<code>brew install ipopt</code>, <code>apt install coinor-libipopt-dev</code>); check with <code><a href="reference/opt_ipopt_available.html">opt_ipopt_available()</a></code>.</p>
+<p>HiGHS is required; the others are optional. The IPOPT backend is compiled in when <code>pkg-config</code> finds IPOPT at installation (<code>brew install ipopt</code>, <code>apt install coinor-libipopt-dev</code>). On Windows, unpack a COIN-OR binary release (<code>Ipopt-3.14.x-win64-msvs2022-md.zip</code>), set <code>IPOPT_HOME</code> to its folder before installing, and keep its <code>bin</code> folder on <code>PATH</code>. Check with <code><a href="reference/opt_ipopt_available.html">opt_ipopt_available()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -289,6 +300,11 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
+<li><a href="https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/adamrsophie/optcompR" class="external-link"><img src="https://codecov.io/gh/adamrsophie/optcompR/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://adamrsophie.github.io/optcompR/"><img src="https://github.com/adamrsophie/optcompR/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://www.gnu.org/licenses/gpl-3.0" class="external-link"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a></li>
 <li><a href="https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://adamrsophie.github.io/optcompR/"><img src="https://github.com/adamrsophie/optcompR/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a></li>
 </ul>

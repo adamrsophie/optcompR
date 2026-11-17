@@ -87,6 +87,7 @@ d
 #>   max integrality violation:    0
 #>   max cone/indicator/SOS violation: 4.93957e-09
 #>   objective recomputation error: 0
+#>   KKT: stationarity 9.76996e-15, dual feasibility 0, complementarity 7.04053e-10 (pass)
 d$special
 #>   constraint     kind    violation
 #> 1      cone1 cone soc 4.939575e-09

@@ -29,8 +29,10 @@ An `opt_diagnostics` list with `max_row_violation`,
 `max_bound_violation`, `max_integrality_violation`, `objective_error`,
 `kkt` (or `NULL`), `feasible`, `rows`, a data frame of row residuals,
 and `special`, the violations of cone, indicator and SOS constraints
-(cones pass at `sqrt(tol)`). KKT conditions are not checked for conic
-models, whose multipliers live in the dual cones.
+(cones pass at `sqrt(tol)`). For conic models solved by Clarabel or SCS
+the KKT test includes the cone multipliers: stationarity with the cone
+terms, membership of each multiplier in the dual cone, and
+complementarity of each cone; `kkt$cones` reports them per cone.
 
 ## Details
 

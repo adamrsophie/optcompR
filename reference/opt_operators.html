@@ -5,7 +5,12 @@ length-one operands are recycled; other length mismatches are errors.
 The comparisons &amp;lt;=, &amp;gt;= and == build constraint relations for
 opt_constraint(); they never return TRUE or FALSE. Strict
 inequalities &amp;lt; and &amp;gt; and != are rejected because they do not define
-closed feasible sets. Logical operators are not overloaded; R's &amp;amp;&amp;amp; and
+closed feasible sets. A power x^p whose exponent is an expression of
+parameters only stays a power node and becomes an ordinary constant power
+when the parameter values are substituted, so x^p with p = 2 is a
+square even for negative x; an exponent containing decision variables
+is rewritten as exp(p * log(x)), defined for positive x. Logical
+operators are not overloaded; R's &amp;amp;&amp;amp; and
 || cannot be overloaded at all, and logical constraints between
 expressions are not supported."><meta property="og:description" content="Expressions support +, -, *, / and ^ elementwise, with numeric
 vectors, matrices and other expressions of the same model. Only
@@ -13,7 +18,12 @@ length-one operands are recycled; other length mismatches are errors.
 The comparisons &amp;lt;=, &amp;gt;= and == build constraint relations for
 opt_constraint(); they never return TRUE or FALSE. Strict
 inequalities &amp;lt; and &amp;gt; and != are rejected because they do not define
-closed feasible sets. Logical operators are not overloaded; R's &amp;amp;&amp;amp; and
+closed feasible sets. A power x^p whose exponent is an expression of
+parameters only stays a power node and becomes an ordinary constant power
+when the parameter values are substituted, so x^p with p = 2 is a
+square even for negative x; an exponent containing decision variables
+is rewritten as exp(p * log(x)), defined for positive x. Logical
+operators are not overloaded; R's &amp;amp;&amp;amp; and
 || cannot be overloaded at all, and logical constraints between
 expressions are not supported."><meta property="og:image" content="https://adamrsophie.github.io/optcompR/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -92,7 +102,12 @@ length-one operands are recycled; other length mismatches are errors.
 The comparisons <code>&lt;=</code>, <code>&gt;=</code> and <code>==</code> build constraint relations for
 <code><a href="opt_constraint.html">opt_constraint()</a></code>; they never return <code>TRUE</code> or <code>FALSE</code>. Strict
 inequalities <code>&lt;</code> and <code>&gt;</code> and <code>!=</code> are rejected because they do not define
-closed feasible sets. Logical operators are not overloaded; R's <code>&amp;&amp;</code> and
+closed feasible sets. A power <code>x^p</code> whose exponent is an expression of
+parameters only stays a power node and becomes an ordinary constant power
+when the parameter values are substituted, so <code>x^p</code> with <code>p = 2</code> is a
+square even for negative <code>x</code>; an exponent containing decision variables
+is rewritten as <code>exp(p * log(x))</code>, defined for positive <code>x</code>. Logical
+operators are not overloaded; R's <code>&amp;&amp;</code> and
 <code>||</code> cannot be overloaded at all, and logical constraints between
 expressions are not supported.</p>
     </div>
