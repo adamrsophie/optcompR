@@ -34,6 +34,14 @@ test_that("a positive lower bound on a square is never treated as redundant", {
     opt_objective(m, x)
     expect_false(opt_classify(m)$convexity == "convex")
   }
+  # a parameter at zero stores a zero coefficient in the row
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = -2, upper = 2)
+  y <- opt_variable(m, "y", lower = -2, upper = 2)
+  p <- opt_parameter(m, "p", 0)
+  opt_constraint(m, x^2 + p * x + y, lower = -1, upper = 1)
+  opt_objective(m, x)
+  expect_false(opt_classify(m)$convexity == "convex")
   # exact redundancy is still recognized
   m <- opt_model()
   x <- opt_variable(m, "x", lower = -2, upper = 2)
@@ -76,6 +84,24 @@ test_that("NLP branch and bound bounds are certified, not primal values", {
   r <- opt_solve(m, solver = "nlpbb")
   expect_identical(opt_status(r), "optimal")
   expect_equal(opt_objective_value(r), 0.16, tolerance = 1e-8)
+})
+
+test_that("NLP branch and bound certifies through convex nonlinear rows", {
+  skip_if_not_installed("nloptr")
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 5)
+  y <- opt_variable(m, "y", type = "integer", lower = 0, upper = 5)
+  opt_constraint(m, x^2 + y^2 <= 8)
+  opt_objective(m, (x - 2.6)^2 + (y - 2.6)^2)
+  r <- opt_solve(m, solver = "nlpbb")
+  expect_identical(opt_status(r), "optimal")
+  expect_equal(unname(r$x), c(2, 2))
+  # enumeration of the integer points confirms the optimum 0.72
+  g <- expand.grid(x = 0:5, y = 0:5)
+  g <- g[g$x^2 + g$y^2 <= 8, ]
+  expect_equal(min((g$x - 2.6)^2 + (g$y - 2.6)^2), opt_objective_value(r),
+               tolerance = 1e-8)
+  expect_lte(opt_objective_bound(r), opt_objective_value(r) + 1e-12)
 })
 
 test_that("a local mixed-integer backend is not promoted by a convex relaxation", {
@@ -171,6 +197,17 @@ test_that("retained helper results form their own fixed relaxations", {
   r <- opt_weighted(m, list(x, 2 * x), c(1, 1), solver = "highs")
   fr <- opt_fixed_relaxation(r, solver = "highs")
   expect_equal(opt_objective_value(fr), opt_objective_value(r))
+  # the user's handles index the rebuilt result
+  m <- opt_model("max")
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
+  y <- opt_variable(m, "y", lower = 0)
+  cap <- opt_constraint(m, x + y <= 4.5)
+  opt_objective(m, 3 * x + 2 * y)
+  r <- opt_weighted(m, list(3 * x + 2 * y, x), c(1, 1), solver = "highs")
+  fr <- opt_fixed_relaxation(r, solver = "highs")
+  expect_equal(unname(opt_value(fr, x)), 3)
+  expect_equal(unname(opt_value(fr, y)), 1.5)
+  expect_equal(unname(opt_dual(fr, cap)), 2)
   m <- opt_model()
   x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 10)
   p <- opt_parameter(m, "p", 2)
@@ -236,6 +273,10 @@ test_that("a strict accuracy request tightens result validation", {
   if (!opt_check(r, tol = 1e-6)$feasible) {
     expect_false(opt_has_solution(r))
   }
+  # a strict request that converges still gives a solution
+  r <- opt_solve(m, solver = "scs", options = list(eps_abs = 1e-9, eps_rel = 1e-9))
+  expect_identical(opt_status(r), "optimal")
+  expect_true(opt_has_solution(r))
   r <- opt_solve(m, solver = "scs")
   expect_identical(r$validation$source, "solver default")
   expect_true(opt_has_solution(r))

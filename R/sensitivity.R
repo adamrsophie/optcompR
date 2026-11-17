@@ -141,10 +141,9 @@ opt_fixed_relaxation <- function(result, ...) {
   # when the live model changed since the result (a helper restored its
   # objective, or a later scenario set a parameter), the problem the result
   # solved is rebuilt from its snapshot in a separate model
-  if (!is.null(result$model_key) && !identical(result$model_key, key) &&
-      !same_problem(result)) {
-    model <- model_from_result(result)
-  }
+  rebuilt <- !is.null(result$model_key) && !identical(result$model_key, key) &&
+    !same_problem(result)
+  if (rebuilt) model <- model_from_result(result)
   vs <- result$standard_form$var_sym
   int <- vs[model$type[vs] %in% c("integer", "binary")]
   saved <- list(lower = model$lower[int], upper = model$upper[int],
@@ -199,6 +198,8 @@ opt_fixed_relaxation <- function(result, ...) {
   }
   touch_structure(model)
   out <- opt_solve(model, ...)
+  # the user's variables and constraints still index the rebuilt result
+  if (rebuilt) out$source_model <- result$source_model %||% result$model
   out$fixed_relaxation <- TRUE
   out$warnings <- c(out$warnings, paste(
     "Continuous problem with integer variables fixed at the incumbent;",

@@ -68,7 +68,7 @@ constraints are checked at its square root. When \code{options} request a
 stricter accuracy from OSQP or SCS (\code{eps_abs}, \code{eps_rel}), the tolerance
 becomes 100 times the strictest request, so the check matches the
 accuracy asked for. The resolved tolerances are stored in
-\code{result$validation}. A point that fails is labelled
+\code{result$validation}. A point that fails is labeled
 \code{"infeasible_point"}, a claimed optimum then becomes
 \code{"locally_infeasible"} (local solvers) or \code{"numerical_error"}, and a
 warning gives the violation. An objective that is not finite at the

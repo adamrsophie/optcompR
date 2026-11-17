@@ -40,7 +40,7 @@
 #' stricter accuracy from OSQP or SCS (`eps_abs`, `eps_rel`), the tolerance
 #' becomes 100 times the strictest request, so the check matches the
 #' accuracy asked for. The resolved tolerances are stored in
-#' `result$validation`. A point that fails is labelled
+#' `result$validation`. A point that fails is labeled
 #' `"infeasible_point"`, a claimed optimum then becomes
 #' `"locally_infeasible"` (local solvers) or `"numerical_error"`, and a
 #' warning gives the violation. An objective that is not finite at the
@@ -174,7 +174,7 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
       res$primal_status <- "infeasible_point"
       warnings <- c(warnings, sprintf(paste(
         "%s returned a point that violates the model (largest scaled",
-        "violation %s); it is labelled infeasible_point."), entry$name,
+        "violation %s); it is labeled infeasible_point."), entry$name,
         fmt_num(max(fs$max))))
       if (term %in% c("optimal", "locally_optimal", "almost_optimal")) {
         term <- if (local) "locally_infeasible" else "numerical_error"
@@ -189,7 +189,7 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
       res$primal_status %in% c("feasible_point", "unknown")) {
     res$primal_status <- "infeasible_point"
     warnings <- c(warnings, sprintf(paste(
-      "The objective is %s at the point %s returned%s; it is labelled",
+      "The objective is %s at the point %s returned%s; it is labeled",
       "infeasible_point."), format(obj), entry$name,
       if (length(obj_warn)) sprintf(" (%s)", paste(unique(obj_warn), collapse = "; ")) else ""))
     if (term %in% c("optimal", "locally_optimal", "almost_optimal")) {

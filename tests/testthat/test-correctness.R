@@ -126,7 +126,7 @@ test_that("NLP branch-and-bound reports a valid bound and honest gap", {
   }
 })
 
-test_that("truncated SCS iterates are labelled by actual primal feasibility", {
+test_that("truncated SCS iterates are labeled by actual primal feasibility", {
   skip_if_not_installed("scs")
   m <- opt_model()
   x <- opt_variable(m, "x")

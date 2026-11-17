@@ -250,8 +250,12 @@ row_local <- function(rq, qi, Ar = NULL, r = NULL) {
     w <- seq.int(Ar@p[r] + 1L, length.out = Ar@p[r + 1L] - Ar@p[r])
     lj <- Ar@j[w] + 1L
     lv <- Ar@x[w]
+    # a stored zero (a parameter at 0) is no support
+    keep <- lv != 0
+    lj <- lj[keep]
+    lv <- lv[keep]
   }
-  S <- sort(unique(c(j, k, lj[lv != 0])))
+  S <- sort(unique(c(j, k, lj)))
   Q <- half_q(match(j, S), match(k, S), v, length(S))
   a <- numeric(length(S))
   a[match(lj, S)] <- lv

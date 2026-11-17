@@ -190,8 +190,10 @@ nlpbb_solve_sf <- function(sf, cls, control) {
 # at every point x_k, and so does any convex combination h of these
 # supporting hyperplanes. Kelley's method collects hyperplanes at the
 # relaxation point and at successive LP solutions over the node's box and
-# its linear rows (nonlinear rows are dropped, which only weakens the
-# bound). The LP optimum itself is not used as the bound, since an LP
+# its linear rows. A nonlinear row side that composition rules prove convex
+# on the node's box (g <= u with g convex, g >= l with g concave) adds its
+# own supporting hyperplane at each point, an outer approximation of its
+# set; other nonlinear rows are dropped, which only weakens the bound. The LP optimum itself is not used as the bound, since an LP
 # solver stops within its tolerances; instead the LP multipliers give
 #   min h(y) over l <= Ay <= u and the box
 #     >= min over the box of (h(y) - lambda'Ay) + sum_i min over [l_i, u_i]
@@ -217,10 +219,60 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
   }
   lin <- which(sf$row_kind == "linear")
   A0 <- methods::as(sf$A[lin, , drop = FALSE], "CsparseMatrix")
-  rl <- sf$row_lower[lin]
-  ru <- sf$row_upper[lin]
+  rl0 <- sf$row_lower[lin]
+  ru0 <- sf$row_upper[lin]
   lo <- sf$lower
   up <- sf$upper
+  # nonlinear row elements with a side proven convex on this box
+  slo <- rep(-Inf, ns)
+  shi <- rep(Inf, ns)
+  slo[vs] <- lo[seq_len(n0)]
+  shi[vs] <- up[seq_len(n0)]
+  rowcut <- list()
+  off <- 0L
+  for (e in sf$cons_lowered) {
+    if (is.null(e)) next
+    rows <- off + seq_len(e$len)
+    off <- off + e$len
+    nonlin <- sf$row_kind[rows] != "linear"
+    if (!any(nonlin)) next
+    cv <- tryCatch(curvature(e, slo, shi)$curv, error = function(err) NULL)
+    if (is.null(cv)) next
+    hi_ok <- nonlin & is.finite(sf$expr_upper[rows]) &
+      cv %in% c(CURV_CONST, CURV_AFFINE, CURV_CONVEX)
+    lo_ok <- nonlin & is.finite(sf$expr_lower[rows]) &
+      cv %in% c(CURV_CONST, CURV_AFFINE, CURV_CONCAVE)
+    if (any(hi_ok | lo_ok)) {
+      rowcut[[length(rowcut) + 1L]] <- list(e = e, hi = hi_ok, lo = lo_ok,
+        u = sf$expr_upper[rows], l = sf$expr_lower[rows])
+    }
+  }
+  # supporting hyperplanes of those rows at y: g(w) >= g(y) + J (w - y),
+  # so g(w) <= u implies J w <= u - g(y) + J y (and >= for a concave side)
+  row_cuts <- function(y) {
+    z <- numeric(ns)
+    z[vs] <- y[seq_len(n0)]
+    C <- NULL
+    l <- numeric()
+    u <- numeric()
+    for (rc in rowcut) {
+      jj <- tryCatch(jac_expr(rc$e, z, ns), error = function(err) NULL)
+      if (is.null(jj)) next
+      J <- as.matrix(jj$J[, vs, drop = FALSE])
+      if (n > n0) J <- cbind(J, matrix(0, nrow(J), n - n0))
+      for (j in which(rc$hi | rc$lo)) {
+        cst <- jj$val[j] - sum(J[j, ] * y)
+        if (!all(is.finite(c(J[j, ], cst)))) next
+        C <- rbind(C, J[j, ])
+        l <- c(l, if (rc$lo[j]) rc$l[j] - cst else -Inf)
+        u <- c(u, if (rc$hi[j]) rc$u[j] - cst else Inf)
+      }
+    }
+    list(C = C, l = l, u = u)
+  }
+  A1 <- A0
+  rl <- rl0
+  ru <- ru0
   # min over [a, b] of r * y, exactly; -Inf when unbounded
   box_min <- function(r, a, b) {
     v <- ifelse(r > 0, r * a, ifelse(r < 0, r * b, 0))
@@ -235,7 +287,7 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
     hc <- as.vector(crossprod(G, mu))
     h0 <- sum(mu * b0)
     lam[(lam > 0 & !is.finite(rl)) | (lam < 0 & !is.finite(ru))] <- 0
-    r <- hc - if (length(lam)) as.vector(Matrix::crossprod(A0, lam)) else 0
+    r <- hc - if (length(lam)) as.vector(Matrix::crossprod(A1, lam)) else 0
     wl <- ifelse(lam > 0, lam * rl, ifelse(lam < 0, lam * ru, 0))
     val <- h0 + box_min(r, lo, up) + sum(wl)
     # floating point error of the evaluation itself
@@ -258,7 +310,15 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
     # t >= f_k + g_k'(y - x_k), written g_k'y - t <= g_k'x_k - f_k
     G <- rbind(G, v$g)
     b0 <- c(b0, v$f - sum(v$g * pt))
-    A <- rbind(cbind(A0, sparse_zero(length(lin), 1L)),
+    if (length(rowcut)) {
+      rc <- row_cuts(pt)
+      if (!is.null(rc$C)) {
+        A1 <- rbind(A1, methods::as(unname(rc$C), "CsparseMatrix"))
+        rl <- c(rl, rc$l)
+        ru <- c(ru, rc$u)
+      }
+    }
+    A <- rbind(cbind(A1, sparse_zero(length(rl), 1L)),
                methods::as(cbind(G, -1), "CsparseMatrix"))
     sol <- tryCatch({
       hm <- highs::highs_model(L = c(numeric(n), 1), lower = c(lo, -Inf),
@@ -274,7 +334,7 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
     }
     if (!identical(sol$status, "Optimal") || !isTRUE(sol$sol$dual_valid)) break
     rd <- sol$sol$row_dual
-    nl <- length(lin)
+    nl <- length(rl)
     # cut rows are upper bounded: their multipliers are -row_dual
     lb <- max(lb, safe_bound(G, b0, -rd[nl + seq_len(it)], rd[seq_len(nl)]))
     pt <- pmin(pmax(sol$sol$col_value[seq_len(n)], lo), up)

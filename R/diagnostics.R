@@ -16,7 +16,7 @@
 #' side by its own bound; an infinite bound imposes nothing, and a value
 #' that is not finite where a bound applies is an infinite violation) and by
 #' `max(1, |gradient|)` for stationarity. `rows$violation` is unscaled. Any
-#' result with a point can be checked, including one labelled
+#' result with a point can be checked, including one labeled
 #' `"infeasible_point"`. Feasibility passes at `tol`; the
 #' KKT test passes at `sqrt(tol)`, because duals and active sets carry the
 #' square root of solver tolerances, and rows within `sqrt(tol)` of a bound

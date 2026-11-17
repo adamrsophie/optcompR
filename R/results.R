@@ -91,7 +91,7 @@ opt_value <- function(result, x) {
   check_result(result)
   if (is.character(x)) x <- opt_get(result$model, x)
   x <- as_expr(x)
-  if (!is.null(x$model) && !identical(x$model, result$model)) {
+  if (!is.null(x$model) && !result_owns(result, x$model)) {
     stop("The expression belongs to a different model.", call. = FALSE)
   }
   syms <- expr_symbols(x)
@@ -149,9 +149,15 @@ opt_gap <- function(result) {
   result$gap
 }
 
+# Expressions and constraints of the solved model, or of the user's model a
+# result was rebuilt from (see model_from_result()), belong to the result.
+result_owns <- function(result, model) {
+  identical(model, result$model) || identical(model, result$source_model)
+}
+
 block_rows <- function(result, constraint) {
   if (inherits(constraint, "opt_constraint") &&
-      !identical(constraint$model, result$model)) {
+      !result_owns(result, constraint$model)) {
     stop("The constraint belongs to a different model.", call. = FALSE)
   }
   name <- if (inherits(constraint, "opt_constraint")) constraint$name else
