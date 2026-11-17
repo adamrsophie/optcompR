@@ -113,3 +113,5 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* The IPOPT binding passes sparse Jacobian and Hessian structures derived
+  from the expressions instead of dense ones.

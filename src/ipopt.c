@@ -36,6 +36,9 @@ typedef struct {
   SEXP f, grad, g, jac, hess, env;
   int error;
   char msg[512]; /* first R error message from a callback */
+  /* sparse structures (0-based) of the Jacobian and of the lower triangle
+     of the Hessian of the Lagrangian */
+  const int *jac_i, *jac_j, *hess_i, *hess_j;
 } ipopt_data;
 
 /* Call fun(x, ...) in R; NULL on error. */
@@ -104,19 +107,17 @@ static oc_bool cb_g(oc_index n, oc_number *x, oc_bool new_x, oc_index m, oc_numb
   return ok;
 }
 
-/* Structures are dense: rows by columns for the Jacobian (column major)
- * and the lower triangle by columns for the Hessian. */
+/* Structures come from R: the structural nonzeros of the Jacobian and of
+ * the lower triangle of the Hessian, in the order of the values the R
+ * callbacks return. */
 static oc_bool cb_jac(oc_index n, oc_number *x, oc_bool new_x, oc_index m, oc_index nele,
                    oc_index *iRow, oc_index *jCol, oc_number *values, UserDataPtr ud) {
   ipopt_data *d = (ipopt_data *) ud;
   if (values == NULL) {
-    oc_index k = 0;
-    for (oc_index j = 0; j < n; j++)
-      for (oc_index i = 0; i < m; i++) {
-        iRow[k] = i;
-        jCol[k] = j;
-        k++;
-      }
+    for (oc_index k = 0; k < nele; k++) {
+      iRow[k] = d->jac_i[k];
+      jCol[k] = d->jac_j[k];
+    }
     return 1;
   }
   SEXP a = PROTECT(list1(xvec(n, x)));
@@ -131,13 +132,10 @@ static oc_bool cb_hess(oc_index n, oc_number *x, oc_bool new_x, oc_number obj_fa
   ipopt_data *d = (ipopt_data *) ud;
   if (isNull(d->hess)) return 0;
   if (values == NULL) {
-    oc_index k = 0;
-    for (oc_index j = 0; j < n; j++)
-      for (oc_index i = j; i < n; i++) {
-        iRow[k] = i;
-        jCol[k] = j;
-        k++;
-      }
+    for (oc_index k = 0; k < nele; k++) {
+      iRow[k] = d->hess_i[k];
+      jCol[k] = d->hess_j[k];
+    }
     return 1;
   }
   SEXP lam = PROTECT(allocVector(REALSXP, m));
@@ -152,13 +150,19 @@ static oc_bool cb_hess(oc_index n, oc_number *x, oc_bool new_x, oc_number obj_fa
 
 SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
                           SEXP f, SEXP grad, SEXP g, SEXP jac, SEXP hess,
-                          SEXP opts, SEXP env) {
+                          SEXP opts, SEXP env, SEXP ji, SEXP jj, SEXP hi,
+                          SEXP hj) {
   oc_index n = (oc_index) XLENGTH(x0), m = (oc_index) XLENGTH(gl);
-  ipopt_data d = {f, grad, g, jac, hess, env, 0, ""};
+  if (TYPEOF(ji) != INTSXP || TYPEOF(jj) != INTSXP || TYPEOF(hi) != INTSXP ||
+      TYPEOF(hj) != INTSXP || XLENGTH(ji) != XLENGTH(jj) ||
+      XLENGTH(hi) != XLENGTH(hj))
+    error("Invalid sparsity structure.");
+  ipopt_data d = {f, grad, g, jac, hess, env, 0, "",
+                  INTEGER(ji), INTEGER(jj), INTEGER(hi), INTEGER(hj)};
   int exact = !isNull(hess);
   IpoptProblem p = CreateIpoptProblem(
-      n, REAL(xl), REAL(xu), m, REAL(gl), REAL(gu), n * m,
-      exact ? n * (n + 1) / 2 : 0, 0, cb_f, cb_g, cb_grad, cb_jac,
+      n, REAL(xl), REAL(xu), m, REAL(gl), REAL(gu), (oc_index) XLENGTH(ji),
+      exact ? (oc_index) XLENGTH(hi) : 0, 0, cb_f, cb_g, cb_grad, cb_jac,
       cb_hess); /* required even with a limited-memory Hessian */
   if (p == NULL) error("IPOPT could not create the problem.");
   AddIpoptNumOption(p, "nlp_lower_bound_inf", -1e300);
@@ -229,7 +233,8 @@ SEXP optcompR_ipopt_available(void) {
 
 SEXP optcompR_ipopt_solve(SEXP x0, SEXP xl, SEXP xu, SEXP gl, SEXP gu,
                           SEXP f, SEXP grad, SEXP g, SEXP jac, SEXP hess,
-                          SEXP opts, SEXP env) {
+                          SEXP opts, SEXP env, SEXP ji, SEXP jj, SEXP hi,
+                          SEXP hj) {
   error("optcompR was installed without IPOPT.");
   return R_NilValue;
 }
@@ -239,7 +244,7 @@ SEXP optcompR_ipopt_available(void) { return ScalarInteger(0); }
 #endif
 
 static const R_CallMethodDef call_methods[] = {
-  {"optcompR_ipopt_solve", (DL_FUNC) &optcompR_ipopt_solve, 12},
+  {"optcompR_ipopt_solve", (DL_FUNC) &optcompR_ipopt_solve, 16},
   {"optcompR_ipopt_available", (DL_FUNC) &optcompR_ipopt_available, 0},
   {NULL, NULL, 0}
 };

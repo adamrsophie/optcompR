@@ -284,3 +284,54 @@ pow_d2 <- function(g, p) {
 powp_dp <- function(a, p) {
   ifelse(a > 0, a^p * log(a), ifelse(a == 0 & p > 0, 0, NaN))
 }
+
+# ------------------------------------------------------- sparsity patterns
+
+# Structural nonzeros, as sparse matrices with positive entries (sums never
+# cancel): the Jacobian pattern (len x ns) of an expression, and the
+# pattern (ns x ns) of the sum of the Hessians of its elements. They follow
+# the same recursion as jac_expr() and hess_expr(), so every nonzero those
+# return lies in the pattern.
+jac_pattern <- function(e, ns) {
+  pos <- function(i, j, n) {
+    if (!length(i)) return(sparse_zero(n, ns))
+    Matrix::sparseMatrix(i = i, j = j, x = 1, dims = c(n, ns))
+  }
+  if (e$type == "poly") {
+    return(pos(c(e$li, e$qi, e$qi), c(e$lj, e$qj, e$qk), e$len))
+  }
+  n <- e$len
+  P <- lapply(e$args, jac_pattern, ns = ns)
+  rep_n <- function(A) if (nrow(A) == n) A else A[rep.int(1L, n), , drop = FALSE]
+  switch(e$op,
+    linmap = abs(e$data$M) %*% P[[1L]],
+    fn = {
+      u <- Matrix::colSums(P[[1L]]) > 0
+      pos(rep(seq_len(n), each = sum(u)), rep(which(u), n), n)
+    },
+    if (length(P) == 1L) rep_n(P[[1L]]) else rep_n(P[[1L]]) + rep_n(P[[2L]]))
+}
+
+hess_pattern <- function(e, ns) {
+  if (e$type == "poly") {
+    if (!length(e$qv)) return(sparse_zero(ns, ns))
+    return(Matrix::sparseMatrix(i = c(e$qj, e$qk), j = c(e$qk, e$qj), x = 1,
+                                dims = c(ns, ns)))
+  }
+  n <- e$len
+  rep_n <- function(A) if (nrow(A) == n) A else A[rep.int(1L, n), , drop = FALSE]
+  outer_sum <- function(A, B) Matrix::crossprod(rep_n(A), rep_n(B))
+  H <- Reduce(`+`, lapply(e$args, hess_pattern, ns = ns))
+  if (e$op %in% c("linmap", "+")) return(H)
+  P <- lapply(e$args, jac_pattern, ns = ns)
+  if (e$op == "^" && all(e$data$p %in% c(0, 1))) return(H)
+  if (e$op == "fn") {
+    # an external function couples all symbols of its argument vector
+    u <- as.numeric(Matrix::colSums(P[[1L]]) > 0)
+    return(H + Matrix::Matrix(tcrossprod(u), sparse = TRUE))
+  }
+  if (length(P) == 1L) return(H + outer_sum(P[[1L]], P[[1L]]))
+  # products, quotients and powers a^p: all second-order cross terms
+  U <- rep_n(P[[1L]]) + rep_n(P[[2L]])
+  H + Matrix::crossprod(U, U)
+}

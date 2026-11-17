@@ -48,12 +48,22 @@ ipopt_solve_sf <- function(sf, cls, control) {
   }
   parts <- function(x) lapply(cons, jac_expr, z = zfull(x), ns = ns)
   g <- function(x) as.numeric(unlist(lapply(parts(x), `[[`, "val")))
-  jac <- function(x) {
-    as.vector(as.matrix(do.call(rbind, lapply(parts(x), function(p)
-      p$J[, vs, drop = FALSE]))))
-  }
   lens <- vapply(cons, function(e) e$len, 0L)
-  low <- lower.tri(matrix(0, n, n), diag = TRUE)
+  # sparse structures: structural nonzeros of the Jacobian rows and of the
+  # lower triangle of the Lagrangian Hessian, in the variable columns
+  m <- sum(lens)
+  JP <- if (m) do.call(rbind, lapply(cons, function(e)
+    jac_pattern(e, ns)[, vs, drop = FALSE])) else sparse_zero(0L, n)
+  JP <- methods::as(JP, "TsparseMatrix")
+  jidx <- cbind(JP@i + 1L, JP@j + 1L)
+  HP <- hess_pattern(obj, ns)
+  for (e in cons) HP <- HP + hess_pattern(e, ns)
+  HP <- methods::as(Matrix::tril(HP[vs, vs, drop = FALSE]), "TsparseMatrix")
+  hidx <- cbind(HP@i + 1L, HP@j + 1L)
+  jac <- function(x) {
+    J <- do.call(rbind, lapply(parts(x), function(p) p$J[, vs, drop = FALSE]))
+    as.numeric(J[jidx])
+  }
   hess <- function(x, obj_factor, lambda) {
     z <- zfull(x)
     H <- s * obj_factor * hess_expr(obj, z, ns, 1)
@@ -63,8 +73,7 @@ ipopt_solve_sf <- function(sf, cls, control) {
       if (any(w != 0)) H <- H + hess_expr(cons[[k]], z, ns, w)
       off <- off + lens[k]
     }
-    H <- as.matrix(H[vs, vs, drop = FALSE])
-    H[low]
+    as.numeric(H[vs, vs, drop = FALSE][hidx])
   }
   st <- default_start(sf, control)
   x0 <- st$x
@@ -92,7 +101,9 @@ ipopt_solve_sf <- function(sf, cls, control) {
   res <- .Call(optcompR_ipopt_solve, as.numeric(x0), big(sf$lower),
                big(sf$upper), big(as.numeric(sf$expr_lower)),
                big(as.numeric(sf$expr_upper)), f, grad, g, jac,
-               if (exact_h) hess else NULL, opts, environment())
+               if (exact_h) hess else NULL, opts, environment(),
+               as.integer(jidx[, 1L] - 1L), as.integer(jidx[, 2L] - 1L),
+               as.integer(hidx[, 1L] - 1L), as.integer(hidx[, 2L] - 1L))
   term <- ipopt_termination(res$status)
   ok <- term %in% c("optimal", "almost_optimal")
   if (isTRUE(res$callback_error)) {
