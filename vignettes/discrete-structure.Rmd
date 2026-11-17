@@ -179,8 +179,11 @@ opt_check(opt_solve(m))$special
 
 The same constructs combine with nonlinear objectives. Mixed-integer
 nonlinear models are solved by `"nlpbb"`, a branch and bound over NLopt
-relaxations. When the continuous relaxation is convex, pruning by bound is
-valid and the search proves global optimality. When it is not known to be
+relaxations. NLopt stops on tolerances, so its objective is never used as a
+bound. When the continuous relaxation is convex, each node is bounded by
+supporting hyperplanes of the objective (an outer approximation whose bound
+is checked by weak duality), pruning by these bounds is valid, and a
+completed search proves global optimality. When it is not known to be
 convex, every node is a local solve and the result is labeled
 `"locally_optimal"`: a heuristic, not a certificate. Polynomial models are
 the exception: SCIP solves them globally after an exact lifting to quadratic

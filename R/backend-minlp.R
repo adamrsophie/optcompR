@@ -1,12 +1,16 @@
 # Mixed-integer nonlinear programming by NLP-based branch and bound.
 #
 # Each node solves the continuous relaxation with NLopt over tightened
-# bounds on the integer variables. When the relaxation is convex, node
-# optima are lower bounds and pruning by bound is valid, so a completed
-# search proves global optimality (up to the NLP tolerances). When the
-# relaxation is not known to be convex, node optima are local, pruning can
-# discard better solutions, and the result is reported as locally optimal:
-# a heuristic, labeled as such.
+# bounds on the integer variables. NLopt stops on step and function
+# tolerances, so its objective is a primal value, not a bound. When the
+# relaxation is proven convex, each node gets a certified lower bound from
+# an outer approximation instead: the objective linearized at the
+# relaxation point (a supporting hyperplane of a convex function) minimized
+# by HiGHS over the node's box and the linear rows. Only these bounds prune
+# nodes and enter the reported bound, and a node closes only when its bound
+# meets its best point; an integral point with a weak bound is branched
+# further. When the relaxation is not known to be convex there are no
+# bounds: the search is a heuristic and the result is locally optimal.
 
 nlpbb_solve_sf <- function(sf, cls, control) {
   s <- if (sf$sense == "max") -1 else 1
@@ -49,6 +53,8 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   # a subtree pruned only because of the requested gap keeps its bound, so
   # the final bound stays valid
   pruned <- Inf
+  # smallest certified bound of the nodes closed as solved
+  closed <- Inf
   while (nopen) {
     if (nodes >= max_nodes) { limit <- "node_limit"; break }
     left <- t_end - proc.time()[["elapsed"]]
@@ -89,12 +95,25 @@ nlpbb_solve_sf <- function(sf, cls, control) {
       next
     }
     val <- s * res$objective
+    x <- res$x
+    # certified lower bound of the node, never below its parent's
+    lb <- -Inf
+    if (convex) {
+      oa <- oa_lower_bound(sub, x, s)
+      lb <- max(node$bound, oa$bound)
+      if (lb == Inf) next # box and linear rows infeasible
+      # with linear rows only, the best cutting-plane point is a feasible
+      # relaxation point; use it when NLopt stopped short of it
+      if (all(sub$row_kind == "linear") && oa$f < val) {
+        x <- oa$y
+        val <- oa$f
+      }
+    }
     if (convex && is.finite(incumbent) &&
-        val >= incumbent - gap_tol * max(1, abs(incumbent))) {
-      pruned <- min(pruned, val)
+        lb >= incumbent - gap_tol * max(1, abs(incumbent))) {
+      pruned <- min(pruned, lb)
       next
     }
-    x <- res$x
     frac <- int[abs(x[int] - round(x[int])) > int_tol]
     if (!length(frac)) {
       if (val < incumbent) {
@@ -118,24 +137,40 @@ nlpbb_solve_sf <- function(sf, cls, control) {
           lost <- lost + 1L
         }
       }
-      next
+      # the node is solved when its certified bound reaches its point;
+      # otherwise a better integer point may remain in it, so it is split
+      # at the middle of its widest integer range
+      if (lb >= val - max(gap_tol, 1e-7) * max(1, abs(val))) {
+        closed <- min(closed, lb)
+        next
+      }
+      wide <- int[node$upper[int] > node$lower[int]]
+      if (!length(wide)) {
+        # all integers fixed and the bound still open: nothing to branch on
+        lost <- lost + 1L
+        next
+      }
+      j <- wide[which.max(node$upper[wide] - node$lower[wide])]
+      cut <- floor((node$lower[j] + node$upper[j]) / 2)
+    } else {
+      j <- frac[which.max(abs(x[frac] - round(x[frac])))]
+      cut <- floor(x[j])
     }
-    j <- frac[which.max(abs(x[frac] - round(x[frac])))]
     dn <- node
-    dn$upper[j] <- floor(x[j])
-    dn$bound <- val
-    dn$start <- x
+    dn$upper[j] <- cut
+    dn$bound <- lb
+    dn$start <- pmin(pmax(x, dn$lower), dn$upper)
     up <- node
-    up$lower[j] <- ceiling(x[j])
-    up$bound <- val
-    up$start <- x
+    up$lower[j] <- cut + 1
+    up$bound <- lb
+    up$start <- pmin(pmax(x, up$lower), up$upper)
     open[nopen + 1:2] <- list(dn, up)
     ob[nopen + 1:2] <- val
     nopen <- nopen + 2L
   }
   exact <- convex && lost == 0L
   bound <- if (!exact) -Inf else
-    min(c(incumbent, pruned, ob[seq_len(nopen)]))
+    min(c(incumbent, pruned, closed, ob[seq_len(nopen)]))
   # with no incumbent, every node was certified infeasible or lost
   term <- if (!is.null(limit)) limit else if (is.null(best))
     (if (lost) "unknown" else "infeasible") else
@@ -148,6 +183,104 @@ nlpbb_solve_sf <- function(sf, cls, control) {
       "is incomplete"), out$message, lost)
   }
   out
+}
+
+# Certified lower bound of the minimization form s * f of a node whose
+# relaxation is convex. A convex f satisfies f(y) >= f(x_k) + g_k'(y - x_k)
+# at every point x_k, and so does any convex combination h of these
+# supporting hyperplanes. Kelley's method collects hyperplanes at the
+# relaxation point and at successive LP solutions over the node's box and
+# its linear rows (nonlinear rows are dropped, which only weakens the
+# bound). The LP optimum itself is not used as the bound, since an LP
+# solver stops within its tolerances; instead the LP multipliers give
+#   min h(y) over l <= Ay <= u and the box
+#     >= min over the box of (h(y) - lambda'Ay) + sum_i min over [l_i, u_i]
+#        of lambda_i w_i,
+# which holds for any lambda and is evaluated in closed form (weak duality
+# with the box kept explicit). Returns the bound (-Inf when nothing
+# finite is certified, Inf when the box and linear rows are infeasible) and
+# the point with the smallest objective seen.
+oa_lower_bound <- function(sf, x, s, iterations = 20L) {
+  vs <- sf$var_sym
+  n0 <- length(vs)
+  n <- length(sf$c)
+  ns <- sf$n_sym
+  fg <- function(y) {
+    z <- numeric(ns)
+    z[vs] <- y[seq_len(n0)]
+    jj <- tryCatch(jac_expr(sf$objective_lowered, z, ns),
+                   error = function(e) NULL)
+    if (is.null(jj)) return(NULL)
+    out <- list(f = s * jj$val,
+                g = c(s * as.vector(jj$J[, vs, drop = FALSE]), numeric(n - n0)))
+    if (all(is.finite(c(out$f, out$g)))) out else NULL
+  }
+  lin <- which(sf$row_kind == "linear")
+  A0 <- methods::as(sf$A[lin, , drop = FALSE], "CsparseMatrix")
+  rl <- sf$row_lower[lin]
+  ru <- sf$row_upper[lin]
+  lo <- sf$lower
+  up <- sf$upper
+  # min over [a, b] of r * y, exactly; -Inf when unbounded
+  box_min <- function(r, a, b) {
+    v <- ifelse(r > 0, r * a, ifelse(r < 0, r * b, 0))
+    v[is.nan(v)] <- 0
+    sum(v)
+  }
+  safe_bound <- function(G, b0, mu, lam) {
+    mu <- pmax(mu, 0)
+    if (!(sum(mu) > 0)) return(-Inf)
+    mu <- mu / sum(mu)
+    # h(y) = sum_k mu_k (f_k - g_k'x_k) + (sum_k mu_k g_k)'y
+    hc <- as.vector(crossprod(G, mu))
+    h0 <- sum(mu * b0)
+    lam[(lam > 0 & !is.finite(rl)) | (lam < 0 & !is.finite(ru))] <- 0
+    r <- hc - if (length(lam)) as.vector(Matrix::crossprod(A0, lam)) else 0
+    wl <- ifelse(lam > 0, lam * rl, ifelse(lam < 0, lam * ru, 0))
+    val <- h0 + box_min(r, lo, up) + sum(wl)
+    # floating point error of the evaluation itself
+    mag <- abs(h0) + sum(abs(r) * pmax(abs(lo), abs(up)), na.rm = TRUE) +
+      sum(abs(wl))
+    if (!is.finite(val)) return(-Inf)
+    val - 1e-12 * max(1, mag)
+  }
+  G <- NULL
+  b0 <- numeric()
+  best <- list(f = Inf, y = x)
+  lb <- -Inf
+  pt <- x
+  ctrl <- highs::highs_control(threads = .optcompR_state$highs_threads %||% 1L,
+                               log_to_console = FALSE)
+  for (it in seq_len(iterations)) {
+    v <- fg(pt)
+    if (is.null(v)) break
+    if (v$f < best$f) best <- list(f = v$f, y = pt)
+    # t >= f_k + g_k'(y - x_k), written g_k'y - t <= g_k'x_k - f_k
+    G <- rbind(G, v$g)
+    b0 <- c(b0, v$f - sum(v$g * pt))
+    A <- rbind(cbind(A0, sparse_zero(length(lin), 1L)),
+               methods::as(cbind(G, -1), "CsparseMatrix"))
+    sol <- tryCatch({
+      hm <- highs::highs_model(L = c(numeric(n), 1), lower = c(lo, -Inf),
+                               upper = c(up, Inf), A = A,
+                               lhs = c(rl, rep(-Inf, it)), rhs = c(ru, -b0))
+      sv <- highs::highs_solver(hm, control = ctrl)
+      sv$solve()
+      list(status = sv$status_message(), sol = sv$solution())
+    }, error = function(e) NULL)
+    if (is.null(sol)) break
+    if (identical(sol$status, "Infeasible") && it == 1L) {
+      return(list(bound = Inf, y = best$y, f = best$f))
+    }
+    if (!identical(sol$status, "Optimal") || !isTRUE(sol$sol$dual_valid)) break
+    rd <- sol$sol$row_dual
+    nl <- length(lin)
+    # cut rows are upper bounded: their multipliers are -row_dual
+    lb <- max(lb, safe_bound(G, b0, -rd[nl + seq_len(it)], rd[seq_len(nl)]))
+    pt <- pmin(pmax(sol$sol$col_value[seq_len(n)], lo), up)
+    if (best$f - lb <= 1e-9 * max(1, abs(best$f))) break
+  }
+  list(bound = lb, y = best$y, f = best$f)
 }
 
 nlpbb_result <- function(term, best, incumbent, bound, nodes, convex, s, sf,
