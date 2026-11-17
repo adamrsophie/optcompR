@@ -1,7 +1,6 @@
 # IPOPT interior point backend through the optional C binding in
-# src/ipopt.c. Jacobian and Hessian structures are dense.
-# ponytail: dense structures cost O(m n) and O(n^2) per evaluation; pass
-# sparsity patterns from the expression graph if large NLPs need IPOPT.
+# src/ipopt.c. The Jacobian and Hessian structures passed to IPOPT are the
+# sparsity patterns of the expression graph.
 
 #' Is the IPOPT backend available?
 #'
@@ -42,11 +41,23 @@ ipopt_solve_sf <- function(sf, cls, control) {
     z[vs] <- x
     z
   }
-  f <- function(x) s * jac_expr(obj, zfull(x), ns)$val
-  grad <- function(x) {
-    s * as.vector(jac_expr(obj, zfull(x), ns)$J[, vs, drop = FALSE])
+  # IPOPT asks for values and first derivatives at the same point in
+  # separate callbacks; each is computed once per point
+  memo <- function(fun) {
+    lx <- NULL
+    lv <- NULL
+    function(x) {
+      if (!identical(x, lx)) {
+        lv <<- fun(x)
+        lx <<- x
+      }
+      lv
+    }
   }
-  parts <- function(x) lapply(cons, jac_expr, z = zfull(x), ns = ns)
+  objp <- memo(function(x) jac_expr(obj, zfull(x), ns))
+  f <- function(x) s * objp(x)$val
+  grad <- function(x) s * as.vector(objp(x)$J[, vs, drop = FALSE])
+  parts <- memo(function(x) lapply(cons, jac_expr, z = zfull(x), ns = ns))
   g <- function(x) as.numeric(unlist(lapply(parts(x), `[[`, "val")))
   lens <- vapply(cons, function(e) e$len, 0L)
   # sparse structures: structural nonzeros of the Jacobian rows and of the

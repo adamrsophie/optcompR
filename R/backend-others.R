@@ -336,7 +336,10 @@ nloptr_solve_sf <- function(sf, cls, control) {
     z[vs] <- x[seq_len(n0)]
     z
   }
-  f <- function(x) {
+  algo <- control$options$algorithm %||% "NLOPT_LD_SLSQP"
+  # derivative-free algorithms (NLOPT_LN_*, NLOPT_GN_*) get values only
+  dfree <- grepl("^NLOPT_[GL]N_", algo)
+  f <- if (dfree) function(x) s * eval_expr(obj, zfull(x)) else function(x) {
     z <- zfull(x)
     jj <- jac_expr(obj, z, ns)
     list(objective = s * jj$val,
@@ -349,8 +352,22 @@ nloptr_solve_sf <- function(sf, cls, control) {
   eq <- is.finite(lo) & is.finite(hi) & lo == hi
   up <- is.finite(hi) & !eq
   dn <- is.finite(lo) & !eq
+  # NLopt asks for the inequality and equality parts at the same point:
+  # the rows are evaluated once per point
+  last_x <- NULL
+  last_g <- NULL
   gall <- function(x) {
+    if (identical(x, last_x)) return(last_g)
+    last_x <<- x
+    last_g <<- gall_at(x)
+    last_g
+  }
+  gall_at <- function(x) {
     z <- zfull(x)
+    if (dfree) {
+      return(list(val = c(unlist(lapply(cons, eval_expr, z = z)),
+                          as.vector(E %*% x)), J = NULL))
+    }
     parts <- lapply(cons, jac_expr, z = z, ns = ns)
     J <- if (length(parts)) pad(as.matrix(do.call(rbind, lapply(parts,
       function(p) p$J[, vs, drop = FALSE])))) else matrix(0, 0, n)
@@ -359,12 +376,14 @@ nloptr_solve_sf <- function(sf, cls, control) {
   }
   g_in <- if (any(up | dn)) function(x) {
     g <- gall(x)
+    if (dfree) return(c(g$val[up] - hi[up], lo[dn] - g$val[dn]))
     J <- as.matrix(g$J)
     list(constraints = c(g$val[up] - hi[up], lo[dn] - g$val[dn]),
          jacobian = rbind(J[up, , drop = FALSE], -J[dn, , drop = FALSE]))
   } else NULL
   g_eq <- if (any(eq)) function(x) {
     g <- gall(x)
+    if (dfree) return(g$val[eq] - lo[eq])
     list(constraints = g$val[eq] - lo[eq],
          jacobian = as.matrix(g$J)[eq, , drop = FALSE])
   } else NULL
@@ -373,11 +392,10 @@ nloptr_solve_sf <- function(sf, cls, control) {
   miss <- st$miss
   ok0 <- tryCatch({
     f0 <- f(x0)
-    all(is.finite(c(f0$objective, f0$gradient))) &&
+    all(is.finite(if (dfree) f0 else c(f0$objective, f0$gradient))) &&
       (!(length(cons) || length(extra)) || all(is.finite(gall(x0)$val)))
   }, error = function(e) FALSE)
   if (!ok0) stop_nonfinite_start()
-  algo <- control$options$algorithm %||% "NLOPT_LD_SLSQP"
   opts <- utils::modifyList(list(algorithm = algo, xtol_rel = 1e-10,
                                  ftol_rel = 1e-12, maxeval = 5000L),
                             control$options)

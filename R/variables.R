@@ -245,6 +245,8 @@ opt_set_parameter <- function(model, x, value) {
   check_numeric(value, "value")
   if (any(!is.finite(value))) stop("Parameter values must be finite.",
                                    call. = FALSE)
+  # setting the current values changes nothing, and keeps every cache
+  if (identical(model$value[sym], value)) return(invisible(model))
   model$value[sym] <- value
   touch_parameters(model)
   invisible(model)
@@ -272,6 +274,9 @@ opt_set_bounds <- function(model, x, lower = NULL, upper = NULL) {
   up <- if (is.null(upper)) model$upper[sym] else
     recycle_to(as.numeric(upper), n, "upper")
   check_bounds(lo, up, model$type[sym], model$sym_name[sym])
+  if (identical(model$lower[sym], lo) && identical(model$upper[sym], up)) {
+    return(invisible(model))
+  }
   model$lower[sym] <- lo
   model$upper[sym] <- up
   touch_parameters(model)
@@ -344,7 +349,9 @@ opt_set_type <- function(model, x, type = c("continuous", "integer", "binary")) 
 opt_set_start <- function(model, x, value) {
   check_model(model)
   sym <- resolve_symbols(model, x, "var")
-  model$start[sym] <- recycle_to(as.numeric(value), length(sym), "value")
+  value <- recycle_to(as.numeric(value), length(sym), "value")
+  if (identical(model$start[sym], value)) return(invisible(model))
+  model$start[sym] <- value
   touch_parameters(model)
   invisible(model)
 }

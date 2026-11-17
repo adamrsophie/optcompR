@@ -86,3 +86,31 @@ test_that("kept HiGHS and OSQP workspaces give the answers of fresh solves", {
   expect_true(r$extra$reused)
   expect_equal(unname(opt_value(r, x)), c(-0.2, 0.3, 1, -1), tolerance = 1e-5)
 })
+
+test_that("setting current values keeps the caches", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = 0)
+  p <- opt_parameter(m, "p", value = 2)
+  opt_objective(m, p * x)
+  v <- m$parameter_version
+  opt_set_parameter(m, p, 2)
+  opt_set_bounds(m, x, lower = 0)
+  opt_set_start(m, x, NA)
+  expect_identical(m$parameter_version, v)
+  opt_set_parameter(m, p, 3)
+  expect_false(identical(m$parameter_version, v))
+})
+
+test_that("derivative-free NLopt algorithms get values only", {
+  skip_if_not_installed("nloptr")
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2, lower = -3, upper = 3)
+  opt_objective(m, (x[1] - 1)^2 + exp(x[2]) + sin(x[1]))
+  opt_constraint(m, x[1]^2 + x[2]^2 <= 2)
+  opt_constraint(m, x[1] + x[2] == 0.5)
+  r1 <- opt_solve(m, solver = "nloptr")
+  r2 <- opt_solve(m, solver = "nloptr",
+                  options = list(algorithm = "NLOPT_LN_COBYLA", maxeval = 20000L))
+  expect_identical(opt_status(r2), "locally_optimal")
+  expect_equal(opt_value(r2, x), opt_value(r1, x), tolerance = 1e-4)
+})

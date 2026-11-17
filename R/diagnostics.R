@@ -115,10 +115,14 @@ estimate_multipliers <- function(result, v, lo, up, tol) {
   y <- numeric(length(v))
   zc <- numeric(n)
   if (any(act) || any(bact)) {
-    J <- if (length(result$cons)) as.matrix(do.call(rbind, lapply(result$cons,
-      function(b) jac_expr(b$expr, z, ns)$J[, cols, drop = FALSE]))) else
-      matrix(0, 0, n)
-    M <- cbind(t(J[act, , drop = FALSE]), diag(n)[, bact, drop = FALSE])
+    # only the active rows and the unit columns of active bounds enter: the
+    # system is n by (active rows + active bounds), never n by n
+    J <- if (length(result$cons)) do.call(rbind, lapply(result$cons,
+      function(b) jac_expr(b$expr, z, ns)$J[, cols, drop = FALSE])) else
+      sparse_zero(0L, n)
+    E <- Matrix::sparseMatrix(i = which(bact), j = seq_len(sum(bact)), x = 1,
+                              dims = c(n, sum(bact)))
+    M <- as.matrix(cbind(Matrix::t(J[act, , drop = FALSE]), E))
     sol <- qr.coef(qr(M), g)
     sol[is.na(sol)] <- 0
     # multiplier signs: s * y >= 0 at a lower bound, <= 0 at an upper bound,

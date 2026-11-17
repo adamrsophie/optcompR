@@ -29,8 +29,15 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   if (any(lower0 > upper0)) {
     return(nlpbb_result("infeasible", NULL, Inf, -Inf, 0L, convex, s, sf))
   }
+  # open nodes: a list with a parallel vector of their bounds, the first
+  # nopen entries in use; a node is removed by moving the last one into
+  # its place, so nothing is copied or scanned in R code
+  # ponytail: picking the best node is a which.min in C, linear in the open
+  # nodes; a binary heap pays off only with very many cheap relaxations
   open <- list(list(lower = lower0, upper = upper0, bound = -Inf,
                     start = sf$start))
+  ob <- -Inf
+  nopen <- 1L
   incumbent <- Inf
   best <- NULL
   nodes <- 0L
@@ -42,14 +49,17 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   # a subtree pruned only because of the requested gap keeps its bound, so
   # the final bound stays valid
   pruned <- Inf
-  while (length(open)) {
+  while (nopen) {
     if (nodes >= max_nodes) { limit <- "node_limit"; break }
     left <- t_end - proc.time()[["elapsed"]]
     if (left <= 0) { limit <- "time_limit"; break }
     # best first: the open node with the smallest relaxation bound
-    k <- which.min(vapply(open, `[[`, 0, "bound"))
+    k <- which.min(ob[seq_len(nopen)])
     node <- open[[k]]
-    open[[k]] <- NULL
+    open[k] <- open[nopen]
+    ob[k] <- ob[nopen]
+    open[nopen] <- list(NULL)
+    nopen <- nopen - 1L
     if (convex && is.finite(incumbent) &&
         node$bound >= incumbent - gap_tol * max(1, abs(incumbent))) {
       pruned <- min(pruned, node$bound)
@@ -119,11 +129,13 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     up$lower[j] <- ceiling(x[j])
     up$bound <- val
     up$start <- x
-    open <- c(open, list(dn, up))
+    open[nopen + 1:2] <- list(dn, up)
+    ob[nopen + 1:2] <- val
+    nopen <- nopen + 2L
   }
   exact <- convex && lost == 0L
   bound <- if (!exact) -Inf else
-    min(c(incumbent, pruned, vapply(open, `[[`, 0, "bound")))
+    min(c(incumbent, pruned, ob[seq_len(nopen)]))
   # with no incumbent, every node was certified infeasible or lost
   term <- if (!is.null(limit)) limit else if (is.null(best))
     (if (lost) "unknown" else "infeasible") else
@@ -170,6 +182,8 @@ linear_infeasible <- function(sf) {
   if (!requireNamespace("highs", quietly = TRUE)) return(FALSE)
   if (any(sf$row_kind != "linear")) return(FALSE)
   if (any(sf$lower > sf$upper)) return(TRUE)
+  # bounds alone are feasible exactly when every lower <= upper
+  if (!nrow(sf$A)) return(FALSE)
   n <- length(sf$lower)
   A <- sf$A
   res <- tryCatch(highs::highs_solve(

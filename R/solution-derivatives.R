@@ -153,21 +153,26 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
     Jrows <- c(Jrows, list(jac_expr(b$expr, z, ns)$J))
     off <- off + k
   }
-  J <- if (length(Jrows)) as.matrix(do.call(rbind, Jrows)) else matrix(0, 0, ns)
+  # H and J stay sparse over all symbols; only the blocks on the free
+  # variables, active rows and parameters are made dense below
+  J <- if (length(Jrows)) do.call(rbind, Jrows) else sparse_zero(0L, ns)
   psd <- result$extra$psd_active %||% list()
   s_sense <- if (result$sense == "max") -1 else 1
   for (q in psd) {
     H <- H - s_sense * hess_expr(q$vec, z, ns, svec_scale(q$k) * q$z)
   }
-  H <- as.matrix(H)
-  H <- (H + t(H)) / 2
+  H <- (H + Matrix::t(H)) / 2
   free <- cols[!bact]
   nf <- length(free)
   JA <- J[act, , drop = FALSE]
   na <- nrow(JA)
-  K <- rbind(cbind(H[free, free, drop = FALSE], -t(JA[, free, drop = FALSE])),
-             cbind(JA[, free, drop = FALSE], matrix(0, na, na)))
-  rhs <- -rbind(H[free, ps, drop = FALSE], JA[, ps, drop = FALSE])
+  Hff <- as.matrix(H[free, free, drop = FALSE])
+  JAf <- as.matrix(JA[, free, drop = FALSE])
+  # ponytail: the active-set KKT matrix is dense (free + active rows square);
+  # a sparse LU with a condition estimate would be needed for huge active sets
+  K <- rbind(cbind(Hff, -t(JAf)), cbind(JAf, matrix(0, na, na)))
+  rhs <- -rbind(as.matrix(H[free, ps, drop = FALSE]),
+                as.matrix(JA[, ps, drop = FALSE]))
   # active PSD constraints S(x, p) >= 0 with multiplier Z: the stationarity
   # term -s M' W dz and the linearized complementarity
   # sym(dS Z + S dZ) = 0, nonsingular under strict complementarity and
@@ -204,7 +209,7 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
     rhs <- rbind(rhs, matrix(Rp, nz, length(ps)))
   }
   bad <- ps[colSums(!is.finite(rhs)) > 0 |
-              !is.finite(colSums(J[, ps, drop = FALSE]))]
+              !is.finite(Matrix::colSums(J[, ps, drop = FALSE]))]
   if (length(bad)) {
     stop(sprintf(paste("The model is not differentiable in %s at this",
                        "solution (for example a parameter exponent of a",
@@ -216,8 +221,7 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   # (with active PSD constraints the curvature condition has an extra
   # term, so nonsingularity of the KKT matrix is the test there)
   if (nf && !length(psd)) {
-    Hff <- H[free, free, drop = FALSE]
-    A <- JA[, free, drop = FALSE]
+    A <- JAf
     rk <- if (na) qr(t(A))$rank else 0L
     if (rk < nf) {
       Z <- if (rk) qr.Q(qr(t(A)), complete = TRUE)[, (rk + 1L):nf, drop = FALSE]
@@ -250,7 +254,7 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   dx[match(free, cols), ] <- sol[seq_len(nf), , drop = FALSE]
   gf <- if (is.null(result$objective)) numeric(ns) else
     as.vector(jac_expr(result$objective, z, ns)$J)
-  df <- gf[ps] - as.vector(crossprod(J[, ps, drop = FALSE], y))
+  df <- gf[ps] - as.vector(Matrix::crossprod(J[, ps, drop = FALSE], y))
   for (q in psd) {
     Jv <- as.matrix(jac_expr(q$vec, z, ns)$J)
     df <- df - s_sense * as.vector(crossprod(Jv[, ps, drop = FALSE],
