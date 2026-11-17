@@ -2,6 +2,16 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/adamrsophie/optcompR/graph/badge.svg)](https://app.codecov.io/gh/adamrsophie/optcompR)
+[![pkgdown](https://github.com/adamrsophie/optcompR/actions/workflows/pkgdown.yaml/badge.svg)](https://adamrsophie.github.io/optcompR/)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+<!-- DOI badge: Zenodo mints a concept DOI on the first GitHub release; replace XXXXXXXX and uncomment. -->
+<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXXX) -->
+<!-- badges: end -->
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/adamrsophie/optcompR/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/adamrsophie/optcompR/actions/workflows/pkgdown.yaml/badge.svg)](https://adamrsophie.github.io/optcompR/)
 <!-- badges: end -->
 
