@@ -393,11 +393,12 @@ opt_complementarity <- function(model, x, y, name = NULL) {
   }
   base <- name %||% paste0("complementarity",
                            length((model$special %||% list())$sos) + 1L)
-  invisible(lapply(seq_along(xs), function(i) {
+  # all pairs are installed or none: a late name collision rolls back
+  atomically(model, invisible(lapply(seq_along(xs), function(i) {
     add_special(model, "sos", list(type = 1L, sym = c(xs[i], ys[i]),
                                    weights = c(1, 2)),
                 paste0(base, "[", i, "]"))
-  }))
+  })))
 }
 
 #' Logical constraints on binary variables

@@ -149,3 +149,17 @@ test_that("a saved OSQP model rebuilds its workspace", {
   expect_equal(as.numeric(opt_solve(m2, solver = "osqp")$x), 2,
                tolerance = 1e-5)
 })
+
+test_that("a failed complementarity call leaves the model unchanged", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2, lower = 0, upper = 1)
+  y <- opt_variable(m, "y", dim = 2, lower = 0, upper = 1)
+  opt_sos1(m, c(x[2], y[2]), name = "pair[2]")
+  before <- opt_special_constraints(m)
+  expect_error(opt_complementarity(m, x, y, name = "pair"))
+  expect_identical(opt_special_constraints(m), before)
+  opt_constraint(m, x[1] == 1)
+  opt_constraint(m, y[1] == 1)
+  opt_objective(m, 0 * x[1])
+  expect_identical(opt_status(opt_solve(m, solver = "highs")), "optimal")
+})
