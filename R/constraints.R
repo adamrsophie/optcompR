@@ -37,10 +37,14 @@ opt_constraint <- function(model, relation, name = NULL, lower = NULL,
     }
     e <- relation$expr
     n <- e$len
-    lo <- switch(relation$sense, "<=" = rep(-Inf, n), ">=" = rep(0, n),
-                 "==" = rep(0, n))
-    up <- switch(relation$sense, "<=" = rep(0, n), ">=" = rep(Inf, n),
-                 "==" = rep(0, n))
+    b <- if (is.null(relation$rhs)) rep(0, n) else
+      recycle_to(relation$rhs, n, "right-hand side")
+    lo <- switch(relation$sense, "<=" = rep(-Inf, n), ">=" = b, "==" = b)
+    up <- switch(relation$sense, "<=" = b, ">=" = rep(Inf, n), "==" = b)
+    if (any(lo == Inf) || any(up == -Inf)) {
+      stop("A constraint lower bound of Inf or upper bound of -Inf can never hold.",
+           call. = FALSE)
+    }
     sense <- relation$sense
   } else if (is_expr(relation)) {
     if (is.null(lower) && is.null(upper)) {

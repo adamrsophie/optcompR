@@ -281,3 +281,17 @@ test_that("a strict accuracy request tightens result validation", {
   expect_identical(r$validation$source, "solver default")
   expect_true(opt_has_solution(r))
 })
+
+test_that("infinite right-hand sides become bounds", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", dim = 2, lower = 0, upper = 5)
+  opt_constraint(m, x <= c(Inf, 2), name = "a")
+  opt_constraint(m, -Inf <= x[1], name = "b")
+  opt_objective(m, -sum(x))
+  sf <- opt_standard_form(m)
+  expect_false(anyNA(c(sf$row_lower, sf$row_upper)))
+  expect_equal(unname(opt_solve(m, solver = "highs")$x), c(5, 2))
+  expect_error(opt_constraint(m, x[1] >= Inf), "never hold")
+  z <- opt_variable(m, "z", type = "binary")
+  expect_error(opt_indicator(m, z, x[1] <= Inf), "finite")
+})

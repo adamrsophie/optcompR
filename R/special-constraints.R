@@ -311,6 +311,9 @@ opt_indicator <- function(model, z, relation, active = 1, name = NULL) {
   if (!inherits(relation, "opt_relation")) {
     stop("`relation` must be a comparison such as `x <= 4`.", call. = FALSE)
   }
+  if (!is.null(relation$rhs)) {
+    stop("Indicator relations need finite right-hand sides.", call. = FALSE)
+  }
   zs <- as_binary_symbol(model, z, "z")
   e <- check_affine(model_expr(model, relation$expr, "relation"), "relation")
   if (!active %in% c(0, 1)) stop("`active` must be 0 or 1.", call. = FALSE)

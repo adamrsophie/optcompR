@@ -1,6 +1,19 @@
 # Operator overloading for opt_expr.
 
 new_relation <- function(lhs, rhs, sense) {
+  # an infinite numeric side cannot be moved into the expression (y - Inf
+  # has no value); it stays a bound, with the expression on the left
+  inf_side <- function(v) is.numeric(v) && !is_expr(v) && any(is.infinite(v))
+  if (inf_side(lhs)) {
+    tmp <- lhs
+    lhs <- rhs
+    rhs <- tmp
+    sense <- switch(sense, "<=" = ">=", ">=" = "<=", "==" = "==")
+  }
+  if (inf_side(rhs)) {
+    return(structure(list(expr = as_expr(lhs), sense = sense,
+                          rhs = as.numeric(rhs)), class = "opt_relation"))
+  }
   lhs <- as_expr(lhs)
   rhs <- as_expr(rhs)
   e <- expr_add(lhs, rhs, sign = -1)
