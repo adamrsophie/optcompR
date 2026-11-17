@@ -1,8 +1,15 @@
-# Runs benchmarks/run.R on demand; it is not part of every check.
+# Runs benchmarks/run.R on a clean runner for the current commit and for a
+# base commit, so the two sets of timings come from the same machine. Run it
+# from the Actions tab; the results are uploaded as an artifact.
 name: benchmarks
 
 on:
   workflow_dispatch:
+    inputs:
+      base:
+        description: Commit to compare against
+        required: true
+        default: 763e61a
 
 permissions:
   contents: read
@@ -10,10 +17,18 @@ permissions:
 jobs:
   benchmarks:
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Install IPOPT
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q coinor-libipopt-dev pkg-config
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
@@ -21,8 +36,27 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
+          extra-packages: any::bench, any::ROI, any::ROI.plugin.highs, any::ROI.plugin.glpk, any::slam
           dependencies: '"hard"'
-          extra-packages: local::., any::ompr, any::ompr.roi, any::ROI.plugin.glpk
+          needs: benchmarks
 
-      - name: Run benchmarks
-        run: Rscript benchmarks/run.R
+      - name: Install optional solvers
+        shell: Rscript {0}
+        run: install.packages(c("osqp", "clarabel", "nloptr", "scip"))
+
+      - name: Install both versions
+        run: |
+          mkdir -p "$RUNNER_TEMP/new" "$RUNNER_TEMP/base"
+          R CMD INSTALL -l "$RUNNER_TEMP/new" .
+          git worktree add "$RUNNER_TEMP/src-base" "${{ inputs.base }}"
+          R CMD INSTALL -l "$RUNNER_TEMP/base" "$RUNNER_TEMP/src-base"
+
+      - name: Run the benchmarks
+        run: |
+          R_LIBS="$RUNNER_TEMP/new" Rscript benchmarks/run.R out/new
+          R_LIBS="$RUNNER_TEMP/base" Rscript benchmarks/run.R out/base
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmarks
+          path: out
