@@ -221,17 +221,47 @@ opt_copy <- function(model, name = NULL) {
   out$cache <- new.env(parent = emptyenv())
   class(out) <- "opt_model"
   # expressions stored in the model point at their model: repoint them
-  relink <- function(x) {
-    if (is.environment(x)) return(if (identical(x, model)) out else x)
-    if (is.list(x)) {
-      at <- attributes(x)
-      x <- lapply(unclass(x), relink)
-      attributes(x) <- at
-    }
-    x
-  }
   for (k in c("blocks", "cons", "objective", "special")) {
-    if (!is.null(out[[k]])) assign(k, relink(out[[k]]), out)
+    if (!is.null(out[[k]])) assign(k, relink(out[[k]], model, out), out)
   }
   out
+}
+
+# Replace references to the model environment `from` by `to` in x.
+relink <- function(x, from, to) {
+  if (is.environment(x)) return(if (identical(x, from)) to else x)
+  if (is.list(x)) {
+    at <- attributes(x)
+    x <- lapply(unclass(x), relink, from, to)
+    attributes(x) <- at
+  }
+  x
+}
+
+# A new model defining the problem a result was computed for: a copy of its
+# model with the constraints, objective, special constraints, sense,
+# parameter values, bounds and types the result recorded. The live model is
+# not touched.
+model_from_result <- function(result) {
+  live <- result$model
+  m <- opt_copy(live)
+  m$cons <- relink(result$cons, live, m)
+  nm <- vapply(m$cons, `[[`, "", "name")
+  m$cons_index <- list2env(as.list(stats::setNames(seq_along(nm), nm)),
+                           parent = emptyenv())
+  m$objective <- relink(result$objective, live, m)
+  m$special <- relink(result$special, live, m)
+  m$sense <- result$sense
+  sf <- result$standard_form
+  ns <- length(result$z)
+  par <- which(m$sym_kind[seq_len(ns)] == "par")
+  m$value[par] <- result$z[par]
+  vs <- sf$var_sym
+  n0 <- length(vs)
+  m$lower[vs] <- sf$lower[seq_len(n0)]
+  m$upper[vs] <- sf$upper[seq_len(n0)]
+  m$type[vs] <- sf$type[seq_len(n0)]
+  touch_structure(m)
+  touch_parameters(m)
+  m
 }

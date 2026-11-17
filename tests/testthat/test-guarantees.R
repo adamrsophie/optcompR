@@ -163,3 +163,28 @@ test_that("a failed complementarity call leaves the model unchanged", {
   opt_objective(m, 0 * x[1])
   expect_identical(opt_status(opt_solve(m, solver = "highs")), "optimal")
 })
+
+test_that("retained helper results form their own fixed relaxations", {
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
+  opt_objective(m, x)
+  r <- opt_weighted(m, list(x, 2 * x), c(1, 1), solver = "highs")
+  fr <- opt_fixed_relaxation(r, solver = "highs")
+  expect_equal(opt_objective_value(fr), opt_objective_value(r))
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 10)
+  p <- opt_parameter(m, "p", 2)
+  opt_constraint(m, x >= p)
+  opt_objective(m, x)
+  before <- opt_standard_form(m)
+  ss <- opt_scenarios(m, p, c(2, 3), keep = TRUE, solver = "highs")
+  for (r in attr(ss, "results")) {
+    fr <- opt_fixed_relaxation(r, solver = "highs")
+    expect_equal(opt_objective_value(fr), opt_objective_value(r))
+  }
+  # the live model is untouched
+  after <- opt_standard_form(m)
+  drop <- c("key", "structure_key")
+  expect_identical(before[setdiff(names(before), drop)],
+                   after[setdiff(names(after), drop)])
+})

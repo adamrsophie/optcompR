@@ -83,7 +83,9 @@ opt_sensitivity <- function(result) {
 #' @param result An `opt_result` of a mixed-integer model with a solution.
 #' @param ... Further arguments for [opt_solve()].
 #' @return An `opt_result` for the continuous problem. The original model is
-#'   not changed.
+#'   not changed. When the model was changed after `result` was computed,
+#'   the problem is rebuilt from the snapshot stored in `result`, and the
+#'   returned result refers to that separate model.
 #' @examples
 #' m <- opt_model("max")
 #' x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 3)
@@ -104,10 +106,12 @@ opt_fixed_relaxation <- function(result, ...) {
   }
   model <- result$model
   key <- paste(model$structure_version, model$parameter_version, sep = ":")
+  # when the live model changed since the result (a helper restored its
+  # objective, or a later scenario set a parameter), the problem the result
+  # solved is rebuilt from its snapshot in a separate model
   if (!is.null(result$model_key) && !identical(result$model_key, key) &&
       !same_problem(result)) {
-    stop(paste("The model changed after this result was computed; solve it",
-               "again before forming the fixed relaxation."), call. = FALSE)
+    model <- model_from_result(result)
   }
   vs <- result$standard_form$var_sym
   int <- vs[model$type[vs] %in% c("integer", "binary")]

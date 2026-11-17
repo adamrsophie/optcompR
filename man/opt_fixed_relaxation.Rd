@@ -13,7 +13,9 @@ opt_fixed_relaxation(result, ...)
 }
 \value{
 An \code{opt_result} for the continuous problem. The original model is
-not changed.
+not changed. When the model was changed after \code{result} was computed,
+the problem is rebuilt from the snapshot stored in \code{result}, and the
+returned result refers to that separate model.
 }
 \description{
 Fixes every integer and binary variable of a mixed-integer result at its
