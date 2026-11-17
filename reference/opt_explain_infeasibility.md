@@ -3,11 +3,14 @@
 Solves an elastic relaxation of the model: every constraint row gets
 nonnegative slack variables that let it move toward feasibility, and
 with `bounds = TRUE` the bounds of continuous and integer variables do
-too. The relaxation minimizes the sum of the (weighted) violations, so
-its solution names a smallest set of rows and bounds that must move, and
-by how much, for the model to become feasible. Special constraints
-(indicators and SOS), binary bounds and integrality are kept as they
-are.
+too. The relaxation minimizes the weighted total (L1) violation, so its
+solution names rows and bounds that can move, and by how much, for the
+model to become feasible at the least weighted total change. This is not
+the smallest number of rows to change, nor an irreducible infeasible
+subset: two copies of `x >= 1` against one `100 * x <= 0` relax the two
+copies (total change 2) although relaxing the single upper row would
+suffice (change 100). Special constraints (indicators and SOS), binary
+bounds and integrality are kept as they are.
 
 ## Usage
 
@@ -53,11 +56,13 @@ opt_explain_infeasibility(
 ## Value
 
 An `opt_infeasibility` list with `feasible` (whether the model is
-feasible, that is, no violation is needed), `total` (the weighted sum of
-violations), `violations`, a data frame with columns `kind` (`"row"` or
-`"bound"`), `name`, `block`, `side` (`"lower"` or `"upper"`), `bound`
-(the original bound), `value` (the row or variable value at the relaxed
-solution) and `violation`, and `result`, the
+feasible, that is, no unweighted violation above `tol` is needed; the
+weights do not change this verdict), `total` (the weighted sum of
+violations), `violation` (their unweighted sum), `violations`, a data
+frame with columns `kind` (`"row"` or `"bound"`), `name`, `block`,
+`side` (`"lower"` or `"upper"`), `bound` (the original bound), `value`
+(the row or variable value at the relaxed solution) and `violation`, and
+`result`, the
 [`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md)
 result of the relaxation.
 

@@ -129,7 +129,9 @@ when all of them are installed. <code><a href="https://rdrr.io/r/base/character.
 
 <dt id="arg-global">global<a class="anchor" aria-label="anchor" href="#arg-global"></a></dt>
 <dd><p>Classes the backend solves to global optimality; for other
-classes it is treated as a local solver.</p></dd>
+classes it is treated as a local solver (an <code>"optimal"</code> result becomes
+<code>"locally_optimal"</code> unless the model is proven convex), whatever the
+<code>local</code> field of its results says.</p></dd>
 
 
 <dt id="arg-features">features<a class="anchor" aria-label="anchor" href="#arg-features"></a></dt>
@@ -187,7 +189,10 @@ vector), <code>message</code>, <code>local</code> (<code>TRUE</code> for local s
 character vector), <code>extra</code> (a list) and <code>raw</code> (the solver's own
 output).</p></li>
 </ul><p>The result is checked: a missing or unknown status, or an <code>x</code> of the
-wrong length, is an error naming the backend.</p>
+wrong length, is an error naming the backend. The returned point is then
+checked against the model, so a feasibility claim the point does not
+meet becomes <code>"infeasible_point"</code> (see <code><a href="opt_solve.html">opt_solve()</a></code>); an <code>"unknown"</code>
+primal status whose point passes becomes <code>"feasible_point"</code>.</p>
     </div>
 
     <div class="section level2">

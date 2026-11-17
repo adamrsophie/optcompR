@@ -106,9 +106,10 @@ structure, bounds or parameter values.</p>
     <p>An <code>opt_standard_form</code> list with elements <code>sense</code>, <code>c</code>, <code>Q</code>,
 <code>offset</code>, <code>A</code>, <code>row_lower</code>, <code>row_upper</code>, <code>lower</code>, <code>upper</code>, <code>type</code>,
 <code>col_names</code>, <code>row_names</code>, <code>row_block</code>, <code>row_kind</code> (<code>"linear"</code>,
-<code>"quadratic"</code> or <code>"nonlinear"</code>), <code>row_Q</code> (list of row Hessian matrices
-in the one-half convention for quadratic rows), and the lowered
-expressions used by nonlinear solvers.</p>
+<code>"quadratic"</code> or <code>"nonlinear"</code>), <code>row_quad</code> (the quadratic terms of all
+rows as one triplet list <code>i</code>, <code>j</code>, <code>k</code>, <code>v</code> with <code>j &lt;= k</code>: row <code>i</code> has
+the term <code>v * x[j] * x[k]</code>; <code><a href="opt_row_hessian.html">opt_row_hessian()</a></code> gives one row's matrix),
+and the lowered expressions used by nonlinear solvers.</p>
     </div>
 
     <div class="section level2">

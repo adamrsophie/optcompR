@@ -45,14 +45,18 @@ complementarity of each cone; `kkt$cones` reports them per cone.
 
 - complementary slackness: \\y_i\\ times the row slack is zero.
 
-Violations are scaled by `max(1, |bound|)` for rows and by
-`max(1, |gradient|)` for stationarity. Feasibility passes at `tol`; the
-KKT test passes at `sqrt(tol)`, because duals and active sets carry the
-square root of solver tolerances, and rows within `sqrt(tol)` of a bound
-count as active. When a solver returns no multipliers, they are
-estimated by least squares on the active set and the report says so. KKT
-conditions certify global optimality only for convex problems; for
-nonconvex problems they describe a stationary point.
+Violations are scaled by `max(1, |bound|)` for rows and bounds (each
+side by its own bound; an infinite bound imposes nothing, and a value
+that is not finite where a bound applies is an infinite violation) and
+by `max(1, |gradient|)` for stationarity. `rows$violation` is unscaled.
+Any result with a point can be checked, including one labelled
+`"infeasible_point"`. Feasibility passes at `tol`; the KKT test passes
+at `sqrt(tol)`, because duals and active sets carry the square root of
+solver tolerances, and rows within `sqrt(tol)` of a bound count as
+active. When a solver returns no multipliers, they are estimated by
+least squares on the active set and the report says so. KKT conditions
+certify global optimality only for convex problems; for nonconvex
+problems they describe a stationary point.
 
 ## Examples
 

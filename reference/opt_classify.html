@@ -149,7 +149,7 @@ problem and is classified by its constraints.</p>
 <span class="r-in"><span><span class="fu">opt_classify</span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;opt_classification: QP, convex&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   - syntactic: objective is quadratic; constraint rows: none</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   - numerical eigenvalues: objective is convex (smallest eigenvalue 1 (rounding level 1.33227e-13, tolerance 3e-09))</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   - structural: objective is convex (diagonally dominant with a nonnegative diagonal (Gershgorin))</span>
 <span class="r-in"><span><span class="fu"><a href="opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">x</span> <span class="op">*</span> <span class="va">y</span> <span class="op">+</span> <span class="va">y</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">opt_classify</span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">convexity</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "nonconvex"</span>

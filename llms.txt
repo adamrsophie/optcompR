@@ -224,6 +224,8 @@ GPL-3.
   : Classify an optimization model
 - [`opt_standard_form()`](https://adamrsophie.github.io/optcompR/reference/opt_standard_form.md)
   : Standard form of a model
+- [`opt_row_hessian()`](https://adamrsophie.github.io/optcompR/reference/opt_row_hessian.md)
+  : Hessian of one quadratic row of a standard form
 - [`opt_write_model()`](https://adamrsophie.github.io/optcompR/reference/opt_write_model.md)
   : Write a model to an MPS or LP file
 

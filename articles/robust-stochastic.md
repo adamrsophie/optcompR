@@ -36,6 +36,14 @@ which for nonnegative production are the largest ones:
 m <- opt_model("max")
 x <- opt_variable(m, "x", dim = 2, lower = 0)
 opt_robust_constraint(m, x, a0 = c(1, 1), b = 10, delta = c(0.5, 0.2))
+#> [[1]]
+#> <opt_constraint '.robust1.pos': 2 rows, affine>
+#> 
+#> [[2]]
+#> <opt_constraint '.robust1.neg': 2 rows, affine>
+#> 
+#> [[3]]
+#> <opt_constraint '.robust1': 1 row, affine>
 opt_objective(m, 3 * x[1] + 2.8 * x[2])
 r <- opt_solve(m)
 opt_value(r, x)
@@ -80,6 +88,8 @@ x <- opt_variable(m, "x", dim = 2, lower = 0)
 P <- diag(c(0.5, 0.2))
 opt_robust_constraint(m, x, a0 = c(1, 1), b = 10, uncertainty = "ellipsoid",
                       P = P)
+#> [[1]]
+#> <opt_special_constraint cone '.robust1'>
 opt_objective(m, 3 * x[1] + 2.8 * x[2])
 r <- opt_solve(m)
 v <- opt_value(r, x)

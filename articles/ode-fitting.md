@@ -92,6 +92,38 @@ rbind(sensitivities = unname(g), finite_differences = num)
 #> finite_differences -1.219944 0.9196712
 ```
 
+## Adjoint gradients for many parameters
+
+Forward sensitivities integrate one equation per state and parameter, so
+their cost grows with the number of parameters. The adjoint method
+solves one backward equation for the states and one quadrature per
+parameter instead, which pays off when parameters outnumber states.
+`sensitivity = "adjoint"` selects it; the default `"auto"` uses it when
+there are more than eight parameters and more than twice as many
+parameters as states. Both give the same gradient:
+
+``` r
+
+# a forcing term with 20 coefficients drives a two state system
+g20 <- function(u, p, t) {
+  s <- sum(p * sin(seq_along(p) * t)) / length(p)
+  c(-u[1] + s, u[1] - 0.5 * u[2])
+}
+prob20 <- modelcompR::ODEProblem(g20, c(1, 0), c(0, 4), rep(1, 20))
+obs <- matrix(0.4, 4, 1)
+m4 <- opt_model()
+w <- opt_variable(m4, "w", dim = 20)
+at <- seq(0.5, 2, length.out = 20)
+fwd <- opt_ode_loss(prob20, w, 1:4, obs, states = 2, sensitivity = "forward")
+adj <- opt_ode_loss(prob20, w, 1:4, obs, states = 2, sensitivity = "adjoint")
+opt_objective(m4, fwd)
+g_fwd <- opt_gradient(m4, at)
+opt_objective(m4, adj)
+g_adj <- opt_gradient(m4, at)
+max(abs(g_fwd - g_adj))
+#> [1] 1.13072e-12
+```
+
 ## Partial observations and weights
 
 Observe only the central compartment by passing `states`, give each

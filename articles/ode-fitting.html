@@ -186,12 +186,43 @@ differences to the integration tolerances:</p>
 <span><span class="co">#&gt; finite_differences -1.219944 0.9196712</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="adjoint-gradients-for-many-parameters">Adjoint gradients for many parameters<a class="anchor" aria-label="anchor" href="#adjoint-gradients-for-many-parameters"></a>
+</h2>
+<p>Forward sensitivities integrate one equation per state and parameter,
+so their cost grows with the number of parameters. The adjoint method
+solves one backward equation for the states and one quadrature per
+parameter instead, which pays off when parameters outnumber states.
+<code>sensitivity = "adjoint"</code> selects it; the default
+<code>"auto"</code> uses it when there are more than eight parameters
+and more than twice as many parameters as states. Both give the same
+gradient:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># a forcing term with 20 coefficients drives a two state system</span></span>
+<span><span class="va">g20</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">u</span>, <span class="va">p</span>, <span class="va">t</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">p</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="op">*</span> <span class="va">t</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="va">u</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">s</span>, <span class="va">u</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">u</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">prob20</span> <span class="op">&lt;-</span> <span class="fu">modelcompR</span><span class="fu">::</span><span class="fu"><a href="https://adamrsophie.github.io/modelcompR/reference/ODEFunction.html" class="external-link">ODEProblem</a></span><span class="op">(</span><span class="va">g20</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">m4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m4</span>, <span class="st">"w"</span>, dim <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="va">at</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">2</span>, length.out <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="va">fwd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_ode_loss.html">opt_ode_loss</a></span><span class="op">(</span><span class="va">prob20</span>, <span class="va">w</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="va">obs</span>, states <span class="op">=</span> <span class="fl">2</span>, sensitivity <span class="op">=</span> <span class="st">"forward"</span><span class="op">)</span></span>
+<span><span class="va">adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_ode_loss.html">opt_ode_loss</a></span><span class="op">(</span><span class="va">prob20</span>, <span class="va">w</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="va">obs</span>, states <span class="op">=</span> <span class="fl">2</span>, sensitivity <span class="op">=</span> <span class="st">"adjoint"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">fwd</span><span class="op">)</span></span>
+<span><span class="va">g_fwd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_gradient.html">opt_gradient</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">at</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">adj</span><span class="op">)</span></span>
+<span><span class="va">g_adj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_gradient.html">opt_gradient</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">at</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">g_fwd</span> <span class="op">-</span> <span class="va">g_adj</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1.13072e-12</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="partial-observations-and-weights">Partial observations and weights<a class="anchor" aria-label="anchor" href="#partial-observations-and-weights"></a>
 </h2>
 <p>Observe only the central compartment by passing <code>states</code>,
 give each observation a weight, and mark missing values with
 <code>NA</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">y2</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span>, <span class="fl">2</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
 <span><span class="va">y2</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
 <span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -208,7 +239,7 @@ give each observation a weight, and mark missing values with
 <p>Because the loss is an ordinary optcompR expression, the fit can
 carry constraints and penalty terms. A ridge penalty toward prior values
 and a constraint that absorption is faster than elimination:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_model.html">opt_model</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">th</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/opt_variable.html">opt_variable</a></span><span class="op">(</span><span class="va">m3</span>, <span class="st">"theta"</span>, dim <span class="op">=</span> <span class="fl">2</span>, lower <span class="op">=</span> <span class="fl">0.01</span>, upper <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>                   start <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="fl">0.3</span><span class="op">)</span><span class="op">)</span></span>

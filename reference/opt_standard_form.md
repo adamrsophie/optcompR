@@ -25,9 +25,12 @@ opt_standard_form(model)
 An `opt_standard_form` list with elements `sense`, `c`, `Q`, `offset`,
 `A`, `row_lower`, `row_upper`, `lower`, `upper`, `type`, `col_names`,
 `row_names`, `row_block`, `row_kind` (`"linear"`, `"quadratic"` or
-`"nonlinear"`), `row_Q` (list of row Hessian matrices in the one-half
-convention for quadratic rows), and the lowered expressions used by
-nonlinear solvers.
+`"nonlinear"`), `row_quad` (the quadratic terms of all rows as one
+triplet list `i`, `j`, `k`, `v` with `j <= k`: row `i` has the term
+`v * x[j] * x[k]`;
+[`opt_row_hessian()`](https://adamrsophie.github.io/optcompR/reference/opt_row_hessian.md)
+gives one row's matrix), and the lowered expressions used by nonlinear
+solvers.
 
 ## Examples
 

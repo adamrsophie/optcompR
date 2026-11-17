@@ -59,7 +59,9 @@ opt_unregister_solver(name)
 - global:
 
   Classes the backend solves to global optimality; for other classes it
-  is treated as a local solver.
+  is treated as a local solver (an `"optimal"` result becomes
+  `"locally_optimal"` unless the model is proven convex), whatever the
+  `local` field of its results says.
 
 - features:
 
@@ -123,7 +125,12 @@ and the other derivative functions evaluate. It returns a list with
   vector), `extra` (a list) and `raw` (the solver's own output).
 
 The result is checked: a missing or unknown status, or an `x` of the
-wrong length, is an error naming the backend.
+wrong length, is an error naming the backend. The returned point is then
+checked against the model, so a feasibility claim the point does not
+meet becomes `"infeasible_point"` (see
+[`opt_solve()`](https://adamrsophie.github.io/optcompR/reference/opt_solve.md));
+an `"unknown"` primal status whose point passes becomes
+`"feasible_point"`.
 
 ## Examples
 

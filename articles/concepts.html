@@ -127,8 +127,8 @@ polynomial models of degree two and records how:</p>
 <span><span class="va">cl</span><span class="op">$</span><span class="va">convexity</span></span>
 <span><span class="co">#&gt; [1] "convex"</span></span>
 <span><span class="va">cl</span><span class="op">$</span><span class="va">evidence</span></span>
-<span><span class="co">#&gt; [1] "syntactic: objective is quadratic; constraint rows: none"                                                        </span></span>
-<span><span class="co">#&gt; [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 1 (rounding level 1.33227e-13, tolerance 3e-09))"</span></span>
+<span><span class="co">#&gt; [1] "syntactic: objective is quadratic; constraint rows: none"                                      </span></span>
+<span><span class="co">#&gt; [2] "structural: objective is convex (diagonally dominant with a nonnegative diagonal (Gershgorin))"</span></span>
 <span><span class="fu"><a href="../reference/opt_objective.html">opt_objective</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/opt_classify.html">opt_classify</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">convexity</span></span>
 <span><span class="co">#&gt; [1] "nonconvex"</span></span></code></pre></div>

@@ -2,11 +2,14 @@
 
 Builds the scalar expression \\\sum\_{t, s} w\_{ts} (u_s(t; \theta) -
 y\_{ts})^2\\ for an `ODEProblem` of the modelcompR package, with
-\\\theta\\ given by decision variables. Each evaluation solves the ODE
-and its forward sensitivities (`ODEForwardSensitivityProblem()`), so the
-gradient is the exact derivative of the numerical solution up to the
-integration tolerances; no finite differences are used. Value and
-gradient at the same point share one solve.
+\\\theta\\ given by decision variables. The gradient is the exact
+derivative of the numerical solution up to the integration tolerances;
+no finite differences are used. It comes from forward sensitivities
+(`ODEForwardSensitivityProblem()`), whose cost grows with the number of
+parameters times the number of states, or from the adjoint equation
+solved backward in time (`adjoint_sensitivities()`), whose cost does not
+grow with the number of parameters. Value and gradient at the same point
+share one solve.
 
 ## Usage
 
@@ -20,7 +23,8 @@ opt_ode_loss(
   weights = NULL,
   reltol = 1e-10,
   abstol = 1e-12,
-  alg = NULL
+  alg = NULL,
+  sensitivity = c("auto", "forward", "adjoint")
 )
 ```
 
@@ -60,6 +64,12 @@ opt_ode_loss(
 
   Integration algorithm (default
   [`modelcompR::Tsit5()`](https://adamrsophie.github.io/modelcompR/reference/ode_algorithms.html)).
+
+- sensitivity:
+
+  `"forward"`, `"adjoint"`, or `"auto"` (the default), which uses the
+  adjoint method when there are more than eight parameters and more than
+  twice as many parameters as states.
 
 ## Value
 

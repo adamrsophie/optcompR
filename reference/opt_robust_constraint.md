@@ -80,6 +80,15 @@ A list of the generated constraint references, invisibly.
 m <- opt_model("max")
 x <- opt_variable(m, "x", dim = 2, lower = 0)
 opt_robust_constraint(m, x, a0 = c(1, 1), b = 10, delta = c(0.5, 0.2))
+#> [[1]]
+#> <opt_constraint '.robust1.pos': 2 rows, affine>
+#> 
+#> [[2]]
+#> <opt_constraint '.robust1.neg': 2 rows, affine>
+#> 
+#> [[3]]
+#> <opt_constraint '.robust1': 1 row, affine>
+#> 
 opt_objective(m, 3 * x[1] + 2 * x[2])
 opt_value(opt_solve(m), x)
 #> [1] 6.666667 0.000000

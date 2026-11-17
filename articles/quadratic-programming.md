@@ -29,7 +29,7 @@ opt_objective(m, t(w) %*% Sigma %*% w)
 opt_classify(m)
 #> <opt_classification: QP, convex>
 #>   - syntactic: objective is quadratic; constraint rows: linear = 2
-#>   - numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 2.48609e-14, tolerance 3.73211e-10))
+#>   - structural: objective is convex (diagonally dominant with a nonnegative diagonal (Gershgorin))
 r <- opt_solve(m)
 round(opt_value(r, w), 4)
 #> [1] 0.3469 0.3469 0.3061
@@ -48,8 +48,8 @@ more return.
 ``` r
 
 opt_classify(m)$evidence
-#> [1] "syntactic: objective is quadratic; constraint rows: linear = 2"                                                               
-#> [2] "numerical eigenvalues: objective is convex (smallest eigenvalue 0.137316 (rounding level 2.48609e-14, tolerance 3.73211e-10))"
+#> [1] "syntactic: objective is quadratic; constraint rows: linear = 2"                                
+#> [2] "structural: objective is convex (diagonally dominant with a nonnegative diagonal (Gershgorin))"
 ```
 
 ## A nonconvex QP

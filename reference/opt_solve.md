@@ -42,8 +42,10 @@ opt_solve(
 - mip_gap:
 
   Relative optimality gap for mixed-integer solvers. `NULL` keeps the
-  solver default. A solve that stops at this gap with a gap above zero
-  has status `"gap_limit"`, not `"optimal"`.
+  solver default. A solve that stops with a gap above zero under a gap
+  the user asked for (here or through a native option such as HiGHS
+  `mip_rel_gap` or SCIP `limits/gap`), or with a gap above 1e-4 in any
+  case, has status `"gap_limit"`, not `"optimal"`.
 
 - verbose:
 
@@ -53,9 +55,13 @@ opt_solve(
 
   Pass start values set with
   [`opt_set_start()`](https://adamrsophie.github.io/optcompR/reference/opt_set_start.md)
-  or `opt_variable(start = )` to solvers that accept them. Without start
-  values, an LP solved again by HiGHS after a parameter update restarts
-  from the previous optimal basis.
+  or `opt_variable(start = )` to solvers that accept them, and reuse the
+  native HiGHS solver and OSQP workspace of the previous solve of the
+  same model: when only costs, bounds or matrix values changed (for
+  example after
+  [`opt_set_parameter()`](https://adamrsophie.github.io/optcompR/reference/opt_set_parameter.md)),
+  they are updated in place and the solver restarts from its last basis
+  or solution. `FALSE` builds a new native solver.
 
 - options:
 
@@ -76,6 +82,18 @@ An `opt_result`. See
 and
 [`opt_check()`](https://adamrsophie.github.io/optcompR/reference/opt_check.md).
 
+## Checking the returned point
+
+The point a backend returns is checked against the model (rows from the
+original expressions, bounds, integrality, cones, indicators and SOS
+constraints), each side scaled by `max(1, |bound|)`, with the backend's
+feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
+first-order solvers OSQP and SCS). A point that fails is labelled
+`"infeasible_point"`, a claimed optimum then becomes
+`"locally_infeasible"` (local solvers) or `"numerical_error"`, and a
+warning gives the violation. A backend is treated as local for the
+classes it does not declare global unless the model is proven convex.
+
 ## Examples
 
 ``` r
@@ -91,7 +109,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.005s (build 0.001s)
+#>   time:        0.004s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```

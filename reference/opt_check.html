@@ -121,8 +121,12 @@ complementarity of each cone; <code>kkt$cones</code> reports them per cone.</p>
 gradients;</p></li>
 <li><p>dual feasibility: each dual has the sign its active bound allows;</p></li>
 <li><p>complementary slackness: \(y_i\) times the row slack is zero.</p></li>
-</ul><p>Violations are scaled by <code>max(1, |bound|)</code> for rows and by
-<code>max(1, |gradient|)</code> for stationarity. Feasibility passes at <code>tol</code>; the
+</ul><p>Violations are scaled by <code>max(1, |bound|)</code> for rows and bounds (each
+side by its own bound; an infinite bound imposes nothing, and a value
+that is not finite where a bound applies is an infinite violation) and by
+<code>max(1, |gradient|)</code> for stationarity. <code>rows$violation</code> is unscaled. Any
+result with a point can be checked, including one labelled
+<code>"infeasible_point"</code>. Feasibility passes at <code>tol</code>; the
 KKT test passes at <code>sqrt(tol)</code>, because duals and active sets carry the
 square root of solver tolerances, and rows within <code>sqrt(tol)</code> of a bound
 count as active. When a solver returns no multipliers, they are estimated
