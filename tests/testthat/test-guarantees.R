@@ -77,3 +77,75 @@ test_that("NLP branch and bound bounds are certified, not primal values", {
   expect_identical(opt_status(r), "optimal")
   expect_equal(opt_objective_value(r), 0.16, tolerance = 1e-8)
 })
+
+test_that("a local mixed-integer backend is not promoted by a convex relaxation", {
+  name <- "test_local_miqp"
+  opt_register_solver(name, function(sf, cls, control) {
+    list(termination = "optimal", primal_status = "feasible_point",
+         dual_status = "not_available", x = rep(0, length(sf$c)),
+         objective = sf$offset)
+  }, classes = "MIQP", global = character(), version = "test")
+  on.exit(opt_unregister_solver(name), add = TRUE)
+  m <- opt_model()
+  x <- opt_variable(m, "x", type = "integer", lower = 0, upper = 1)
+  opt_objective(m, (x - .6)^2)
+  expect_identical(opt_status(opt_solve(m, solver = name)), "locally_optimal")
+})
+
+test_that("an undefined objective at the returned point is not a solution", {
+  name <- "test_zero_nlp"
+  opt_register_solver(name, function(sf, cls, control) {
+    list(termination = "optimal", primal_status = "feasible_point",
+         dual_status = "not_available", x = rep(0, length(sf$c)), objective = 0)
+  }, classes = "NLP", version = "test")
+  on.exit(opt_unregister_solver(name), add = TRUE)
+  for (f in list(log, function(x) sqrt(x - 1))) {
+    m <- opt_model()
+    x <- opt_variable(m, "x", lower = 0)
+    opt_objective(m, f(x))
+    r <- opt_solve(m, solver = name)
+    expect_false(opt_has_solution(r))
+    expect_identical(opt_status(r), "numerical_error")
+    expect_false(anyNA(r$x))
+  }
+})
+
+test_that("the KKT verdict requires primal feasibility", {
+  name <- "test_zero_qp"
+  opt_register_solver(name, function(sf, cls, control) {
+    list(termination = "optimal", primal_status = "feasible_point",
+         dual_status = "feasible_point", x = rep(0, length(sf$c)), objective = 0,
+         row_dual = rep(0, nrow(sf$A)), col_dual = rep(0, length(sf$c)))
+  }, classes = "QP", version = "test")
+  on.exit(opt_unregister_solver(name), add = TRUE)
+  m <- opt_model()
+  x <- opt_variable(m, "x")
+  opt_constraint(m, x >= 1)
+  opt_objective(m, x^2)
+  d <- opt_check(opt_solve(m, solver = name))
+  expect_false(d$feasible)
+  expect_false(d$kkt$pass)
+  expect_true(d$kkt$dual_pass)
+  expect_false(d$kkt$primal_feasibility)
+})
+
+test_that("a saved OSQP model rebuilds its workspace", {
+  skip_if_not_installed("osqp")
+  m <- opt_model()
+  x <- opt_variable(m, "x", lower = -5, upper = 5)
+  p <- opt_parameter(m, "p", 1)
+  opt_objective(m, (x - p)^2)
+  opt_solve(m, solver = "osqp")
+  f <- tempfile(fileext = ".rds")
+  on.exit(unlink(f), add = TRUE)
+  saveRDS(m, f)
+  m2 <- readRDS(f)
+  r <- opt_solve(m2, solver = "osqp")
+  expect_equal(as.numeric(r$x), 1, tolerance = 1e-5)
+  expect_false(isTRUE(r$extra$reused))
+  r <- opt_solve(m2, solver = "osqp")
+  expect_true(isTRUE(r$extra$reused))
+  opt_set_parameter(m2, "p", 2)
+  expect_equal(as.numeric(opt_solve(m2, solver = "osqp")$x), 2,
+               tolerance = 1e-5)
+})
