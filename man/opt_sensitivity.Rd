@@ -12,8 +12,9 @@ opt_sensitivity(result)
 \value{
 A list of two data frames: \code{costs} (variable, coefficient, lowest
 and highest coefficient keeping the basis optimal, and the objective
-at those values) and \code{rows} (row, active bound, dual, lowest and highest
-bound value and the objective there).
+at those values) and \code{rows} (row, its bounds, the side whose range is
+reported, dual, lowest and highest value of that bound keeping the
+basis optimal, and the objective there).
 }
 \description{
 For an optimal linear program solved by HiGHS, reports the ranges over
@@ -25,7 +26,12 @@ value is piecewise linear rather than following the dual.
 }
 \details{
 Row bounds are reported in standard-form terms (\verb{row_lower <= a'x <= row_upper}, constants moved to the bounds), so for \verb{a'x + c <= b} the
-bound is \code{b - c}.
+bound is \code{b - c}. Each row reports the range of one bound, named in
+\code{side}: the active bound of an active row, the upper bound of an
+inactive row with a finite upper bound, and its lower bound otherwise.
+An inactive bound can move from the row's activity to infinity (an
+upper bound) or from minus infinity to the activity (a lower bound)
+without changing the optimal value.
 }
 \examples{
 m <- opt_model("max")

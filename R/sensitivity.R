@@ -9,13 +9,19 @@
 #'
 #' Row bounds are reported in standard-form terms (`row_lower <= a'x <=
 #' row_upper`, constants moved to the bounds), so for `a'x + c <= b` the
-#' bound is `b - c`.
+#' bound is `b - c`. Each row reports the range of one bound, named in
+#' `side`: the active bound of an active row, the upper bound of an
+#' inactive row with a finite upper bound, and its lower bound otherwise.
+#' An inactive bound can move from the row's activity to infinity (an
+#' upper bound) or from minus infinity to the activity (a lower bound)
+#' without changing the optimal value.
 #'
 #' @param result An `opt_result` for an LP solved with `solver = "highs"`.
 #' @return A list of two data frames: `costs` (variable, coefficient, lowest
 #'   and highest coefficient keeping the basis optimal, and the objective
-#'   at those values) and `rows` (row, active bound, dual, lowest and highest
-#'   bound value and the objective there).
+#'   at those values) and `rows` (row, its bounds, the side whose range is
+#'   reported, dual, lowest and highest value of that bound keeping the
+#'   basis optimal, and the objective there).
 #' @examples
 #' m <- opt_model("max")
 #' x <- opt_variable(m, "x", lower = 0)
@@ -60,12 +66,38 @@ opt_sensitivity <- function(result) {
   if (k > 0L) {
     ru <- take(rg$row_bound_up, k)
     rd <- take(rg$row_bound_dn, k)
+    blo <- rd$value
+    bup <- ru$value
+    olo <- s * rd$objective
+    oup <- s * ru$objective
+    fin_up <- is.finite(sf$row_upper)
+    side <- ifelse(sf$row_lower == sf$row_upper, "both",
+                   ifelse(fin_up, "upper", "lower"))
+    # HiGHS ranges a basic (inactive) row over its activity, not over its
+    # bound. An inactive bound moves freely away from the activity and
+    # down to it with the optimal value unchanged, so its range is
+    # [activity, Inf) for an upper bound and (-Inf, activity] for a lower
+    # bound; a ranged row reports its upper side
+    st <- result$extra$basis$row_status
+    basic <- if (isTRUE(result$extra$basis$valid) && length(st) == k) st == 1L else {
+      v <- as.vector(sf$A %*% result$x[seq_len(n)])
+      tl <- 1e-7 * pmax(1, abs(v))
+      !(abs(v - sf$row_lower) <= tl | abs(v - sf$row_upper) <= tl)
+    }
+    basic <- basic & side != "both"
+    if (any(basic)) {
+      act <- as.vector(sf$A[basic, , drop = FALSE] %*% result$x[seq_len(n)])
+      up_side <- fin_up[basic]
+      blo[basic] <- ifelse(up_side, act, -Inf)
+      bup[basic] <- ifelse(up_side, Inf, act)
+      olo[basic] <- result$objective_value
+      oup[basic] <- result$objective_value
+    }
     rows <- data.frame(row = sf$row_names, row_lower = sf$row_lower,
-                       row_upper = sf$row_upper,
+                       row_upper = sf$row_upper, side = side,
                        dual = unname(result$row_dual),
-                       bound_lower = rd$value, bound_upper = ru$value,
-                       objective_at_lower = s * rd$objective,
-                       objective_at_upper = s * ru$objective,
+                       bound_lower = blo, bound_upper = bup,
+                       objective_at_lower = olo, objective_at_upper = oup,
                        stringsAsFactors = FALSE)
   }
   list(costs = costs, rows = rows)

@@ -188,3 +188,35 @@ test_that("retained helper results form their own fixed relaxations", {
   expect_identical(before[setdiff(names(before), drop)],
                    after[setdiff(names(after), drop)])
 })
+
+test_that("LP row ranges agree with re-solves at their endpoints", {
+  rhs0 <- c(capacity = 4, xmax = 2, ymax = 3, low = 1)
+  build <- function(rhs) {
+    m <- opt_model("max")
+    x <- opt_variable(m, "x", lower = 0)
+    y <- opt_variable(m, "y", lower = 0)
+    opt_constraint(m, x + y <= rhs[["capacity"]], name = "capacity")
+    opt_constraint(m, x <= rhs[["xmax"]], name = "xmax")
+    opt_constraint(m, y <= rhs[["ymax"]], name = "ymax")
+    opt_constraint(m, x + 3 * y >= rhs[["low"]], name = "low")
+    opt_objective(m, 3 * x + 2 * y)
+    m
+  }
+  r <- opt_solve(build(rhs0), solver = "highs")
+  rows <- opt_sensitivity(r)$rows
+  for (i in seq_len(nrow(rows))) {
+    for (end in c("lower", "upper")) {
+      b <- rows[[paste0("bound_", end)]][i]
+      if (!is.finite(b)) next
+      rhs <- rhs0
+      rhs[[rows$row[i]]] <- b
+      actual <- opt_objective_value(opt_solve(build(rhs), solver = "highs"))
+      expect_equal(rows[[paste0("objective_at_", end)]][i], actual,
+                   tolerance = 1e-7, info = paste(rows$row[i], end))
+    }
+  }
+  z <- rows[rows$row == "ymax", ]
+  expect_identical(z$side, "upper")
+  expect_equal(z$bound_lower, 2)
+  expect_identical(z$bound_upper, Inf)
+})
