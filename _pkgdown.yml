@@ -109,6 +109,7 @@ reference:
 - title: Diagnostics, derivatives and sensitivity
   contents:
   - opt_check
+  - opt_explain_infeasibility
   - opt_gradient
   - opt_solution_jacobian
   - opt_sensitivity

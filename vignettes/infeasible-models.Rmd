@@ -62,6 +62,22 @@ setNames(opt_value(re, s), c("cap", "min_a", "min_b"))
 The total violation is 1: either capacity rises by 1 or one minimum falls
 by 1.
 
+`opt_explain_infeasibility()` builds this relaxation automatically on a copy
+of the model, for every constraint row and, by default, every variable
+bound. It reports each row or bound that must move, on which side, and by
+how much:
+
+```{r}
+opt_explain_infeasibility(m)
+```
+
+Weights express which changes are acceptable. A large weight on the
+capacity row makes the explanation move a minimum instead:
+
+```{r}
+opt_explain_infeasibility(m, weights = c(cap = 10))$violations
+```
+
 ## Exact proofs with Z3
 
 Floating point solvers declare infeasibility within tolerances. For linear

@@ -113,6 +113,9 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* `opt_explain_infeasibility()` solves a weighted elastic relaxation of the
+  rows and variable bounds and reports which must move, and by how much, for
+  an infeasible model to become feasible.
 * `opt_classify()` proves convexity of nonlinear models by composition rules
   (disciplined convex programming) with interval bounds from the variable
   bounds, so local solvers and NLP branch and bound report global optima for
