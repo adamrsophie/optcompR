@@ -13,7 +13,8 @@ opt_ode_loss(
   weights = NULL,
   reltol = 1e-10,
   abstol = 1e-12,
-  alg = NULL
+  alg = NULL,
+  sensitivity = c("auto", "forward", "adjoint")
 )
 }
 \arguments{
@@ -35,6 +36,10 @@ observed state (\code{NA} for missing values).}
 \item{reltol, abstol}{Integration tolerances.}
 
 \item{alg}{Integration algorithm (default \code{modelcompR::Tsit5()}).}
+
+\item{sensitivity}{\code{"forward"}, \code{"adjoint"}, or \code{"auto"} (the default),
+which uses the adjoint method when there are more than eight
+parameters and more than twice as many parameters as states.}
 }
 \value{
 A scalar nonlinear \code{opt_expr}.
@@ -43,11 +48,14 @@ A scalar nonlinear \code{opt_expr}.
 Builds the scalar expression
 \eqn{\sum_{t, s} w_{ts} (u_s(t; \theta) - y_{ts})^2} for an
 \code{ODEProblem} of the modelcompR package, with \eqn{\theta} given by
-decision variables. Each evaluation solves the ODE and its forward
-sensitivities (\code{ODEForwardSensitivityProblem()}), so the gradient is the
-exact derivative of the numerical solution up to the integration
-tolerances; no finite differences are used. Value and gradient at the
-same point share one solve.
+decision variables. The gradient is the exact derivative of the numerical
+solution up to the integration tolerances; no finite differences are
+used. It comes from forward sensitivities
+(\code{ODEForwardSensitivityProblem()}), whose cost grows with the number of
+parameters times the number of states, or from the adjoint equation
+solved backward in time (\code{adjoint_sensitivities()}), whose cost does not
+grow with the number of parameters. Value and gradient at the same point
+share one solve.
 }
 \details{
 The loss is generally not convex, so solves are local: start from a

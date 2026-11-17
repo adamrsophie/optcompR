@@ -635,3 +635,36 @@ test_that("SCIP solves polynomial MINLPs globally by exact lifting", {
   expect_false(identical(opt_solve(m)$solver, "scip"))
   expect_equal(opt_solve(m, solver = "scip")$solver, "scip")
 })
+
+test_that("adjoint ODE gradients match forward sensitivities", {
+  skip_if_not_installed("modelcompR")
+  # a chain of n compartments with one rate per compartment
+  n <- 10
+  f <- function(u, p, t) {
+    out <- -p * u
+    out[-1] <- out[-1] + p[-n] * u[-n]
+    out
+  }
+  prob <- modelcompR::ODEProblem(f, c(1, rep(0, n - 1)), c(0, 4), rep(1, n))
+  times <- c(0.5, 1, 2, 3, 4)
+  set.seed(2)
+  y <- matrix(runif(length(times) * 3, 0, 0.3), length(times))
+  m <- opt_model()
+  k <- opt_variable(m, "k", dim = n, lower = 0.1, upper = 5)
+  fw <- opt_ode_loss(prob, k, times, y, states = c(2, 5, 9),
+                     sensitivity = "forward")
+  ad <- opt_ode_loss(prob, k, times, y, states = c(2, 5, 9),
+                     sensitivity = "adjoint")
+  au <- opt_ode_loss(prob, k, times, y, states = c(2, 5, 9))
+  z <- c(seq(0.5, 2, length.out = n))
+  grad <- function(e) as.numeric(jac_expr(e, z, n_symbols(m))$J)
+  gf <- grad(fw)
+  expect_equal(opt_evaluate(ad, z), opt_evaluate(fw, z), tolerance = 1e-8)
+  expect_equal(grad(ad), gf, tolerance = 1e-6)
+  expect_equal(grad(au), gf, tolerance = 1e-6)
+  h <- 1e-6
+  e1 <- replace(z, 3, z[3] + h)
+  e0 <- replace(z, 3, z[3] - h)
+  expect_equal(gf[3], (opt_evaluate(fw, e1) - opt_evaluate(fw, e0)) / (2 * h),
+               tolerance = 1e-5)
+})

@@ -113,6 +113,9 @@
   updates when the parameters they use keep their values, and HiGHS
   restarts LPs from the previous optimal basis. Scalar constraints built
   in loops are about a quarter faster.
+* `opt_ode_loss()` computes gradients by the adjoint method
+  (`sensitivity = "adjoint"`), whose cost does not grow with the number of
+  parameters; `"auto"` chooses it when parameters outnumber states.
 * SCIP solves polynomial NLP and MINLP models to global optimality: products
   of degree above two are lifted exactly to quadratic rows with auxiliary
   variables bounded by interval arithmetic. Nonconvex polynomial models

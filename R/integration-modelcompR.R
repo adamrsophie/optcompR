@@ -5,11 +5,14 @@
 #' Builds the scalar expression
 #' \eqn{\sum_{t, s} w_{ts} (u_s(t; \theta) - y_{ts})^2} for an
 #' `ODEProblem` of the modelcompR package, with \eqn{\theta} given by
-#' decision variables. Each evaluation solves the ODE and its forward
-#' sensitivities (`ODEForwardSensitivityProblem()`), so the gradient is the
-#' exact derivative of the numerical solution up to the integration
-#' tolerances; no finite differences are used. Value and gradient at the
-#' same point share one solve.
+#' decision variables. The gradient is the exact derivative of the numerical
+#' solution up to the integration tolerances; no finite differences are
+#' used. It comes from forward sensitivities
+#' (`ODEForwardSensitivityProblem()`), whose cost grows with the number of
+#' parameters times the number of states, or from the adjoint equation
+#' solved backward in time (`adjoint_sensitivities()`), whose cost does not
+#' grow with the number of parameters. Value and gradient at the same point
+#' share one solve.
 #'
 #' The loss is generally not convex, so solves are local: start from a
 #' sensible `start` on the variables.
@@ -25,6 +28,9 @@
 #' @param weights Matrix of weights like `data` (default 1).
 #' @param reltol,abstol Integration tolerances.
 #' @param alg Integration algorithm (default `modelcompR::Tsit5()`).
+#' @param sensitivity `"forward"`, `"adjoint"`, or `"auto"` (the default),
+#'   which uses the adjoint method when there are more than eight
+#'   parameters and more than twice as many parameters as states.
 #' @return A scalar nonlinear `opt_expr`.
 #' @examplesIf requireNamespace("modelcompR", quietly = TRUE) && requireNamespace("nloptr", quietly = TRUE)
 #' f <- function(u, p, t) -p[1] * u
@@ -38,7 +44,9 @@
 #' @export
 opt_ode_loss <- function(prob, theta, times, data, states = NULL,
                          weights = NULL, reltol = 1e-10, abstol = 1e-12,
-                         alg = NULL) {
+                         alg = NULL,
+                         sensitivity = c("auto", "forward", "adjoint")) {
+  sensitivity <- match.arg(sensitivity)
   if (!requireNamespace("modelcompR", quietly = TRUE)) {
     stop("opt_ode_loss() needs the modelcompR package.", call. = FALSE)
   }
@@ -59,9 +67,41 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
   weights[is.na(data)] <- 0
   data[is.na(data)] <- 0
   alg <- alg %||% modelcompR::Tsit5()
+  np <- as_expr(theta)$len
+  if (sensitivity == "auto") {
+    # forward sensitivities integrate states x parameters equations, the
+    # adjoint about twice the states plus one quadrature per parameter
+    ns0 <- length(prob$u0)
+    sensitivity <- if (np > 8L && np > 2L * ns0) "adjoint" else "forward"
+  }
   cache <- new.env(parent = emptyenv())
+  adjoint <- function(v) {
+    p <- modelcompR::remake(prob, p = v)
+    sol <- solve(p, alg, reltol = reltol, abstol = abstol)
+    U <- do.call(rbind, lapply(times, function(t) as.numeric(sol(t))))
+    if (nrow(U) != length(times) || anyNA(U)) {
+      stop("The ODE solve did not reach every observation time.",
+           call. = FALSE)
+    }
+    R <- U[, states, drop = FALSE] - data
+    nu <- ncol(U)
+    res <- modelcompR::adjoint_sensitivities(
+      sol, alg, t = times,
+      dgdu_discrete = function(u, p, t, i) {
+        g <- numeric(nu)
+        g[states] <- 2 * weights[i, ] * (u[states] - data[i, ])
+        g
+      }, abstol = abstol, reltol = reltol)
+    list(value = sum(weights * R^2), gradient = as.numeric(res$dp))
+  }
   evaluate <- function(v) {
     if (identical(cache$at, v)) return(cache$out)
+    if (sensitivity == "adjoint") {
+      out <- adjoint(v)
+      cache$at <- v
+      cache$out <- out
+      return(out)
+    }
     p <- modelcompR::remake(prob, p = v)
     fs <- solve(modelcompR::ODEForwardSensitivityProblem(p), alg,
                 reltol = reltol, abstol = abstol, saveat = times)
