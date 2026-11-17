@@ -33,7 +33,7 @@ build <- system.time({
   opt_objective(m, sum(cost * x))
 })
 build[["elapsed"]]
-#> [1] 0.614
+#> [1] 0.608
 sf <- opt_standard_form(m)
 dim(sf$A)
 #> [1]  2000 20000
