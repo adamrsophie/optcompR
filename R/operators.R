@@ -122,18 +122,41 @@ matrixOps.opt_expr <- function(x, y) {
   expr_matmul(x, y)
 }
 
-as_matrix_shape <- function(e, left) {
-  if (!is.null(e$dim) && length(e$dim) == 2L) return(e$dim)
-  if (left) c(1L, e$len) else c(e$len, 1L)
+# Matrix shapes of the operands of x %*% y by the rules of base R: a vector
+# next to a matrix is a row or a column, whichever conforms; two vectors of
+# the same length give their inner product, and a length one vector on the
+# left gives an outer product.
+matmul_dims <- function(x, y) {
+  shape <- function(a) {
+    d <- if (is_expr(a)) a$dim else dim(a)
+    if (!is.null(d) && length(d) == 2L) as.integer(d) else NULL
+  }
+  len <- function(a) if (is_expr(a)) a$len else length(a)
+  dx <- shape(x)
+  dy <- shape(y)
+  nx <- len(x)
+  ny <- len(y)
+  if (is.null(dx) && is.null(dy)) {
+    if (nx == ny) return(list(c(1L, nx), c(ny, 1L)))
+    if (nx == 1L) return(list(c(1L, 1L), c(1L, ny)))
+  } else if (is.null(dx)) {
+    if (nx == dy[1L]) return(list(c(1L, nx), dy))
+    if (dy[1L] == 1L) return(list(c(nx, 1L), dy))
+  } else if (is.null(dy)) {
+    if (ny == dx[2L]) return(list(dx, c(ny, 1L)))
+    if (dx[2L] == 1L) return(list(dx, c(1L, ny)))
+  } else if (dx[2L] == dy[1L]) {
+    return(list(dx, dy))
+  }
+  stop("Non-conformable arguments in %*%.", call. = FALSE)
 }
 
 expr_matmul <- function(x, y) {
   if (!is_expr(x) && !is_expr(y)) return(x %*% y)
+  dims <- matmul_dims(x, y)
+  dx <- dims[[1L]]
+  dy <- dims[[2L]]
   if (is_expr(x) && is_expr(y)) {
-    dx <- as_matrix_shape(x, TRUE)
-    dy <- as_matrix_shape(y, FALSE)
-    if (dx[2L] != dy[1L]) stop("Non-conformable arguments in %*%.",
-                               call. = FALSE)
     if (dx[1L] == 1L && dy[2L] == 1L) {
       # row times column: flatten both so elementwise shapes agree
       return(expr_sum(expr_mul(expr_subset(x, seq_len(x$len)),
@@ -152,19 +175,11 @@ expr_matmul <- function(x, y) {
     return(expr_linmap(M, prod, dim = c(dx[1L], dy[2L])))
   }
   if (is_expr(y)) {
-    A <- x
-    if (is.null(dim(A))) A <- matrix(A, nrow = 1L)
-    dy <- as_matrix_shape(y, FALSE)
-    if (ncol(A) != dy[1L]) stop("Non-conformable arguments in %*%.",
-                                call. = FALSE)
+    A <- matrix(as.vector(x), dx[1L], dx[2L])
     M <- Matrix::kronecker(Matrix::Diagonal(dy[2L]), Matrix::Matrix(A, sparse = TRUE, doDiag = FALSE))
     return(expr_linmap(M, y, dim = c(nrow(A), dy[2L])))
   }
-  B <- y
-  if (is.null(dim(B))) B <- matrix(B, ncol = 1L)
-  dx <- as_matrix_shape(x, TRUE)
-  if (dx[2L] != nrow(B)) stop("Non-conformable arguments in %*%.",
-                              call. = FALSE)
+  B <- matrix(as.vector(y), dy[1L], dy[2L])
   M <- Matrix::kronecker(Matrix::t(Matrix::Matrix(B, sparse = TRUE, doDiag = FALSE)),
                          Matrix::Diagonal(dx[1L]))
   expr_linmap(M, x, dim = c(dx[1L], ncol(B)))

@@ -22,8 +22,10 @@ opt_solve(
 \item{time_limit}{Wall-clock limit in seconds, for solvers that accept it.}
 
 \item{mip_gap}{Relative optimality gap for mixed-integer solvers. \code{NULL}
-keeps the solver default. A solve that stops at this gap with a gap
-above zero has status \code{"gap_limit"}, not \code{"optimal"}.}
+keeps the solver default. A solve that stops with a gap above zero
+under a gap the user asked for (here or through a native option such
+as HiGHS \code{mip_rel_gap} or SCIP \code{limits/gap}), or with a gap above 1e-4
+in any case, has status \code{"gap_limit"}, not \code{"optimal"}.}
 
 \item{verbose}{Print the solver log.}
 
@@ -51,6 +53,19 @@ backends with global guarantees come first. A model is never transformed
 into an approximation to fit a solver: if no installed backend supports
 it, an error lists what is missing.
 }
+\section{Checking the returned point}{
+
+The point a backend returns is checked against the model (rows from the
+original expressions, bounds, integrality, cones, indicators and SOS
+constraints), each side scaled by \verb{max(1, |bound|)}, with the backend's
+feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
+first-order solvers OSQP and SCS). A point that fails is labelled
+\code{"infeasible_point"}, a claimed optimum then becomes
+\code{"locally_infeasible"} (local solvers) or \code{"numerical_error"}, and a
+warning gives the violation. A backend is treated as local for the
+classes it does not declare global unless the model is proven convex.
+}
+
 \examples{
 m <- opt_model("max")
 x <- opt_variable(m, "x", lower = 0, upper = 2)

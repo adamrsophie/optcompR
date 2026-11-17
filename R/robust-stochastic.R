@@ -57,6 +57,12 @@ opt_robust_constraint <- function(model, x, a0, b,
                                   name = NULL) {
   check_model(model)
   uncertainty <- match.arg(uncertainty)
+  atomically(model, robust_constraint(model, x, a0, b, uncertainty, delta, P,
+                                      gamma, name))
+}
+
+robust_constraint <- function(model, x, a0, b, uncertainty, delta, P, gamma,
+                              name) {
   x <- affine_vector(model, x)
   n <- x$len
   check_numeric(a0, "a0")
@@ -77,6 +83,12 @@ opt_robust_constraint <- function(model, x, a0, b,
   check_numeric(delta, "delta")
   delta <- recycle_to(delta, n, "delta")
   if (any(delta < 0)) stop("`delta` must be nonnegative.", call. = FALSE)
+  if (uncertainty == "budget") {
+    check_numeric(gamma, "gamma")
+    if (length(gamma) != 1L || gamma < 0 || gamma > n) {
+      stop("`gamma` must be between 0 and the length of `x`.", call. = FALSE)
+    }
+  }
   s <- opt_variable(model, paste0(base, ".abs"), dim = n, lower = 0)
   refs <- list(opt_constraint(model, s - x >= 0, name = paste0(base, ".pos")),
                opt_constraint(model, s + x >= 0, name = paste0(base, ".neg")))
@@ -84,10 +96,6 @@ opt_robust_constraint <- function(model, x, a0, b,
     refs <- c(refs, list(opt_constraint(model, nominal + sum(delta * s) <= b,
                                         name = base)))
     return(invisible(refs))
-  }
-  check_numeric(gamma, "gamma")
-  if (length(gamma) != 1L || gamma < 0 || gamma > n) {
-    stop("`gamma` must be between 0 and the length of `x`.", call. = FALSE)
   }
   # max over |S| <= gamma (fractional allowed) of sum delta_i s_i equals
   # min gamma p + sum q  s.t.  p + q_i >= delta_i s_i,  p, q >= 0
@@ -213,10 +221,13 @@ opt_cvar <- function(model, losses, alpha, prob = NULL, name = NULL) {
   }
   prob <- scenario_prob(prob, K)
   base <- name %||% aux_name(model, "cvar")
-  t <- opt_variable(model, paste0(base, ".t"))
-  u <- opt_variable(model, paste0(base, ".excess"), dim = K, lower = 0)
-  opt_constraint(model, u - L + rep(t, K) >= 0, name = paste0(base, ".excess"))
-  t + sum(prob * u) / (1 - alpha)
+  atomically(model, {
+    t <- opt_variable(model, paste0(base, ".t"))
+    u <- opt_variable(model, paste0(base, ".excess"), dim = K, lower = 0)
+    opt_constraint(model, u - L + rep(t, K) >= 0,
+                   name = paste0(base, ".excess"))
+    t + sum(prob * u) / (1 - alpha)
+  })
 }
 
 #' @rdname opt_cvar
@@ -236,10 +247,12 @@ opt_worst_expectation <- function(model, losses, probs, name = NULL) {
                                  call. = FALSE)
   for (j in seq_len(nrow(probs))) scenario_prob(probs[j, ], L$len)
   base <- name %||% aux_name(model, "worst")
-  w <- opt_variable(model, paste0(base, ".w"))
-  opt_constraint(model, rep(w, nrow(probs)) - probs %*% L >= 0,
-                 name = paste0(base, ".epigraph"))
-  w
+  atomically(model, {
+    w <- opt_variable(model, paste0(base, ".w"))
+    opt_constraint(model, rep(w, nrow(probs)) - probs %*% L >= 0,
+                   name = paste0(base, ".epigraph"))
+    w
+  })
 }
 
 scenario_prob <- function(prob, K) {

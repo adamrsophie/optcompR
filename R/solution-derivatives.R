@@ -64,8 +64,8 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   }
   if (!result$termination %in% c("optimal", "locally_optimal",
                                  "almost_optimal")) {
-    stop(sprintf(paste("The result terminated with `%s`, not at an optimum,",
-                       "so its point is not differentiated."),
+    stop(sprintf(paste("The result terminated with `%s`, not at a feasible",
+                       "optimum, so its point is not differentiable."),
                  result$termination), call. = FALSE)
   }
   cls <- result$classification
@@ -114,10 +114,9 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
          call. = FALSE)
   }
   # primal feasibility, each side scaled by its own bound
-  rviol <- pmax((lo - v) / pmax(1, abs(lo)), (v - up) / pmax(1, abs(up)), 0)
-  bviol <- pmax((sf$lower - x) / pmax(1, abs(sf$lower)),
-                (x - sf$upper) / pmax(1, abs(sf$upper)), 0)
-  if (max(c(rviol, bviol, 0), na.rm = TRUE) > sqrt(tol)) {
+  rviol <- bound_violation(v, lo, up)
+  bviol <- bound_violation(x, sf$lower, sf$upper)
+  if (max(c(rviol, bviol, 0)) > sqrt(tol)) {
     stop("The point violates the constraints, so it is not a differentiable optimum.",
          call. = FALSE)
   }
@@ -283,18 +282,14 @@ nonsmooth_check <- function(result, z, tol) {
 
 # Replace the cones of a conic result by equivalent smooth rows g <= 0 near
 # the solution, so the NLP machinery applies. Inactive cones are dropped.
+# The cones come from the result's own snapshot, so later edits of the model
+# do not affect it.
 conic_as_smooth <- function(result, tol) {
-  model <- result$model
-  key <- paste(model$structure_version, model$parameter_version, sep = ":")
-  if (!identical(result$model_key, key)) {
-    stop("The model changed after this result was computed; solve it again.",
-         call. = FALSE)
-  }
   z <- result$z
   near <- function(val, scale) abs(val) <= sqrt(tol) * max(1, scale)
   blocks <- list()
   psd <- list()
-  for (it in model$special$cone %||% list()) {
+  for (it in result$special$cone %||% list()) {
     a <- lapply(it$args, as_expr)
     g <- switch(it$type,
       soc = {
@@ -355,7 +350,7 @@ conic_as_smooth <- function(result, tol) {
         NULL
       })
     if (!is.null(g)) {
-      g$model <- model
+      g$model <- result$model
       blocks <- c(blocks, list(list(name = it$name, expr = g, lower = -Inf,
                                     upper = 0, sense = "<=")))
     }

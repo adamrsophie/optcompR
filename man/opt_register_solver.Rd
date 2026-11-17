@@ -36,7 +36,9 @@ when all of them are installed. \code{character()} for none.}
 \item{convex_only}{Classes accepted only when convexity is proven.}
 
 \item{global}{Classes the backend solves to global optimality; for other
-classes it is treated as a local solver.}
+classes it is treated as a local solver (an \code{"optimal"} result becomes
+\code{"locally_optimal"} unless the model is proven convex), whatever the
+\code{local} field of its results says.}
 
 \item{features}{Named list of capabilities: \code{duals}, \code{ranging},
 \code{warm_start}, \code{time_limit}, \code{mip_gap}, \code{iteration_limit} (logical),
@@ -93,7 +95,10 @@ output).
 }
 
 The result is checked: a missing or unknown status, or an \code{x} of the
-wrong length, is an error naming the backend.
+wrong length, is an error naming the backend. The returned point is then
+checked against the model, so a feasibility claim the point does not
+meet becomes \code{"infeasible_point"} (see \code{\link[=opt_solve]{opt_solve()}}); an \code{"unknown"}
+primal status whose point passes becomes \code{"feasible_point"}.
 }
 
 \examples{

@@ -30,8 +30,10 @@ block name (and \code{".bounds"} for variable bounds); the default weight is
 }
 \value{
 An \code{opt_infeasibility} list with \code{feasible} (whether the model is
-feasible, that is, no violation is needed), \code{total} (the weighted sum
-of violations), \code{violations}, a data frame with columns \code{kind} (\code{"row"}
+feasible, that is, no unweighted violation above \code{tol} is needed; the
+weights do not change this verdict), \code{total} (the weighted sum of
+violations), \code{violation} (their unweighted sum), \code{violations}, a data
+frame with columns \code{kind} (\code{"row"}
 or \code{"bound"}), \code{name}, \code{block}, \code{side} (\code{"lower"} or \code{"upper"}), \code{bound}
 (the original bound), \code{value} (the row or variable value at the
 relaxed solution) and \code{violation}, and \code{result}, the \code{\link[=opt_solve]{opt_solve()}}
@@ -41,10 +43,14 @@ result of the relaxation.
 Solves an elastic relaxation of the model: every constraint row gets
 nonnegative slack variables that let it move toward feasibility, and with
 \code{bounds = TRUE} the bounds of continuous and integer variables do too. The
-relaxation minimizes the sum of the (weighted) violations, so its solution
-names a smallest set of rows and bounds that must move, and by how much,
-for the model to become feasible. Special constraints (indicators and
-SOS), binary bounds and integrality are kept as they are.
+relaxation minimizes the weighted total (L1) violation, so its solution
+names rows and bounds that can move, and by how much, for the model to
+become feasible at the least weighted total change. This is not the
+smallest number of rows to change, nor an irreducible infeasible subset:
+two copies of \code{x >= 1} against one \code{100 * x <= 0} relax the two copies
+(total change 2) although relaxing the single upper row would suffice
+(change 100). Special constraints (indicators and SOS), binary bounds and
+integrality are kept as they are.
 }
 \details{
 The model itself is not changed; the relaxation is built on a copy (see

@@ -346,8 +346,7 @@ nloptr_solve_sf <- function(sf, cls, control) {
   # a local solver can stop at an infeasible point: check it here
   if (primal == "feasible_point" && (length(cons) || length(extra))) {
     v <- gall(x)$val
-    viol <- max(c(pmax((lo - v) / pmax(1, abs(lo)),
-                       (v - hi) / pmax(1, abs(hi)), 0), 0), na.rm = TRUE)
+    viol <- max(c(bound_violation(v, lo, hi), 0))
     if (viol > 1e-6) {
       primal <- "infeasible_point"
       if (term == "optimal") term <- "locally_infeasible"
@@ -449,7 +448,8 @@ register_builtin_backends <- function() {
     "OSQP: operator splitting for convex QP and LP (first-order, moderate accuracy)",
     classes = c("LP", "QP"), convex_only = "QP", global = c("LP", "QP"),
     features = list(duals = TRUE, time_limit = TRUE, iteration_limit = TRUE),
-    solve = osqp_solve_sf, version = pkg_version("osqp"), priority = 30L)
+    solve = osqp_solve_sf, version = pkg_version("osqp"), priority = 30L,
+    feasibility_tol = 1e-2)
   register_solver(
     "nloptr", "nloptr",
     "NLopt SLSQP (default): local gradient-based nonlinear programming",

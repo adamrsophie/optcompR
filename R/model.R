@@ -77,6 +77,35 @@ touch_structure <- function(model) {
   invisible(model)
 }
 
+# Evaluate `code`, which adds several variables and constraints to `model`;
+# if it fails, the model is put back as it was, so a rejected call leaves no
+# partial construction behind. The versions move forward (and the caches are
+# cleared) so that no cached lowering can be mistaken for the restored state.
+atomically <- function(model, code) {
+  snap <- as.list.environment(model, all.names = TRUE)
+  bi <- as.list(model$block_index, all.names = TRUE)
+  ci <- as.list(model$cons_index, all.names = TRUE)
+  ok <- FALSE
+  on.exit(if (!ok) {
+    sv <- model$structure_version
+    pv <- model$parameter_version
+    rm(list = setdiff(ls(model, all.names = TRUE), names(snap)), envir = model)
+    for (k in setdiff(names(snap), c("block_index", "cons_index", "cache"))) {
+      assign(k, snap[[k]], envir = model)
+    }
+    rm(list = ls(model$block_index, all.names = TRUE), envir = model$block_index)
+    rm(list = ls(model$cons_index, all.names = TRUE), envir = model$cons_index)
+    list2env(bi, model$block_index)
+    list2env(ci, model$cons_index)
+    model$cache <- new.env(parent = emptyenv())
+    model$structure_version <- max(sv, snap$structure_version) + 1L
+    model$parameter_version <- max(pv, snap$parameter_version) + 1L
+  }, add = TRUE)
+  out <- force(code)
+  ok <- TRUE
+  out
+}
+
 touch_parameters <- function(model) {
   model$parameter_version <- model$parameter_version + 1L
   invisible(model)

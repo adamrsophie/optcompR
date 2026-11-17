@@ -78,3 +78,28 @@ element_labels <- function(name, len, dim = NULL, dimnames = NULL) {
 }
 
 fmt_num <- function(x) sprintf("%.6g", x)
+
+# Violations of lo <= v <= up. Only finite bounds count, so an absent side
+# contributes zero; a value that is not finite (NA, NaN, Inf) where a bound
+# applies is an infinite violation. `scaled` divides each side by
+# max(1, |bound|), so a large bound on the other side cannot hide a
+# violation.
+bound_violation <- function(v, lo, up, scaled = TRUE) {
+  n <- length(v)
+  lo <- rep_len(lo, n)
+  up <- rep_len(up, n)
+  out <- numeric(n)
+  bad <- !is.finite(v)
+  l <- is.finite(lo) & !bad
+  u <- is.finite(up) & !bad
+  dl <- lo[l] - v[l]
+  du <- v[u] - up[u]
+  if (scaled) {
+    dl <- dl / pmax(1, abs(lo[l]))
+    du <- du / pmax(1, abs(up[u]))
+  }
+  out[l] <- pmax(out[l], dl)
+  out[u] <- pmax(out[u], du)
+  out[bad & (is.finite(lo) | is.finite(up) | is.na(v))] <- Inf
+  out
+}

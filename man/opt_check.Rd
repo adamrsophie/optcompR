@@ -37,8 +37,12 @@ gradients;
 \item complementary slackness: \eqn{y_i} times the row slack is zero.
 }
 
-Violations are scaled by \verb{max(1, |bound|)} for rows and by
-\verb{max(1, |gradient|)} for stationarity. Feasibility passes at \code{tol}; the
+Violations are scaled by \verb{max(1, |bound|)} for rows and bounds (each
+side by its own bound; an infinite bound imposes nothing, and a value
+that is not finite where a bound applies is an infinite violation) and by
+\verb{max(1, |gradient|)} for stationarity. \code{rows$violation} is unscaled. Any
+result with a point can be checked, including one labelled
+\code{"infeasible_point"}. Feasibility passes at \code{tol}; the
 KKT test passes at \code{sqrt(tol)}, because duals and active sets carry the
 square root of solver tolerances, and rows within \code{sqrt(tol)} of a bound
 count as active. When a solver returns no multipliers, they are estimated

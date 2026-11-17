@@ -12,8 +12,10 @@
 #' @param solver Backend name from [opt_solvers()], or `"auto"`.
 #' @param time_limit Wall-clock limit in seconds, for solvers that accept it.
 #' @param mip_gap Relative optimality gap for mixed-integer solvers. `NULL`
-#'   keeps the solver default. A solve that stops at this gap with a gap
-#'   above zero has status `"gap_limit"`, not `"optimal"`.
+#'   keeps the solver default. A solve that stops with a gap above zero
+#'   under a gap the user asked for (here or through a native option such
+#'   as HiGHS `mip_rel_gap` or SCIP `limits/gap`), or with a gap above 1e-4
+#'   in any case, has status `"gap_limit"`, not `"optimal"`.
 #' @param verbose Print the solver log.
 #' @param warm_start Pass start values set with [opt_set_start()] or
 #'   `opt_variable(start = )` to solvers that accept them. Without start
@@ -24,6 +26,17 @@
 #'   thread by default; its thread scheduler is global to the process, so
 #'   the `threads` value of the first HiGHS solve holds for the whole R
 #'   session and a different value is an error.
+#' @section Checking the returned point:
+#' The point a backend returns is checked against the model (rows from the
+#' original expressions, bounds, integrality, cones, indicators and SOS
+#' constraints), each side scaled by `max(1, |bound|)`, with the backend's
+#' feasibility tolerance (1e-5 by default, 1e-4 for IPOPT and 1e-2 for the
+#' first-order solvers OSQP and SCS). A point that fails is labelled
+#' `"infeasible_point"`, a claimed optimum then becomes
+#' `"locally_infeasible"` (local solvers) or `"numerical_error"`, and a
+#' warning gives the violation. A backend is treated as local for the
+#' classes it does not declare global unless the model is proven convex.
+#'
 #' @return An `opt_result`. See [opt_status()], [opt_value()],
 #'   [opt_objective_value()], [opt_dual()] and [opt_check()].
 #' @examples
@@ -107,11 +120,37 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
   if (!is.null(res$row_dual)) names(res$row_dual) <- sf$row_names
   if (!is.null(res$col_dual)) names(res$col_dual) <- sf$col_names
   term <- res$termination
-  if (term == "optimal" && isTRUE(res$local)) term <- "locally_optimal"
-  # a stop at the user's MIP gap is not a proof of optimality
-  if (term == "optimal" && !is.null(control$mip_gap) && cls$integer &&
-      is.finite(res$gap %||% NA_real_) && res$gap > 1e-9) {
-    term <- "gap_limit"
+  # a backend is local for the classes it does not declare global, unless
+  # the model is proven convex, where a local optimum is global
+  local <- isTRUE(res$local) ||
+    (!cls$class %in% entry$global && cls$convexity != "convex")
+  # the returned point is checked against the model: a backend's
+  # feasibility claim is not trusted on its own
+  if (has_x && res$primal_status %in% c("feasible_point", "unknown")) {
+    tol <- entry$feasibility_tol %||% 1e-5
+    fs <- feasibility_summary(point_feasibility(sf, model$cons, z, tol), tol)
+    if (!fs$ok || any(!is.finite(res$x))) {
+      res$primal_status <- "infeasible_point"
+      warnings <- c(warnings, sprintf(paste(
+        "%s returned a point that violates the model (largest scaled",
+        "violation %s); it is labelled infeasible_point."), entry$name,
+        fmt_num(max(fs$max))))
+      if (term %in% c("optimal", "locally_optimal", "almost_optimal")) {
+        term <- if (local) "locally_infeasible" else "numerical_error"
+      }
+    } else if (res$primal_status == "unknown") {
+      res$primal_status <- "feasible_point"
+    }
+  }
+  if (term == "optimal" && local) term <- "locally_optimal"
+  # a stop at a relative gap is not a proof of optimality: a mixed-integer
+  # result with a gap above 1e-9 under a gap the user requested (through
+  # `mip_gap` or a native gap option), or above 1e-4 (looser than the
+  # solvers' defaults) in any case, has status gap_limit
+  if (term == "optimal" && cls$integer && is.finite(res$gap %||% NA_real_)) {
+    requested <- !is.null(control$mip_gap) || any(names(control$options) %in%
+      c("mip_rel_gap", "mip_abs_gap", "limits/gap", "limits/absgap"))
+    if (res$gap > 1e-4 || (requested && res$gap > 1e-9)) term <- "gap_limit"
   }
   fd <- unique(unlist(lapply(c(list(model$objective),
                                lapply(model$cons, `[[`, "expr")),
@@ -133,7 +172,7 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
     gap = res$gap %||% NA_real_, bound = res$bound %||% NA_real_,
     iterations = res$iterations, message = res$message,
     classification = cls, standard_form = sf, cons = model$cons,
-    objective = model$objective, sense = sf$sense,
+    objective = model$objective, special = model$special, sense = sf$sense,
     warm_start = isTRUE(res$warm_start), extra = res$extra,
     warnings = c(warnings, res$warnings), raw = res$raw, control = control,
     timing = timing,

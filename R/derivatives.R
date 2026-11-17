@@ -10,8 +10,15 @@ point_vector <- function(model, at) {
     return(list(z = z, vs = vs))
   }
   check_numeric(at, "at")
+  if (length(at) != length(vs)) {
+    stop(sprintf("`at` must have one value per variable (%d).", length(vs)),
+         call. = FALSE)
+  }
   if (!is.null(names(at)) && all(nzchar(names(at)))) {
     nm <- model$sym_name[vs]
+    if (anyDuplicated(names(at))) {
+      stop("Names of `at` must not repeat.", call. = FALSE)
+    }
     if (!setequal(names(at), nm)) {
       stop("Names of `at` must match the variable names of the model.",
            call. = FALSE)

@@ -434,13 +434,24 @@ opt_implies <- function(model, a, b, name = NULL) {
   opt_constraint(model, a - b <= 0, name = name)
 }
 
-# A binary variable or its negation 1 - x: affine in binary variables.
+# Each element must be a Boolean literal: a binary variable x, its
+# negation 1 - x, or the constant 0 or 1. Scaled variables (2 * x) and sums
+# of variables are not literals.
 check_binary_literal <- function(model, e, what) {
-  e <- check_affine(model_expr(model, e, what), what)
+  e <- compact_poly(check_affine(model_expr(model, e, what), what))
   sym <- expr_symbols(e)
-  if (!length(sym) || !all(model$sym_kind[sym] == "var" &
-                           model$type[sym] == "binary")) {
-    stop(sprintf("`%s` must be binary variables or their negations (1 - x).",
+  const <- rep_len(e$const, e$len)
+  nterm <- tabulate(e$li, nbins = e$len)
+  coef <- numeric(e$len)
+  coef[e$li] <- e$lv
+  ok <- !length(e$qv) && all(model$sym_kind[sym] == "var" &
+                               model$type[sym] == "binary") &&
+    all(ifelse(nterm == 0L, const %in% c(0, 1),
+               nterm == 1L & ((coef == 1 & const == 0) |
+                                (coef == -1 & const == 1))))
+  if (!ok || !length(sym)) {
+    stop(sprintf(paste("`%s` must be Boolean literals: binary variables x,",
+                       "their negations 1 - x, or the constants 0 and 1."),
                  what), call. = FALSE)
   }
   invisible(e)

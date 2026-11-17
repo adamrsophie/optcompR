@@ -156,10 +156,14 @@ opt_classify <- function(model, tol = 1e-9) {
       lab <- sf$row_names[ri]
       if (!fin_up && !fin_lo) next # no bound, so no restriction
       if (fin_up && fin_lo) {
-        convex <- "nonconvex"
-        evidence <- c(evidence, sprintf(
-          "syntactic: quadratic row %s is bounded on both sides (or an equality), which is nonconvex",
-          lab))
+        # a side that the quadratic can never cross is redundant: for
+        # 0 <= x^2 <= 1 only the upper side restricts, and the set is convex
+        two <- two_sided_quadratic(Qr, sf$A[ri, ], sf$row_lower[ri],
+                                   sf$row_upper[ri], tol)
+        if (two$verdict == "nonconvex") convex <- "nonconvex" else
+          if (two$verdict == "unknown" && convex == "convex") convex <- "unknown"
+        evidence <- c(evidence, sprintf("%s: quadratic row %s is bounded on both sides; %s",
+                                        two$method, lab, two$detail))
         next
       }
       chk <- psd_check(if (fin_up) Qr else -Qr, tol)
@@ -198,4 +202,51 @@ print.opt_classification <- function(x, ...) {
               if (x$integer) " relaxation" else ""))
   cat(paste0("  - ", x$evidence), sep = "\n")
   invisible(x)
+}
+
+# Convexity of the set lo <= a'x + 0.5 x'Qx <= up with both bounds finite.
+# When Q is PSD (or NSD) and the quadratic attains its minimum (maximum) m,
+# the lower (upper) side is redundant if lo <= m (up >= m), and the set is
+# then the convex sublevel (superlevel) set. Otherwise, for Q PSD, nonzero
+# and m < lo, a line through the minimizer along a curved direction meets
+# the set in two separate intervals, so the set is nonconvex. Everything
+# else is left unknown.
+two_sided_quadratic <- function(Q, a, lo, up, tol) {
+  a <- as.vector(a)
+  S <- sort(unique(c(which(a != 0), methods::as(Q, "TsparseMatrix")@i + 1L)))
+  if (length(S) > 500L) {
+    return(list(verdict = "unknown", method = "numerical",
+                detail = "too many variables to decide redundancy of a side"))
+  }
+  Qs <- as.matrix(Matrix::forceSymmetric(Q[S, S, drop = FALSE]))
+  as_ <- a[S]
+  e <- eigen(Qs, symmetric = TRUE)
+  scale <- max(1, abs(e$values))
+  rt <- 100 * length(S) * .Machine$double.eps * scale
+  for (sg in c(1, -1)) {
+    ev <- sg * e$values
+    if (min(ev) < -rt) next
+    # extremum of sg * g: solve sg * (Q x + a) = 0 by the pseudo-inverse
+    keep <- ev > rt
+    V <- e$vectors[, keep, drop = FALSE]
+    xs <- -V %*% ((crossprod(V, as_)) / e$values[keep])
+    attained <- max(abs(Qs %*% xs + as_)) <= sqrt(tol) * max(1, abs(as_))
+    if (!attained) next
+    m <- sum(as_ * xs) + 0.5 * sum(xs * (Qs %*% xs))
+    side <- if (sg > 0) lo else up
+    slack <- sqrt(tol) * max(1, abs(side))
+    if ((sg > 0 && lo <= m + slack) || (sg < 0 && up >= m - slack)) {
+      return(list(verdict = "convex", method = "numerical", detail = sprintf(
+        "the %s side is redundant (the quadratic's %s is %s), so the set is convex",
+        if (sg > 0) "lower" else "upper", if (sg > 0) "minimum" else "maximum",
+        fmt_num(m))))
+    }
+    if (any(keep)) {
+      return(list(verdict = "nonconvex", method = "numerical", detail = sprintf(
+        "the %s %s lies outside the bounds, so the set is not convex",
+        if (sg > 0) "minimum" else "maximum", fmt_num(m))))
+    }
+  }
+  list(verdict = "unknown", method = "numerical",
+       detail = "neither side is shown redundant and nonconvexity is not proven")
 }

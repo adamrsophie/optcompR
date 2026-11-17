@@ -8,7 +8,7 @@
 register_solver <- function(name, package, description, classes,
                             convex_only = character(), global = character(),
                             features = list(), solve, version, priority = 50L,
-                            check = NULL) {
+                            check = NULL, feasibility_tol = 1e-5) {
   .solver_registry[[name]] <- list(
     name = name, package = package, description = description,
     classes = classes, convex_only = convex_only, global = global,
@@ -17,7 +17,8 @@ register_solver <- function(name, package, description, classes,
       time_limit = FALSE, mip_gap = FALSE, iteration_limit = FALSE,
       cones = character(), special = character()),
       features),
-    solve = solve, version = version, priority = priority, check = check)
+    solve = solve, version = version, priority = priority, check = check,
+    feasibility_tol = feasibility_tol)
 }
 
 solver_available <- function(entry) {
@@ -195,7 +196,10 @@ select_solver <- function(cls, solver, sf = NULL) {
 #'   output).
 #'
 #' The result is checked: a missing or unknown status, or an `x` of the
-#' wrong length, is an error naming the backend.
+#' wrong length, is an error naming the backend. The returned point is then
+#' checked against the model, so a feasibility claim the point does not
+#' meet becomes `"infeasible_point"` (see [opt_solve()]); an `"unknown"`
+#' primal status whose point passes becomes `"feasible_point"`.
 #'
 #' @param name Backend name used in `opt_solve(solver = )`.
 #' @param solve The solve function described below.
@@ -206,7 +210,9 @@ select_solver <- function(cls, solver, sf = NULL) {
 #' @param description One line shown by [opt_solvers()].
 #' @param convex_only Classes accepted only when convexity is proven.
 #' @param global Classes the backend solves to global optimality; for other
-#'   classes it is treated as a local solver.
+#'   classes it is treated as a local solver (an `"optimal"` result becomes
+#'   `"locally_optimal"` unless the model is proven convex), whatever the
+#'   `local` field of its results says.
 #' @param features Named list of capabilities: `duals`, `ranging`,
 #'   `warm_start`, `time_limit`, `mip_gap`, `iteration_limit` (logical),
 #'   `cones` (cone types such as `"soc"`, `"exp"`, `"pow"`, `"psd"`) and

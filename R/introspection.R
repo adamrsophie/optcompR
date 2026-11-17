@@ -52,7 +52,13 @@ opt_terms <- function(x) {
 #' @rdname opt_terms
 #' @export
 opt_degree <- function(x) {
-  x <- as_expr(x)
+  # exact cancellation (x - x) is removed first
+  compact_leaves <- function(e) {
+    if (e$type == "poly") return(compact_poly(e))
+    e$args <- lapply(e$args, compact_leaves)
+    e
+  }
+  x <- compact_leaves(as_expr(x))
   vapply(seq_len(x$len), function(k) elem_degree(x, k), 0L)
 }
 

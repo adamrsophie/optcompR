@@ -171,7 +171,9 @@ lift_sf <- function(sf) {
     cc[t$j] <- cc[t$j] + t$v
     out$c <- cc
     out$Q <- t$Q
-    out$offset <- sf$offset + t$k
+    # a nonlinear objective has offset NA: the lifted polynomial carries the
+    # whole constant
+    out$offset <- t$k
     out$objective_kind <- if (is.null(t$Q)) "linear" else "quadratic"
   } else {
     out$c <- c(sf$c, numeric(na))

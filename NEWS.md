@@ -126,10 +126,49 @@
   variable name.
 * `opt_explain_infeasibility()` solves a weighted elastic relaxation of the
   rows and variable bounds and reports which must move, and by how much, for
-  an infeasible model to become feasible.
+  an infeasible model to become feasible. It minimizes the weighted total
+  violation (not the number of rows changed), and its feasibility verdict
+  comes from the unweighted violations, so rescaling the weights cannot
+  change it.
 * `opt_classify()` proves convexity of nonlinear models by composition rules
   (disciplined convex programming) with interval bounds from the variable
   bounds, so local solvers and NLP branch and bound report global optima for
   more models.
 * The IPOPT binding passes sparse Jacobian and Hessian structures derived
   from the expressions instead of dense ones.
+* Results are checked before they are returned. `opt_solve()` checks the
+  backend's point against the model (rows, bounds, integrality, cones,
+  indicators, SOS) and labels a point that fails `"infeasible_point"`, so a
+  local solver stopping at an infeasible point, an SCS iterate cut short by
+  its iteration limit or a faulty custom backend can no longer report a
+  feasible optimum. The check, `opt_check()` and the solution derivatives
+  share one violation measure, in which a bound present on one side only
+  can no longer hide a violation of that side.
+* NLP branch and bound keeps the bounds of subtrees pruned under the
+  requested gap, so its objective bound stays valid and an early stop is
+  reported as `"gap_limit"` with its gap.
+* SCS: a dual infeasibility certificate is reported as
+  `"infeasible_or_unbounded"`, a solve stopped by `max_iters` or the time
+  limit as that limit, and an inaccurate iterate gives no objective bound.
+* A requested gap passed through a native option (HiGHS `mip_rel_gap`, SCIP
+  `limits/gap`) gives the same `"gap_limit"` status as `mip_gap`.
+* A custom backend is treated as local for the classes it does not declare
+  global, unless the model is proven convex.
+* SCIP results of lifted polynomial models report the solver objective and
+  bound including the objective constant.
+* Results keep a snapshot of the cones, so solution derivatives of conic
+  results from `opt_weighted()`, `opt_scenarios()` and
+  `opt_fixed_relaxation()` work after those helpers restore the model, and
+  `opt_fixed_relaxation()` accepts a result whose model was edited and
+  restored to the same problem.
+* `opt_classify()` recognizes a quadratic row bounded on both sides whose
+  one side is redundant (`0 <= x^2 <= 1`, `x^2 == 0`) as convex, proves
+  nonconvexity only when the extremum lies outside the bounds, and
+  otherwise reports `"unknown"`.
+* `opt_implies()` and the other logical helpers accept only Boolean
+  literals (`x`, `1 - x`, 0, 1), not scaled variables or sums.
+* `opt_robust_constraint()`, `opt_cvar()` and `opt_worst_expectation()`
+  leave the model unchanged when they fail.
+* `opt_degree()` removes exact cancellation first; `%*%` follows base R in
+  treating a vector as a row or a column; named points with repeated names
+  are rejected.

@@ -99,7 +99,8 @@ opt_fixed_relaxation <- function(result, ...) {
   }
   model <- result$model
   key <- paste(model$structure_version, model$parameter_version, sep = ":")
-  if (!is.null(result$model_key) && !identical(result$model_key, key)) {
+  if (!is.null(result$model_key) && !identical(result$model_key, key) &&
+      !same_problem(result)) {
     stop(paste("The model changed after this result was computed; solve it",
                "again before forming the fixed relaxation."), call. = FALSE)
   }
@@ -167,9 +168,9 @@ opt_fixed_relaxation <- function(result, ...) {
 #' Solve a model over parameter scenarios
 #'
 #' Sets a parameter to each value in turn, solves, and collects the status
-#' and objective. The parameter is restored afterwards. Each solve lowers the
-#' unchanged expressions again with the new values and builds a new backend
-#' model.
+#' and objective. The parameter is restored afterwards. Each solve reuses
+#' the lowered constraint blocks whose parameters keep their values, and
+#' HiGHS restarts LPs from the previous basis.
 #'
 #' @param model An [opt_model()].
 #' @param parameter A parameter expression or name.
@@ -209,3 +210,14 @@ opt_scenarios <- function(model, parameter, values, ..., keep = FALSE) {
 }
 
 sym_expr_for <- function(model, sym) symbol_expr(model, sym, NULL)
+
+# Does the model, as it is now, define the same problem as when `result` was
+# computed? Compares the mathematical content of the standard forms, so an
+# edit that was undone (as by the helpers that restore the model) does not
+# count as a change.
+same_problem <- function(result) {
+  a <- result$standard_form
+  b <- opt_standard_form(result$model)
+  drop <- c("key", "structure_key")
+  identical(a[setdiff(names(a), drop)], b[setdiff(names(b), drop)])
+}

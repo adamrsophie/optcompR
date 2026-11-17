@@ -38,6 +38,10 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   # nodes whose relaxation stopped without a verdict (limits, numerical
   # trouble): their subtrees are lost, so nothing global can be claimed
   lost <- 0L
+  # smallest relaxation bound of the subtrees pruned against the incumbent:
+  # a subtree pruned only because of the requested gap keeps its bound, so
+  # the final bound stays valid
+  pruned <- Inf
   while (length(open)) {
     if (nodes >= max_nodes) { limit <- "node_limit"; break }
     left <- t_end - proc.time()[["elapsed"]]
@@ -46,7 +50,11 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     k <- which.min(vapply(open, `[[`, 0, "bound"))
     node <- open[[k]]
     open[[k]] <- NULL
-    if (convex && is.finite(incumbent) && node$bound >= incumbent - gap_tol * max(1, abs(incumbent))) next
+    if (convex && is.finite(incumbent) &&
+        node$bound >= incumbent - gap_tol * max(1, abs(incumbent))) {
+      pruned <- min(pruned, node$bound)
+      next
+    }
     nodes <- nodes + 1L
     sub <- sf
     sub$lower <- node$lower
@@ -71,7 +79,11 @@ nlpbb_solve_sf <- function(sf, cls, control) {
       next
     }
     val <- s * res$objective
-    if (convex && is.finite(incumbent) && val >= incumbent - gap_tol * max(1, abs(incumbent))) next
+    if (convex && is.finite(incumbent) &&
+        val >= incumbent - gap_tol * max(1, abs(incumbent))) {
+      pruned <- min(pruned, val)
+      next
+    }
     x <- res$x
     frac <- int[abs(x[int] - round(x[int])) > int_tol]
     if (!length(frac)) {
@@ -110,8 +122,8 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     open <- c(open, list(dn, up))
   }
   exact <- convex && lost == 0L
-  bound <- if (!exact) -Inf else if (length(open))
-    min(c(incumbent, vapply(open, `[[`, 0, "bound"))) else incumbent
+  bound <- if (!exact) -Inf else
+    min(c(incumbent, pruned, vapply(open, `[[`, 0, "bound")))
   # with no incumbent, every node was certified infeasible or lost
   term <- if (!is.null(limit)) limit else if (is.null(best))
     (if (lost) "unknown" else "infeasible") else

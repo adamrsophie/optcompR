@@ -12,8 +12,12 @@
 #' * dual feasibility: each dual has the sign its active bound allows;
 #' * complementary slackness: \eqn{y_i} times the row slack is zero.
 #'
-#' Violations are scaled by `max(1, |bound|)` for rows and by
-#' `max(1, |gradient|)` for stationarity. Feasibility passes at `tol`; the
+#' Violations are scaled by `max(1, |bound|)` for rows and bounds (each
+#' side by its own bound; an infinite bound imposes nothing, and a value
+#' that is not finite where a bound applies is an infinite violation) and by
+#' `max(1, |gradient|)` for stationarity. `rows$violation` is unscaled. Any
+#' result with a point can be checked, including one labelled
+#' `"infeasible_point"`. Feasibility passes at `tol`; the
 #' KKT test passes at `sqrt(tol)`, because duals and active sets carry the
 #' square root of solver tolerances, and rows within `sqrt(tol)` of a bound
 #' count as active. When a solver returns no multipliers, they are estimated
@@ -41,34 +45,27 @@
 #' @export
 opt_check <- function(result, tol = 1e-6) {
   check_result(result)
-  if (!opt_has_solution(result)) {
+  if (anyNA(result$x)) {
     stop(sprintf("The result has no primal point to check (status '%s').",
                  result$termination), call. = FALSE)
   }
   sf <- result$standard_form
   z <- result$z
   x <- z[sf$var_sym]
-  # rows from the original expressions
-  vals <- lapply(result$cons, function(b) eval_expr(b$expr, z))
-  v <- unlist(vals, use.names = FALSE) %||% numeric()
-  lo <- unlist(lapply(result$cons, `[[`, "lower"), use.names = FALSE) %||%
-    numeric()
-  up <- unlist(lapply(result$cons, `[[`, "upper"), use.names = FALSE) %||%
-    numeric()
-  # each side is scaled by its own bound, so a huge opposite bound cannot
-  # hide a violation
-  viol <- pmax(lo - v, v - up, 0)
-  rel <- pmax((lo - v) / pmax(1, abs(lo)), (v - up) / pmax(1, abs(up)), 0)
-  rel[is.na(rel)] <- 0
-  bviol <- pmax(sf$lower - x, x - sf$upper, 0) / pmax(1, abs(x))
-  int <- sf$type %in% c("integer", "binary")
-  iviol <- if (any(int)) abs(x[int] - round(x[int])) else 0
+  pf <- point_feasibility(sf, result$cons, z, tol)
+  v <- pf$value
+  lo <- pf$lower
+  up <- pf$upper
+  viol <- pf$row_raw
+  rel <- pf$row
+  bviol <- pf$bound
+  iviol <- pf$integrality
   obj_err <- if (is.na(result$solver_objective)) NA_real_ else
     abs(result$objective_value - result$solver_objective) /
       max(1, abs(result$objective_value))
   rows <- data.frame(row = sf$row_names, value = v, lower = lo, upper = up,
                      violation = viol, stringsAsFactors = FALSE)
-  special <- special_violations(sf, x, tol)
+  special <- pf$special
   kkt <- NULL
   cone_z <- result$extra[["cone_dual"]]
   conic_ok <- !length(sf$cones) ||
@@ -290,4 +287,37 @@ print.opt_diagnostics <- function(x, ...) {
     }
   }
   invisible(x)
+}
+
+# Feasibility of the point z (all symbols) for the rows of `cons` (the
+# original constraint expressions), the column bounds, integrality and the
+# special constraints of `sf`. Row and bound violations are scaled per side
+# by max(1, |bound|); `row_raw` is unscaled. A row or column value that is
+# not finite is an infinite violation.
+point_feasibility <- function(sf, cons, z, tol) {
+  x <- z[sf$var_sym]
+  v <- unlist(lapply(cons, function(b) eval_expr(b$expr, z)),
+              use.names = FALSE) %||% numeric()
+  lo <- unlist(lapply(cons, `[[`, "lower"), use.names = FALSE) %||% numeric()
+  up <- unlist(lapply(cons, `[[`, "upper"), use.names = FALSE) %||% numeric()
+  int <- sf$type %in% c("integer", "binary")
+  iviol <- abs(x[int] - round(x[int]))
+  iviol[!is.finite(iviol)] <- Inf
+  special <- if (all(is.finite(x))) special_violations(sf, x, tol) else
+    data.frame(constraint = "point", kind = "nonfinite", violation = Inf,
+               stringsAsFactors = FALSE)
+  list(value = v, lower = lo, upper = up,
+       row_raw = bound_violation(v, lo, up, scaled = FALSE),
+       row = bound_violation(v, lo, up),
+       bound = bound_violation(x, sf$lower, sf$upper),
+       integrality = iviol, special = special)
+}
+
+# Largest violation of each kind, with `ok` when all are within tol
+# (cones and other special constraints within sqrt(tol)).
+feasibility_summary <- function(pf, tol) {
+  m <- c(row = max(c(pf$row, 0)), bound = max(c(pf$bound, 0)),
+         integrality = max(c(pf$integrality, 0)),
+         special = max(c(pf$special$violation, 0)))
+  list(max = m, ok = all(m[1:3] <= tol) && m[[4]] <= sqrt(tol))
 }

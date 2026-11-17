@@ -149,5 +149,6 @@ register_ipopt <- function() {
     global = character(),
     features = list(duals = TRUE, warm_start = TRUE, time_limit = TRUE,
                     iteration_limit = TRUE),
-    solve = ipopt_solve_sf, version = function() "linked", priority = 65L)
+    solve = ipopt_solve_sf, version = function() "linked", priority = 65L,
+    feasibility_tol = 1e-4)
 }

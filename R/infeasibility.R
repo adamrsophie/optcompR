@@ -3,10 +3,14 @@
 #' Solves an elastic relaxation of the model: every constraint row gets
 #' nonnegative slack variables that let it move toward feasibility, and with
 #' `bounds = TRUE` the bounds of continuous and integer variables do too. The
-#' relaxation minimizes the sum of the (weighted) violations, so its solution
-#' names a smallest set of rows and bounds that must move, and by how much,
-#' for the model to become feasible. Special constraints (indicators and
-#' SOS), binary bounds and integrality are kept as they are.
+#' relaxation minimizes the weighted total (L1) violation, so its solution
+#' names rows and bounds that can move, and by how much, for the model to
+#' become feasible at the least weighted total change. This is not the
+#' smallest number of rows to change, nor an irreducible infeasible subset:
+#' two copies of `x >= 1` against one `100 * x <= 0` relax the two copies
+#' (total change 2) although relaxing the single upper row would suffice
+#' (change 100). Special constraints (indicators and SOS), binary bounds and
+#' integrality are kept as they are.
 #'
 #' The model itself is not changed; the relaxation is built on a copy (see
 #' [opt_copy()]). For nonlinear models the relaxation is solved by a local
@@ -21,8 +25,10 @@
 #' @param solver,... Passed to [opt_solve()] for the relaxation.
 #' @param tol Violations at or below `tol` are reported as zero.
 #' @return An `opt_infeasibility` list with `feasible` (whether the model is
-#'   feasible, that is, no violation is needed), `total` (the weighted sum
-#'   of violations), `violations`, a data frame with columns `kind` (`"row"`
+#'   feasible, that is, no unweighted violation above `tol` is needed; the
+#'   weights do not change this verdict), `total` (the weighted sum of
+#'   violations), `violation` (their unweighted sum), `violations`, a data
+#'   frame with columns `kind` (`"row"`
 #'   or `"bound"`), `name`, `block`, `side` (`"lower"` or `"upper"`), `bound`
 #'   (the original bound), `value` (the row or variable value at the
 #'   relaxed solution) and `violation`, and `result`, the [opt_solve()]
@@ -139,7 +145,8 @@ opt_explain_infeasibility <- function(model, bounds = TRUE, weights = NULL,
   tab <- tab[order(-tab$violation), , drop = FALSE]
   rownames(tab) <- NULL
   total <- opt_objective_value(r)
-  structure(list(feasible = total <= tol, total = total, violations = tab,
+  structure(list(feasible = nrow(tab) == 0L, total = total,
+                 violation = sum(tab$violation), violations = tab,
                  result = r), class = "opt_infeasibility")
 }
 

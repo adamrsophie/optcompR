@@ -24,9 +24,9 @@ objective value.
 }
 \description{
 Sets a parameter to each value in turn, solves, and collects the status
-and objective. The parameter is restored afterwards. Each solve lowers the
-unchanged expressions again with the new values and builds a new backend
-model.
+and objective. The parameter is restored afterwards. Each solve reuses
+the lowered constraint blocks whose parameters keep their values, and
+HiGHS restarts LPs from the previous basis.
 }
 \examples{
 m <- opt_model()
