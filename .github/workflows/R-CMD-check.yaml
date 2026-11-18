@@ -37,6 +37,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # macOS binaries of several solver packages each bundle libomp; the
+      # vignette that loads all of them aborts on the second copy otherwise
+      KMP_DUPLICATE_LIB_OK: ${{ startsWith(matrix.config.os, 'macos') && 'TRUE' || '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
