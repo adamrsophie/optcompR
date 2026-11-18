@@ -118,7 +118,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.007s (build 0.001s)
+#>   time:        0.004s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```
