@@ -11,7 +11,9 @@ opt_solver_capabilities(solver)
 }
 \value{
 A list with the problem classes, the classes accepted only when
-convex, the classes solved to global optimality, feature flags (duals,
+convex, the classes solved to global optimality (\code{global}), the
+classes solved to global optimality only when the continuous
+relaxation is convex (\code{global_convex}), feature flags (duals,
 ranging, warm starts, time limits, MIP gaps, iteration limits),
 availability and the installed version.
 }

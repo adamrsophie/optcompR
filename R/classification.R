@@ -183,7 +183,8 @@ opt_classify <- function(model, tol = 1e-9) {
         if (is.null(Ar)) Ar <- methods::as(sf$A, "RsparseMatrix")
         loc <- row_local(rq, qi, Ar, ri)
         two <- two_sided_quadratic(loc$Q, loc$a, sf$row_lower[ri],
-                                   sf$row_upper[ri])
+                                   sf$row_upper[ri], sf$lower[loc$S],
+                                   sf$upper[loc$S])
         if (two$verdict == "nonconvex") convex <- "nonconvex" else
           if (two$verdict == "unknown" && convex == "convex") convex <- "unknown"
         rev_[g] <- sprintf("%s: quadratic row %s is bounded on both sides; %s",
@@ -274,7 +275,28 @@ row_local <- function(rq, qi, Ar = NULL, r = NULL) {
 # lo <= m holds beyond the rounding error of computing m; a lower bound a
 # little above the minimum (1e-5 <= x^2) is never treated as redundant,
 # whatever feasibility tolerance a solver uses.
-two_sided_quadratic <- function(Q, a, lo, up) {
+#
+# bl and bu are the variable bounds on the support: fixed variables are
+# substituted first, and nonconvexity needs a witness inside the box (two
+# feasible points whose midpoint is the infeasible extremum).
+two_sided_quadratic <- function(Q, a, lo, up, bl = rep(-Inf, length(a)),
+                                bu = rep(Inf, length(a))) {
+  fx <- is.finite(bl) & bl == bu
+  if (any(fx)) {
+    v <- bl[fx]
+    Qm <- as.matrix(Q)
+    c0 <- sum(a[fx] * v) + 0.5 * sum(v * (Qm[fx, fx, drop = FALSE] %*% v))
+    a <- a[!fx] + as.vector(Qm[!fx, fx, drop = FALSE] %*% v)
+    Q <- Matrix::Matrix(Qm[!fx, !fx, drop = FALSE], sparse = TRUE)
+    lo <- lo - c0
+    up <- up - c0
+    bl <- bl[!fx]
+    bu <- bu[!fx]
+    if (!length(a)) {
+      return(list(verdict = "convex", method = "numerical",
+                  detail = "every variable of the row is fixed"))
+    }
+  }
   n <- length(a)
   if (n > 500L) {
     return(list(verdict = "unknown", method = "numerical",
@@ -287,14 +309,20 @@ two_sided_quadratic <- function(Q, a, lo, up) {
   rt <- eps * scale
   for (sg in c(1, -1)) {
     ev <- sg * e$values
-    if (min(ev) < -rt) next
+    # curvature of the wrong sign beyond rounding, or a diagonal entry of
+    # the wrong sign however small (a negative diagonal entry is exact
+    # proof; its eigenvalue can hide in the rounding of large ones)
+    if (min(ev) < -rt || any(sg * diag(Qs) < 0)) next
     # extremum of sg * g: solve sg * (Q x + a) = 0 by the pseudo-inverse
     keep <- ev > rt
     V <- e$vectors[, keep, drop = FALSE]
     xs <- -V %*% ((crossprod(V, a)) / e$values[keep])
-    # attained only if the gradient vanishes up to rounding
-    attained <- max(abs(Qs %*% xs + a)) <= eps * (scale * max(1, abs(xs)) +
-                                                    max(1, abs(a)))
+    # attained only if the gradient vanishes up to rounding, and exactly
+    # in a variable without curvature (its linear term is unbounded)
+    flat <- rowSums(Qs != 0) == 0
+    attained <- !any(a[flat] != 0) &&
+      max(abs(Qs %*% xs + a)) <= eps * (scale * max(1, abs(xs)) +
+                                          max(1, abs(a)))
     if (!attained) next
     m <- sum(a * xs) + 0.5 * sum(xs * (Qs %*% xs))
     # rounding error of m
@@ -306,7 +334,18 @@ two_sided_quadratic <- function(Q, a, lo, up) {
         if (sg > 0) "lower" else "upper", if (sg > 0) "minimum" else "maximum",
         fmt_num(m))))
     }
-    if (any(keep) && ((sg > 0 && lo > m + err) || (sg < 0 && up < m - err))) {
+    # witness: along the most curved direction d, the points xs +- t d
+    # with sg * g = sg * bound lie in the box and are feasible, while their
+    # midpoint xs is not
+    witness <- FALSE
+    if (any(keep)) {
+      top <- which(keep)[which.max(ev[keep])]
+      d <- e$vectors[, top]
+      t <- sqrt(2 * max(0, if (sg > 0) lo - m else m - up) / ev[top])
+      pts <- cbind(xs + t * d, xs - t * d)
+      witness <- all(pts >= bl - err & pts <= bu + err)
+    }
+    if (witness && ((sg > 0 && lo > m + err) || (sg < 0 && up < m - err))) {
       return(list(verdict = "nonconvex", method = "numerical", detail = sprintf(
         "the %s %s lies outside the bounds, so the set is not convex",
         if (sg > 0) "minimum" else "maximum", fmt_num(m))))

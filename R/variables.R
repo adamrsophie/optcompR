@@ -227,7 +227,7 @@ opt_parameter <- function(model, name, value, dim = NULL, dimnames = NULL) {
 # Resolve an expression (or block name) to the symbol indices it denotes.
 # Only plain symbol expressions, such as variables or slices of them, are
 # accepted.
-resolve_symbols <- function(model, x, kind) {
+resolve_symbols <- function(model, x, kind, also = NULL) {
   if (is.character(x)) {
     check_scalar_string(x, "x")
     bid <- index_get(model$block_index, x)
@@ -235,7 +235,11 @@ resolve_symbols <- function(model, x, kind) {
                          call. = FALSE)
     sym <- model$blocks[[bid]]$sym
   } else {
-    if (!is_expr(x) || x$type != "poly" || !identical(x$model, model)) {
+    # `also`: a second model whose handles are accepted (the user's model
+    # a result was rebuilt from)
+    if (!is_expr(x) || x$type != "poly" ||
+        !(identical(x$model, model) ||
+          (!is.null(also) && identical(x$model, also)))) {
       stop("`x` must be a variable or parameter of this model, or its name.",
            call. = FALSE)
     }

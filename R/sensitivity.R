@@ -38,6 +38,13 @@ opt_sensitivity <- function(result) {
       identical(result$classification$class, "LP") &&
       identical(result$termination, "optimal")) {
     rg <- highs_ranging(result)
+    # HiGHS does not range a problem without row coefficients: there each
+    # column sits at the bound its cost sign picks, so the ranges are
+    # known in closed form
+    if ((is.null(rg) || !isTRUE(rg$valid)) &&
+        Matrix::nnzero(result$standard_form$A) == 0L) {
+      rg <- bound_only_ranging(result)
+    }
   }
   if (is.null(rg) || !isTRUE(rg$valid)) {
     stop(paste("Sensitivity ranging is available for optimal linear programs",
@@ -73,21 +80,28 @@ opt_sensitivity <- function(result) {
     fin_up <- is.finite(sf$row_upper)
     side <- ifelse(sf$row_lower == sf$row_upper, "both",
                    ifelse(fin_up, "upper", "lower"))
+    # a ranged row that is active reports the side it is active at, from
+    # the basis (0 lower, 2 upper) or from its activity
+    st <- result$extra$basis$row_status
+    has_basis <- isTRUE(result$extra$basis$valid) && length(st) == k
+    v <- as.vector(sf$A %*% result$x[seq_len(n)])
+    tl <- 1e-7 * pmax(1, abs(v))
+    near_lo <- abs(v - sf$row_lower) <= tl
+    near_up <- abs(v - sf$row_upper) <= tl
+    ranged <- is.finite(sf$row_lower) & fin_up & side != "both"
+    at_lo <- if (has_basis) st == 0L else near_lo & !near_up
+    side[ranged & at_lo] <- "lower"
     # HiGHS ranges a basic (inactive) row over its activity, not over its
     # bound. An inactive bound moves freely away from the activity and
     # down to it with the optimal value unchanged, so its range is
     # [activity, Inf) for an upper bound and (-Inf, activity] for a lower
-    # bound; a ranged row reports its upper side
-    st <- result$extra$basis$row_status
-    basic <- if (isTRUE(result$extra$basis$valid) && length(st) == k) st == 1L else {
-      v <- as.vector(sf$A %*% result$x[seq_len(n)])
-      tl <- 1e-7 * pmax(1, abs(v))
-      !(abs(v - sf$row_lower) <= tl | abs(v - sf$row_upper) <= tl)
-    }
+    # bound; an inactive ranged row reports its upper side
+    basic <- if (has_basis) st == 1L else !(near_lo | near_up)
+    if (Matrix::nnzero(sf$A) == 0L) basic <- rep(TRUE, k)
     basic <- basic & side != "both"
     if (any(basic)) {
-      act <- as.vector(sf$A[basic, , drop = FALSE] %*% result$x[seq_len(n)])
-      up_side <- fin_up[basic]
+      act <- v[basic]
+      up_side <- side[basic] == "upper"
       blo[basic] <- ifelse(up_side, act, -Inf)
       bup[basic] <- ifelse(up_side, Inf, act)
       olo[basic] <- result$objective_value
@@ -101,6 +115,33 @@ opt_sensitivity <- function(result) {
                        stringsAsFactors = FALSE)
   }
   list(costs = costs, rows = rows)
+}
+
+# Ranging of an LP without row coefficients, in the solver's terms
+# (minimizing sign * c): a column at its lower bound stays optimal for a
+# nonnegative cost, one at its upper bound for a nonpositive cost, a column
+# strictly between its bounds only at cost 0, and a fixed column for any
+# cost. Rows are all basic; opt_sensitivity() ranges them from activity.
+bound_only_ranging <- function(result) {
+  sf <- result$standard_form
+  s <- result$extra$sign
+  n <- length(sf$c)
+  x <- result$x[seq_len(n)]
+  sc <- s * sf$c
+  tl <- 1e-9 * pmax(1, abs(x))
+  at_lo <- is.finite(sf$lower) & abs(x - sf$lower) <= tl
+  at_up <- is.finite(sf$upper) & abs(x - sf$upper) <= tl
+  fixed <- at_lo & at_up
+  dn <- ifelse(fixed | at_up, -Inf, 0)
+  up <- ifelse(fixed | at_lo, Inf, 0)
+  obj <- s * result$objective_value
+  at <- function(end) ifelse(x == 0, obj, obj + (end - sc) * x)
+  k <- nrow(sf$A)
+  na <- list(value = rep(NA_real_, k), objective = rep(NA_real_, k))
+  list(valid = TRUE,
+       col_cost_dn = list(value = dn, objective = at(dn)),
+       col_cost_up = list(value = up, objective = at(up)),
+       row_bound_dn = na, row_bound_up = na)
 }
 
 #' Continuous problem with integer variables fixed
@@ -141,8 +182,10 @@ opt_fixed_relaxation <- function(result, ...) {
   # when the live model changed since the result (a helper restored its
   # objective, or a later scenario set a parameter), the problem the result
   # solved is rebuilt from its snapshot in a separate model
+  # (an edit that no longer lowers counts as a change)
   rebuilt <- !is.null(result$model_key) && !identical(result$model_key, key) &&
-    !same_problem(result)
+    !isTRUE(tryCatch(suppressWarnings(same_problem(result)),
+                     error = function(e) FALSE))
   if (rebuilt) model <- model_from_result(result)
   vs <- result$standard_form$var_sym
   int <- vs[model$type[vs] %in% c("integer", "binary")]

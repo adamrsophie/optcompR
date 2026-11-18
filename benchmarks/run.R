@@ -45,6 +45,19 @@ check_value <- function(v) {
                 violation = viol))
   }
   if (inherits(v, "opt_model")) return(modifyList(na, list(status = "built")))
+  # repeated solves: every status, the last objective, the worst violation
+  if (is.list(v) && length(v) && all(vapply(v, inherits, TRUE, "opt_result"))) {
+    ck <- lapply(v, check_value)
+    return(list(status = paste(unique(vapply(ck, `[[`, "", "status")),
+                               collapse = ","),
+                objective = ck[[length(ck)]]$objective,
+                violation = suppressWarnings(max(vapply(ck, `[[`, 0,
+                                                        "violation"),
+                                                 na.rm = TRUE))))
+  }
+  if (is.data.frame(v) && !is.null(attr(v, "results"))) {
+    return(check_value(attr(v, "results")))
+  }
   if (is.list(v) && !is.null(v$status_message)) {
     return(modifyList(na, list(status = v$status_message,
                                objective = v$objective_value)))
@@ -164,9 +177,9 @@ for (n in c(50, 200)) {
         measure(opt_solve(build(), solver = s)))
   }
   add("MILP", "build and solve", size, "highs direct", measure(
-    highs::highs_solve(L = -v, lower = rep(0, n), upper = rep(1, n),
+    highs::highs_solve(L = v, lower = rep(0, n), upper = rep(1, n),
                        A = matrix(w, 1), lhs = -Inf, rhs = cap,
-                       types = rep(2L, n))))
+                       types = rep(2L, n), maximum = TRUE)))
   if (has("ROI", "ROI.plugin.glpk")) {
     add("MILP", "build and solve", size, "ROI glpk", measure({
       op <- ROI::OP(v, ROI::L_constraint(matrix(w, 1), "<=", cap),
@@ -207,22 +220,26 @@ rep_model <- function(n) {
 rm_ <- rep_model(500)
 add("repeated", "20 solves after parameter updates", "40 x 500",
     "optcompR parameters", measure({
+      out <- vector("list", 20L)
       for (k in 1:20) {
         opt_set_parameter(rm_$m, rm_$b, rep(10 + k / 10, 40))
-        opt_solve(rm_$m, solver = "highs")
+        out[[k]] <- opt_solve(rm_$m, solver = "highs")
       }
+      out
     }))
 add("repeated", "20 solves after parameter updates", "40 x 500",
     "rebuild each time", measure({
+      out <- vector("list", 20L)
       for (k in 1:20) {
         r <- rep_model(500)
         opt_set_parameter(r$m, r$b, rep(10 + k / 10, 40))
-        opt_solve(r$m, solver = "highs")
+        out[[k]] <- opt_solve(r$m, solver = "highs")
       }
+      out
     }))
 scen <- lapply(1:20, function(k) rep(10 + k / 10, 40))
 add("repeated", "20 scenarios", "40 x 500", "opt_scenarios",
-    measure(opt_scenarios(rm_$m, rm_$b, scen, solver = "highs")))
+    measure(opt_scenarios(rm_$m, rm_$b, scen, solver = "highs", keep = TRUE)))
 
 # --------------------------------------------------------- derivatives
 der_model <- function(n) {
@@ -307,17 +324,17 @@ if (has("osqp")) {
   vals <- lapply(1:20, function(i) rnorm(n))
   add("repeated", "20 QP solves after parameter updates", format(n),
       "optcompR osqp kept", measure({
-        for (v in vals) {
+        lapply(vals, function(v) {
           opt_set_parameter(m, a, v)
           opt_solve(m, solver = "osqp")
-        }
+        })
       }))
   add("repeated", "20 QP solves after parameter updates", format(n),
       "optcompR osqp new", measure({
-        for (v in vals) {
+        lapply(vals, function(v) {
           opt_set_parameter(m, a, v)
           opt_solve(m, solver = "osqp", warm_start = FALSE)
-        }
+        })
       }))
 }
 

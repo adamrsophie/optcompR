@@ -155,6 +155,19 @@ result_owns <- function(result, model) {
   identical(model, result$model) || identical(model, result$source_model)
 }
 
+# Symbols of a variable or parameter handle of the result's model (or the
+# model it was rebuilt from) that existed when it was solved.
+result_symbols <- function(result, x, kind) {
+  late <- function(s) length(s) && max(s) > length(result$z)
+  if ((is_expr(x) && late(expr_symbols(x))) ||
+      late(sym <- resolve_symbols(result$model, x, kind,
+                                  also = result$source_model))) {
+    stop("The expression uses variables added after the model was solved.",
+         call. = FALSE)
+  }
+  sym
+}
+
 block_rows <- function(result, constraint) {
   if (inherits(constraint, "opt_constraint") &&
       !result_owns(result, constraint$model)) {
@@ -219,7 +232,7 @@ opt_reduced_cost <- function(result, x) {
   if (is.null(result$col_dual)) {
     stop(dual_unavailable_reason(result), call. = FALSE)
   }
-  sym <- resolve_symbols(result$model, x, "var")
+  sym <- result_symbols(result, x, "var")
   result$col_dual[result$standard_form$col_of_sym[sym]]
 }
 

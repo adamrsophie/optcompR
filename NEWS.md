@@ -49,7 +49,9 @@ independently checked results.
   programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP),
   IPOPT with exact sparse Hessians (compiled in when available), NLP branch
   and bound for MINLP with outer approximation bounds certified by weak
-  duality, and ROI plugins.
+  duality (global when the continuous relaxation is convex, a heuristic
+  otherwise), and ROI plugins. A local solver that stops because its steps
+  stalled reports a local optimum, even on a convex model.
 * `opt_register_solver()` makes the backend contract public, so other
   solvers can be connected without changing optcompR.
 
@@ -73,7 +75,8 @@ independently checked results.
 
 ## Sensitivity and analysis
 
-* Sensitivity ranging for LPs (`opt_sensitivity()`), fixed relaxations of
+* Sensitivity ranging for LPs (`opt_sensitivity()`), reporting the active
+  side of ranged rows and covering problems with bounds only, fixed relaxations of
   mixed-integer results (`opt_fixed_relaxation()`) and parameter scenario
   sweeps (`opt_scenarios()`).
 * Derivatives of optimal solutions with respect to parameters

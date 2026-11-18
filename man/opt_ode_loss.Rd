@@ -39,7 +39,10 @@ observed state (\code{NA} for missing values).}
 
 \item{sensitivity}{\code{"forward"}, \code{"adjoint"}, or \code{"auto"} (the default),
 which uses the adjoint method when there are more than eight
-parameters and more than twice as many parameters as states.}
+parameters and more than twice as many parameters as states. A
+problem whose time origin is more than a million times its interval
+length always uses forward sensitivities. \code{states} index the full
+state vector; the problem's \code{save_idxs} is ignored.}
 }
 \value{
 A scalar nonlinear \code{opt_expr}.

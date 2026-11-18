@@ -39,7 +39,10 @@
 #' @param alg Integration algorithm (default `modelcompR::Tsit5()`).
 #' @param sensitivity `"forward"`, `"adjoint"`, or `"auto"` (the default),
 #'   which uses the adjoint method when there are more than eight
-#'   parameters and more than twice as many parameters as states.
+#'   parameters and more than twice as many parameters as states. A
+#'   problem whose time origin is more than a million times its interval
+#'   length always uses forward sensitivities. `states` index the full
+#'   state vector; the problem's `save_idxs` is ignored.
 #' @return A scalar nonlinear `opt_expr`.
 #' @examplesIf requireNamespace("modelcompR", quietly = TRUE) && requireNamespace("nloptr", quietly = TRUE)
 #' f <- function(u, p, t) -p[1] * u
@@ -90,16 +93,15 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
   }
   ut <- sort(unique(times), decreasing = span[2L] < span[1L])
   at <- match(times, ut)
+  # the solves save the interval endpoints too, so the schedule is never a
+  # single number (which modelcompR reads as a step size)
+  grid <- unique(c(span[1L], ut, span[2L]))
+  # `states` index the full state vector, so the internal solves save
+  # every state whatever the problem's own save_idxs
+  prob$kwargs$save_idxs <- NULL
   nu <- length(prob$u0)
   if (any(states < 1 | states > nu | states != round(states))) {
     stop(sprintf("`states` must be indices between 1 and %d.", nu), call. = FALSE)
-  }
-  # the loss and its gradient from states U (one row per saved time) and
-  # their sensitivities S[[k]] (states x parameters) at those times; a
-  # state observed by several columns adds every contribution
-  loss_of <- function(U) {
-    R <- U[at, states, drop = FALSE] - data
-    sum(weights * R^2)
   }
   np <- as_expr(theta)$len
   if (sensitivity == "auto") {
@@ -108,32 +110,55 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
     ns0 <- length(prob$u0)
     sensitivity <- if (np > 8L && np > 2L * ns0) "adjoint" else "forward"
   }
+  # the backward solve loses the time step against a time origin far
+  # larger than the interval (its gradient is wrong there), so such a
+  # problem uses forward sensitivities
+  if (sensitivity == "adjoint" &&
+      max(abs(span)) > 1e6 * abs(span[2L] - span[1L])) {
+    sensitivity <- "forward"
+  }
   cache <- new.env(parent = emptyenv())
   saved_rows <- function(tt) {
-    # the last saved value at each observation time (after an event there)
-    vapply(ut, function(x) {
-      k <- which(abs(tt - x) <= 1e-12 * max(1, abs(x)))
+    # the last saved value at each observation time (after an event
+    # there): an exact time match first, else the nearest saved time
+    # within rounding of it
+    k <- vapply(ut, function(x) {
+      k <- which(tt == x)
+      if (!length(k)) {
+        d <- abs(tt - x)
+        k <- which(d == min(d) & d <= 4 * .Machine$double.eps * max(1, abs(x)))
+      }
       if (!length(k)) NA_integer_ else k[length(k)]
     }, 1L)
+    if (anyNA(k)) {
+      stop("The ODE solve did not reach every observation time.",
+           call. = FALSE)
+    }
+    k
+  }
+  states_at <- function(sol) {
+    do.call(rbind, lapply(sol$u[saved_rows(as.numeric(sol$t))], as.numeric))
   }
   adjoint <- function(v) {
     p <- modelcompR::remake(prob, p = v)
+    # the loss is differenced around the current states U0, written as
+    # sum w ((U - U0)^2 + 2 (U0 - y)(U - U0)) plus the constant loss at U0,
+    # so a large residual elsewhere does not swamp a small change
+    U0 <- states_at(solve(p, alg, reltol = reltol, abstol = abstol,
+                          saveat = grid))
+    R0 <- U0[at, states, drop = FALSE] - data
     loss <- function(sol) {
-      k <- saved_rows(as.numeric(sol$t))
-      if (anyNA(k)) {
-        stop("The ODE solve did not reach every observation time.",
-             call. = FALSE)
-      }
-      U <- do.call(rbind, lapply(sol$u[k], as.numeric))
-      loss_of(U)
+      D <- states_at(sol)[at, states, drop = FALSE] -
+        U0[at, states, drop = FALSE]
+      sum(weights * (D^2 + 2 * R0 * D))
     }
     # modelcompR's solve_gradient composes the adjoint with the
     # initialization of parameter-dependent initial values and records
     # events for the backward solve
-    g <- modelcompR::solve_gradient(loss, p, alg, saveat = ut,
+    g <- modelcompR::solve_gradient(loss, p, alg, saveat = grid,
                                     reltol = reltol, abstol = abstol,
                                     sensealg = modelcompR::InterpolatingAdjoint())
-    list(value = g$value, gradient = as.numeric(g$p))
+    list(value = sum(weights * R0^2), gradient = as.numeric(g$p))
   }
   evaluate <- function(v) {
     if (identical(cache$at, v)) return(cache$out)
@@ -145,16 +170,13 @@ opt_ode_loss <- function(prob, theta, times, data, states = NULL,
     }
     p <- modelcompR::remake(prob, p = v)
     fs <- solve(modelcompR::ODEForwardSensitivityProblem(p), alg,
-                reltol = reltol, abstol = abstol, saveat = ut)
+                reltol = reltol, abstol = abstol, saveat = grid)
     s <- modelcompR::extract_local_sensitivities(fs, asmatrix = TRUE)
-    if (nrow(s$u) != length(ut)) {
-      stop("The ODE solve did not reach every observation time.",
-           call. = FALSE)
-    }
-    R <- s$u[at, states, drop = FALSE] - data
+    k <- saved_rows(as.numeric(fs$t))[at]
+    R <- s$u[k, states, drop = FALSE] - data
     g <- numeric(length(v))
     for (i in seq_along(times)) {
-      S <- s$du[[at[i]]][states, , drop = FALSE]
+      S <- s$du[[k[i]]][states, , drop = FALSE]
       g <- g + 2 * as.vector(crossprod(S, weights[i, ] * R[i, ]))
     }
     out <- list(value = sum(weights * R^2), gradient = g)

@@ -74,7 +74,9 @@ accuracy asked for. The resolved tolerances are stored in
 warning gives the violation. An objective that is not finite at the
 point (for example \code{log(0)}) also makes it \code{"infeasible_point"}. A
 backend is treated as local for the classes it does not declare global
-unless the model is continuous and proven convex.
+unless the model is continuous and proven convex. NLopt stopping on its
+function or step tolerance is reported as \code{"locally_optimal"} even then:
+stalled iterates are not a proof of optimality.
 }
 
 \examples{

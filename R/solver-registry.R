@@ -4,9 +4,12 @@
 
 # Register a backend. `classes` lists the problem classes the R binding
 # supports; `convex_only` lists classes accepted only when the
-# classification proves (or numerically supports) convexity.
+# classification proves (or numerically supports) convexity. `global_convex`
+# lists classes solved to global optimality only when the continuous
+# relaxation is convex.
 register_solver <- function(name, package, description, classes,
                             convex_only = character(), global = character(),
+                            global_convex = character(),
                             features = list(), solve, version, priority = 50L,
                             check = NULL, feasibility_tol = 1e-5,
                             first_for = character(),
@@ -14,6 +17,7 @@ register_solver <- function(name, package, description, classes,
   .solver_registry[[name]] <- list(
     name = name, package = package, description = description,
     classes = classes, convex_only = convex_only, global = global,
+    global_convex = global_convex,
     features = utils::modifyList(list(
       duals = FALSE, ranging = FALSE, warm_start = FALSE,
       time_limit = FALSE, mip_gap = FALSE, iteration_limit = FALSE,
@@ -58,7 +62,9 @@ opt_solvers <- function() {
 #'
 #' @param solver Backend name, see [opt_solvers()].
 #' @return A list with the problem classes, the classes accepted only when
-#'   convex, the classes solved to global optimality, feature flags (duals,
+#'   convex, the classes solved to global optimality (`global`), the
+#'   classes solved to global optimality only when the continuous
+#'   relaxation is convex (`global_convex`), feature flags (duals,
 #'   ranging, warm starts, time limits, MIP gaps, iteration limits),
 #'   availability and the installed version.
 #' @examples
@@ -70,7 +76,8 @@ opt_solver_capabilities <- function(solver) {
   list(name = e$name, package = e$package, available = avail,
        version = if (avail) e$version() else NA_character_,
        classes = e$classes, convex_only = e$convex_only,
-       global = e$global, features = e$features,
+       global = e$global, global_convex = e$global_convex %||% character(),
+       features = e$features,
        description = e$description)
 }
 
@@ -335,6 +342,13 @@ check_backend_result <- function(res, entry, sf) {
   if (is.null(res$x)) res$x <- rep(NA_real_, n)
   if (!is.numeric(res$x) || length(res$x) != n) {
     fail(sprintf("`x` of length %d for %d columns", length(res$x), n))
+  }
+  # a feasible point or an optimum needs the whole point
+  if ((res$primal_status == "feasible_point" ||
+       res$termination %in% c("optimal", "locally_optimal", "almost_optimal")) &&
+      any(!is.finite(res$x))) {
+    fail(sprintf("termination %s and primal status %s without a complete finite `x`",
+                 res$termination, res$primal_status))
   }
   if (is.null(res$objective)) res$objective <- NA_real_
   res

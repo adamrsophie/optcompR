@@ -23,7 +23,9 @@ opt_or(model, z, x, name = NULL)
 \item{x}{A vector of binary variables.}
 }
 \value{
-An \code{opt_constraint} reference, invisibly.
+An \code{opt_constraint} reference, invisibly. An implication between
+constants adds no row and returns \code{NULL} when it holds (\verb{0 => b},
+\verb{a => 1}); \verb{1 => 0} is an error.
 }
 \description{
 Exact linear formulations of logical relations between binary

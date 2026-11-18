@@ -40,7 +40,11 @@ nlpbb_solve_sf <- function(sf, cls, control) {
   # nodes; a binary heap pays off only with very many cheap relaxations
   open <- list(list(lower = lower0, upper = upper0, bound = -Inf,
                     start = sf$start))
+  # ob: certified bounds of the open nodes (they enter the final bound);
+  # ov: their parents' relaxation values, the search order when nothing is
+  # certified
   ob <- -Inf
+  ov <- -Inf
   nopen <- 1L
   incumbent <- Inf
   best <- NULL
@@ -60,10 +64,11 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     left <- t_end - proc.time()[["elapsed"]]
     if (left <= 0) { limit <- "time_limit"; break }
     # best first: the open node with the smallest relaxation bound
-    k <- which.min(ob[seq_len(nopen)])
+    k <- which.min(if (convex) ob[seq_len(nopen)] else ov[seq_len(nopen)])
     node <- open[[k]]
     open[k] <- open[nopen]
     ob[k] <- ob[nopen]
+    ov[k] <- ov[nopen]
     open[nopen] <- list(NULL)
     nopen <- nopen - 1L
     if (convex && is.finite(incumbent) &&
@@ -116,6 +121,9 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     }
     frac <- int[abs(x[int] - round(x[int])) > int_tol]
     if (!length(frac)) {
+      # objective at the point with the integers fixed and the rest solved
+      # again; the node closes only when its bound reaches this value
+      fv <- Inf
       if (val < incumbent) {
         # rounding within the tolerance can break other constraints, so
         # solve again with the integers fixed at their rounded values
@@ -128,6 +136,7 @@ nlpbb_solve_sf <- function(sf, cls, control) {
         if (!is.null(rf) && rf$primal_status == "feasible_point" &&
             rf$termination %in% c("optimal", "locally_optimal")) {
           fval <- s * rf$objective
+          fv <- fval
           if (fval < incumbent) {
             incumbent <- fval
             best <- rf$x
@@ -137,16 +146,21 @@ nlpbb_solve_sf <- function(sf, cls, control) {
           lost <- lost + 1L
         }
       }
-      # the node is solved when its certified bound reaches its point;
-      # otherwise a better integer point may remain in it, so it is split
-      # at the middle of its widest integer range
-      if (lb >= val - max(gap_tol, 1e-7) * max(1, abs(val))) {
+      # without convexity there is no bound to close the node with: the
+      # search is a heuristic and an integral relaxation ends the branch
+      if (!convex) next
+      # the node is solved when its certified bound reaches the value of
+      # its integer point (a nearly integral relaxation can round to a worse
+      # one); otherwise a better integer point may remain in it, so it is
+      # split at the middle of its widest integer range
+      if (is.finite(fv) && lb >= fv - max(gap_tol, 1e-7) * max(1, abs(fv))) {
         closed <- min(closed, lb)
         next
       }
-      wide <- int[node$upper[int] > node$lower[int]]
+      wide <- int[node$upper[int] > node$lower[int] &
+                    is.finite(node$lower[int]) & is.finite(node$upper[int])]
       if (!length(wide)) {
-        # all integers fixed and the bound still open: nothing to branch on
+        # all integers fixed (or unbounded) and the bound still open
         lost <- lost + 1L
         next
       }
@@ -165,7 +179,8 @@ nlpbb_solve_sf <- function(sf, cls, control) {
     up$bound <- lb
     up$start <- pmin(pmax(x, up$lower), up$upper)
     open[nopen + 1:2] <- list(dn, up)
-    ob[nopen + 1:2] <- val
+    ob[nopen + 1:2] <- lb
+    ov[nopen + 1:2] <- val
     nopen <- nopen + 2L
   }
   exact <- convex && lost == 0L
@@ -263,9 +278,13 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
       for (j in which(rc$hi | rc$lo)) {
         cst <- jj$val[j] - sum(J[j, ] * y)
         if (!all(is.finite(c(J[j, ], cst)))) next
-        C <- rbind(C, J[j, ])
-        l <- c(l, if (rc$lo[j]) rc$l[j] - cst else -Inf)
-        u <- c(u, if (rc$hi[j]) rc$u[j] - cst else Inf)
+        # scaled to a largest coefficient of one, so the LP solver keeps
+        # every coefficient
+        sc <- max(abs(J[j, ]))
+        if (!(sc > 0)) next
+        C <- rbind(C, J[j, ] / sc)
+        l <- c(l, if (rc$lo[j]) (rc$l[j] - cst) / sc else -Inf)
+        u <- c(u, if (rc$hi[j]) (rc$u[j] - cst) / sc else Inf)
       }
     }
     list(C = C, l = l, u = u)
@@ -291,8 +310,10 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
     wl <- ifelse(lam > 0, lam * rl, ifelse(lam < 0, lam * ru, 0))
     val <- h0 + box_min(r, lo, up) + sum(wl)
     # floating point error of the evaluation itself
-    mag <- abs(h0) + sum(abs(r) * pmax(abs(lo), abs(up)), na.rm = TRUE) +
-      sum(abs(wl))
+    # at the minimizing endpoint of each variable, which is finite when
+    # the bound is
+    at <- ifelse(r > 0, abs(lo), ifelse(r < 0, abs(up), 0))
+    mag <- abs(h0) + sum(abs(r) * at) + sum(abs(wl))
     if (!is.finite(val)) return(-Inf)
     val - 1e-12 * max(1, mag)
   }
@@ -329,9 +350,8 @@ oa_lower_bound <- function(sf, x, s, iterations = 20L) {
       list(status = sv$status_message(), sol = sv$solution())
     }, error = function(e) NULL)
     if (is.null(sol)) break
-    if (identical(sol$status, "Infeasible") && it == 1L) {
-      return(list(bound = Inf, y = best$y, f = best$f))
-    }
+    # an infeasible LP is not trusted as a certificate: HiGHS may drop tiny
+    # coefficients, so the node stays open with its inherited bound
     if (!identical(sol$status, "Optimal") || !isTRUE(sol$sol$dual_valid)) break
     rd <- sol$sol$row_dual
     nl <- length(rl)
@@ -365,9 +385,9 @@ register_nlpbb <- function() {
     "nlpbb", "nloptr",
     "NLP branch and bound over NLopt relaxations (global for convex MINLP, heuristic otherwise)",
     classes = c("MINLP", "MIQCQP", "MIQP"), convex_only = character(),
-    # a global search whose results mark themselves local when the
-    # relaxation is not convex or the search is incomplete
-    global = c("MINLP", "MIQCQP", "MIQP"),
+    # global only over a convex relaxation; its results mark themselves
+    # local when the search is incomplete
+    global_convex = c("MINLP", "MIQCQP", "MIQP"),
     features = list(time_limit = TRUE, mip_gap = TRUE, warm_start = TRUE),
     solve = nlpbb_solve_sf, version = pkg_version("nloptr"), priority = 80L)
 }

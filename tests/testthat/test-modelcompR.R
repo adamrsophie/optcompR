@@ -131,3 +131,61 @@ test_that("every ODE gradient method supports callbacks", {
                  tolerance = 1e-5, info = method)
   }
 })
+
+test_that("the adjoint keeps small residuals beside a large one", {
+  m <- opt_model()
+  p <- opt_variable(m, "p")
+  prob <- modelcompR::ODEProblem(function(u, p, t) c(p, 0), c(0, 1e10),
+                                 c(0, 1), 1)
+  for (method in c("forward", "adjoint")) {
+    opt_objective(m, opt_ode_loss(prob, p, c(0.5, 1), matrix(0, 2, 2),
+                                  sensitivity = method))
+    expect_equal(unname(opt_gradient(m, 1)), 2.5, tolerance = 1e-6)
+  }
+})
+
+test_that("single, repeated and initial observation times work", {
+  m <- opt_model()
+  p <- opt_variable(m, "p")
+  prob <- modelcompR::ODEProblem(function(u, p, t) -p * u, 1, c(0, 1), 0.7)
+  want <- c(exp(-0.8 * 0.7), 2 * exp(-0.8 * 0.7), 1)
+  tt <- list(0.4, c(0.4, 0.4), 0)
+  for (i in 1:3) for (method in c("forward", "adjoint")) {
+    e <- opt_ode_loss(prob, p, tt[[i]], matrix(0, length(tt[[i]]), 1),
+                      sensitivity = method)
+    expect_equal(opt_evaluate(e, 0.7), want[i], tolerance = 1e-5)
+  }
+})
+
+test_that("states index the full state vector despite save_idxs", {
+  m <- opt_model()
+  p <- opt_variable(m, "p")
+  prob <- modelcompR::ODEProblem(function(u, p, t) c(-p * u[1], -2 * p * u[2]),
+                                 c(1, 2), c(0, 1), 0.7, save_idxs = 2)
+  for (st in 1:2) {
+    v <- vapply(c("forward", "adjoint"), function(method) {
+      e <- opt_ode_loss(prob, p, c(0.2, 0.7), matrix(0, 2, 1), states = st,
+                        sensitivity = method)
+      opt_objective(m, e)
+      c(opt_evaluate(e, 0.7), opt_gradient(m, 0.7))
+    }, numeric(2))
+    expect_equal(v[, 1], v[, 2], tolerance = 1e-5)
+    u0 <- c(1, 2)[st]
+    k <- c(1, 2)[st] * 0.7
+    expect_equal(v[1, 1], sum((u0 * exp(-k * c(0.2, 0.7)))^2), tolerance = 1e-5)
+  }
+})
+
+test_that("close observations at a large time origin stay distinct", {
+  m <- opt_model()
+  p <- opt_variable(m, "p")
+  prob <- modelcompR::ODEProblem(function(u, p, t) 1000 * p, 0,
+                                 c(1e9, 1e9 + 1e-3), 1)
+  for (method in c("forward", "adjoint")) {
+    e <- opt_ode_loss(prob, p, 1e9 + c(0.0004, 0.0008), matrix(0, 2, 1),
+                      sensitivity = method)
+    opt_objective(m, e)
+    expect_equal(opt_evaluate(e, 1), 0.8, tolerance = 1e-3)
+    expect_equal(unname(opt_gradient(m, 1)), 1.6, tolerance = 1e-3)
+  }
+})

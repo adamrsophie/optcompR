@@ -11,8 +11,20 @@ new_relation <- function(lhs, rhs, sense) {
     sense <- switch(sense, "<=" = ">=", ">=" = "<=", "==" = "==")
   }
   if (inf_side(rhs)) {
-    return(structure(list(expr = as_expr(lhs), sense = sense,
-                          rhs = as.numeric(rhs)), class = "opt_relation"))
+    if (anyNA(rhs)) {
+      stop("The right-hand side has missing values.", call. = FALSE)
+    }
+    # the ordinary shape rules: subtracting zeros of the right-hand side's
+    # shape recycles a scalar expression and checks other lengths
+    e <- as_expr(lhs)
+    if (e$len != length(rhs)) {
+      z <- rhs
+      z[] <- 0
+      e <- expr_add(e, as_expr(z), sign = -1)
+    }
+    return(structure(list(expr = e, sense = sense,
+                          rhs = rep_len(as.numeric(rhs), e$len)),
+                     class = "opt_relation"))
   }
   lhs <- as_expr(lhs)
   rhs <- as_expr(rhs)

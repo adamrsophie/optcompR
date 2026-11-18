@@ -184,19 +184,20 @@ opt_objective <- function(model, expr, sense = NULL) {
 
 #' @export
 print.opt_relation <- function(x, ...) {
-  cat(sprintf("<opt_relation: %d row%s, %s %s 0>\n", x$expr$len,
+  b <- x$rhs %||% rep(0, x$expr$len)
+  cat(sprintf("<opt_relation: %d row%s, %s %s %s>\n", x$expr$len,
               if (x$expr$len == 1L) "" else "s", expr_kind_label(x$expr),
-              x$sense))
+              x$sense, if (is.null(x$rhs)) "0" else "bound"))
   e <- x$expr
   n <- min(e$len, 10L)
   if (e$type == "poly") {
     e <- compact_poly(e)
     lhs <- vapply(seq_len(n), format_poly_element, "", e = e,
                   drop_const = TRUE)
-    rhs <- fmt_num(-e$const[seq_len(n)])
+    rhs <- vapply(b[seq_len(n)] - e$const[seq_len(n)], fmt_num, "")
   } else {
     lhs <- format_expr(e, n)
-    rhs <- "0"
+    rhs <- vapply(b[seq_len(n)], fmt_num, "")
   }
   cat(paste0("  ", lhs, " ", x$sense, " ", rhs), sep = "\n")
   if (e$len > n) cat(sprintf("  ... %d more\n", e$len - n))

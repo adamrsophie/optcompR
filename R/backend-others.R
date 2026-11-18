@@ -428,7 +428,10 @@ nloptr_solve_sf <- function(sf, cls, control) {
        objective = s * res$objective + 0, row_dual = NULL, col_dual = NULL,
        iterations = c(evaluations = res$iterations), gap = NA_real_,
        bound = NA_real_, message = res$message,
-       local = cls$convexity != "convex",
+       # a function or step tolerance stop (3, 4) shows the iterates
+       # stalled, not that the point is optimal, so convexity does not make
+       # it global
+       local = cls$convexity != "convex" || res$status %in% c(3L, 4L),
        warm_start = any(!miss), extra = list(), raw = res)
 }
 

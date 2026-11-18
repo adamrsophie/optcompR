@@ -46,7 +46,9 @@
 #' warning gives the violation. An objective that is not finite at the
 #' point (for example `log(0)`) also makes it `"infeasible_point"`. A
 #' backend is treated as local for the classes it does not declare global
-#' unless the model is continuous and proven convex.
+#' unless the model is continuous and proven convex. NLopt stopping on its
+#' function or step tolerance is reported as `"locally_optimal"` even then:
+#' stalled iterates are not a proof of optimality.
 #'
 #' @return An `opt_result`. See [opt_status()], [opt_value()],
 #'   [opt_objective_value()], [opt_dual()] and [opt_check()].
@@ -130,7 +132,7 @@ validation_policy <- function(entry, control) {
   req <- suppressWarnings(as.numeric(unlist(opts)))
   req <- req[is.finite(req) & req > 0]
   if (length(req)) {
-    t2 <- max(100 * max(req), 1e-8)
+    t2 <- max(100 * min(req), 1e-8)
     if (t2 < tol) {
       tol <- t2
       source <- "requested solver accuracy"
@@ -162,7 +164,9 @@ build_result <- function(model, sf, cls, entry, res, control, warnings,
   # the model is continuous and proven convex, where a local optimum is
   # global; for a mixed-integer model the convexity is the relaxation's,
   # which does not make a local search global
-  local <- isTRUE(res$local) || (!cls$class %in% entry$global &&
+  global <- cls$class %in% entry$global ||
+    (cls$class %in% entry$global_convex && cls$convexity == "convex")
+  local <- isTRUE(res$local) || (!global &&
     (cls$integer || cls$convexity != "convex"))
   # the returned point is checked against the model: a backend's
   # feasibility claim is not trusted on its own

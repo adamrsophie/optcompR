@@ -254,7 +254,18 @@ model_from_result <- function(result) {
   m$sense <- result$sense
   sf <- result$standard_form
   ns <- length(result$z)
-  par <- which(m$sym_kind[seq_len(ns)] == "par")
+  # symbols created after the solve are not part of its problem
+  for (k in c("sym_kind", "sym_name", "sym_block", "lower", "upper", "type",
+              "start", "value")) {
+    m[[k]] <- m[[k]][seq_len(ns)]
+  }
+  keep <- vapply(m$blocks, function(b) all(b$sym <= ns), TRUE)
+  m$blocks <- m$blocks[keep]
+  bn <- names(as.list(live$block_index))
+  bn <- bn[unlist(mget(bn, envir = live$block_index)) <= length(m$blocks)]
+  m$block_index <- list2env(mget(bn, envir = live$block_index),
+                            parent = emptyenv())
+  par <- which(m$sym_kind == "par")
   m$value[par] <- result$z[par]
   vs <- sf$var_sym
   n0 <- length(vs)

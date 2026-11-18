@@ -79,7 +79,7 @@ opt_solution_jacobian <- function(result, parameter, tol = 1e-7) {
   }
   sf <- result$standard_form
   model <- result$model
-  ps <- resolve_symbols(model, parameter, "par")
+  ps <- result_symbols(result, parameter, "par")
   z <- result$z
   ns <- length(z)
   cols <- sf$var_sym

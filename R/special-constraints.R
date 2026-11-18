@@ -421,7 +421,9 @@ opt_complementarity <- function(model, x, y, name = NULL) {
 #'   `opt_implies()`).
 #' @param x A vector of binary variables.
 #' @param name Optional constraint name.
-#' @return An `opt_constraint` reference, invisibly.
+#' @return An `opt_constraint` reference, invisibly. An implication between
+#'   constants adds no row and returns `NULL` when it holds (`0 => b`,
+#'   `a => 1`); `1 => 0` is an error.
 #' @examples
 #' m <- opt_model("max")
 #' x <- opt_variable(m, "x", dim = 3, type = "binary")
@@ -433,9 +435,21 @@ opt_complementarity <- function(model, x, y, name = NULL) {
 #' @export
 opt_implies <- function(model, a, b, name = NULL) {
   check_model(model)
-  check_binary_literal(model, a, "a")
-  check_binary_literal(model, b, "b")
-  opt_constraint(model, a - b <= 0, name = name)
+  # as expressions, so constants make a row (0 <= 1 always holds, 1 <= 0
+  # never) instead of a logical TRUE or FALSE
+  a <- check_binary_literal(model, a, "a")
+  b <- check_binary_literal(model, b, "b")
+  d <- compact_poly(expr_add(a, b, sign = -1))
+  if (!length(d$lv) && !length(d$qv)) {
+    # constants only: 0 => anything and anything => 1 always hold, 1 => 0
+    # never does
+    if (any(rep_len(d$const, d$len) > 0)) {
+      stop("The implication has a constant 1 => 0, which can never hold.",
+           call. = FALSE)
+    }
+    return(invisible(NULL))
+  }
+  opt_constraint(model, d <= 0, name = name)
 }
 
 # Each element must be a Boolean literal: a binary variable x, its

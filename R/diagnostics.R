@@ -75,9 +75,17 @@ opt_check <- function(result, tol = 1e-6) {
     (!is.null(cone_z) && all(vapply(sf$cones, function(cn)
       !is.null(cone_z[[cn$name]]), logical(1))))
   # conic KKT conditions use the cone multipliers of Clarabel or SCS
+  sviol <- max(c(special$violation, 0))
+  feasible <- isTRUE(max(c(rel, 0)) <= tol && max(c(bviol, 0)) <= tol &&
+    max(c(iviol, 0)) <= tol && sviol <= sqrt(tol))
   if (!result$classification$integer && conic_ok &&
       (!length(sf$cones) || !is.null(result$row_dual))) {
-    if (!is.null(result$row_dual) && !is.null(result$col_dual)) {
+    if (any(!is.finite(v))) {
+      # a row undefined at the point (sqrt of a negative, log of zero):
+      # no multipliers can be fitted, and the point is not a KKT point
+      kkt <- list(stationarity = NA_real_, dual_feasibility = NA_real_,
+                  complementarity = NA_real_, pass = FALSE, estimated = NA)
+    } else if (!is.null(result$row_dual) && !is.null(result$col_dual)) {
       kkt <- kkt_check(result, v, lo, up, tol)
       kkt$estimated <- FALSE
     } else {
@@ -86,9 +94,6 @@ opt_check <- function(result, tol = 1e-6) {
       kkt$estimated <- TRUE
     }
   }
-  sviol <- max(c(special$violation, 0))
-  feasible <- max(c(rel, 0)) <= tol && max(c(bviol, 0)) <= tol &&
-    max(c(iviol, 0)) <= tol && sviol <= sqrt(tol)
   if (!is.null(kkt)) {
     # the KKT conditions include primal feasibility and a finite objective;
     # dual_pass keeps the stationarity, sign and complementarity part alone
