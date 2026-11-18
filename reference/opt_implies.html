@@ -115,7 +115,9 @@ a binary <code>x</code>).</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An <code>opt_constraint</code> reference, invisibly.</p>
+    <p>An <code>opt_constraint</code> reference, invisibly. An implication between
+constants adds no row and returns <code>NULL</code> when it holds (<code>0 =&gt; b</code>,
+<code>a =&gt; 1</code>); <code>1 =&gt; 0</code> is an error.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

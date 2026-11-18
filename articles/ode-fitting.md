@@ -125,7 +125,7 @@ g_fwd <- opt_gradient(m4, at)
 opt_objective(m4, adj)
 g_adj <- opt_gradient(m4, at)
 max(abs(g_fwd - g_adj))
-#> [1] 8.170912e-13
+#> [1] 8.013386e-13
 ```
 
 ## Partial observations and weights

@@ -178,7 +178,9 @@ accuracy asked for. The resolved tolerances are stored in
 warning gives the violation. An objective that is not finite at the
 point (for example <code>log(0)</code>) also makes it <code>"infeasible_point"</code>. A
 backend is treated as local for the classes it does not declare global
-unless the model is continuous and proven convex.</p>
+unless the model is continuous and proven convex. NLopt stopping on its
+function or step tolerance is reported as <code>"locally_optimal"</code> even then:
+stalled iterates are not a proof of optimality.</p>
     </div>
 
     <div class="section level2">
@@ -195,7 +197,7 @@ unless the model is continuous and proven convex.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   problem:     LP (convex)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   status:      optimal (primal: feasible_point, dual: feasible_point)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   objective:   10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.004s (build 0.001s)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   time:        0.007s (build 0.001s)</span>
 <span class="r-in"><span><span class="fu"><a href="opt_value.html">opt_value</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 </code></pre></div>

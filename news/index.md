@@ -72,7 +72,10 @@ independently checked results.
   and conic programs, with cone multipliers), OSQP (convex QP), NLopt
   (local NLP), IPOPT with exact sparse Hessians (compiled in when
   available), NLP branch and bound for MINLP with outer approximation
-  bounds certified by weak duality, and ROI plugins.
+  bounds certified by weak duality (global when the continuous
+  relaxation is convex, a heuristic otherwise), and ROI plugins. A local
+  solver that stops because its steps stalled reports a local optimum,
+  even on a convex model.
 - [`opt_register_solver()`](https://adamrsophie.github.io/optcompR/reference/opt_register_solver.md)
   makes the backend contract public, so other solvers can be connected
   without changing optcompR.
@@ -104,7 +107,8 @@ independently checked results.
 
 - Sensitivity ranging for LPs
   ([`opt_sensitivity()`](https://adamrsophie.github.io/optcompR/reference/opt_sensitivity.md)),
-  fixed relaxations of mixed-integer results
+  reporting the active side of ranged rows and covering problems with
+  bounds only, fixed relaxations of mixed-integer results
   ([`opt_fixed_relaxation()`](https://adamrsophie.github.io/optcompR/reference/opt_fixed_relaxation.md))
   and parameter scenario sweeps
   ([`opt_scenarios()`](https://adamrsophie.github.io/optcompR/reference/opt_scenarios.md)).

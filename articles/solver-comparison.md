@@ -66,6 +66,9 @@ opt_solver_capabilities("highs")
 #> $global
 #> [1] "LP"   "MILP" "QP"  
 #> 
+#> $global_convex
+#> character(0)
+#> 
 #> $features
 #> $features$duals
 #> [1] TRUE
@@ -154,11 +157,11 @@ data.frame(solver = solvers,
            status = vapply(res, opt_status, ""),
            objective = vapply(res, opt_objective_value, 0),
            max_row_violation = vapply(res, function(r) opt_check(r)$max_row_violation, 0))
-#>   solver  status objective max_row_violation
-#> 1  highs optimal 0.1171429      1.110223e-16
-#> 2   osqp optimal 0.1171429      0.000000e+00
-#> 3   scip optimal 0.1171429      0.000000e+00
-#> 4 nloptr optimal 0.1171429      0.000000e+00
+#>   solver          status objective max_row_violation
+#> 1  highs         optimal 0.1171429      1.110223e-16
+#> 2   osqp         optimal 0.1171429      0.000000e+00
+#> 3   scip         optimal 0.1171429      0.000000e+00
+#> 4 nloptr locally_optimal 0.1171429      0.000000e+00
 ```
 
 The objective in every result is evaluated from the model, not copied

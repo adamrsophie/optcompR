@@ -177,7 +177,10 @@ observed state (<code>NA</code> for missing values).</p></dd>
 <dt id="arg-sensitivity">sensitivity<a class="anchor" aria-label="anchor" href="#arg-sensitivity"></a></dt>
 <dd><p><code>"forward"</code>, <code>"adjoint"</code>, or <code>"auto"</code> (the default),
 which uses the adjoint method when there are more than eight
-parameters and more than twice as many parameters as states.</p></dd>
+parameters and more than twice as many parameters as states. A
+problem whose time origin is more than a million times its interval
+length always uses forward sensitivities. <code>states</code> index the full
+state vector; the problem's <code>save_idxs</code> is ignored.</p></dd>
 
 </dl></div>
     <div class="section level2">

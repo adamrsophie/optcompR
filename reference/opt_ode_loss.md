@@ -74,7 +74,10 @@ opt_ode_loss(
 
   `"forward"`, `"adjoint"`, or `"auto"` (the default), which uses the
   adjoint method when there are more than eight parameters and more than
-  twice as many parameters as states.
+  twice as many parameters as states. A problem whose time origin is
+  more than a million times its interval length always uses forward
+  sensitivities. `states` index the full state vector; the problem's
+  `save_idxs` is ignored.
 
 ## Value
 

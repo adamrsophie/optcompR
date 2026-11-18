@@ -37,7 +37,9 @@ opt_or(model, z, x, name = NULL)
 
 ## Value
 
-An `opt_constraint` reference, invisibly.
+An `opt_constraint` reference, invisibly. An implication between
+constants adds no row and returns `NULL` when it holds (`0 => b`,
+`a => 1`); `1 => 0` is an error.
 
 ## Details
 

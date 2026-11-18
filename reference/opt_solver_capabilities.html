@@ -90,7 +90,9 @@
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with the problem classes, the classes accepted only when
-convex, the classes solved to global optimality, feature flags (duals,
+convex, the classes solved to global optimality (<code>global</code>), the
+classes solved to global optimality only when the continuous
+relaxation is convex (<code>global_convex</code>), feature flags (duals,
 ranging, warm starts, time limits, MIP gaps, iteration limits),
 availability and the installed version.</p>
     </div>
@@ -118,6 +120,9 @@ availability and the installed version.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $global</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "LP"   "MILP" "QP"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $global_convex</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> character(0)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $features</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $features$duals</span>

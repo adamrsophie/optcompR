@@ -18,9 +18,11 @@ opt_solver_capabilities(solver)
 ## Value
 
 A list with the problem classes, the classes accepted only when convex,
-the classes solved to global optimality, feature flags (duals, ranging,
-warm starts, time limits, MIP gaps, iteration limits), availability and
-the installed version.
+the classes solved to global optimality (`global`), the classes solved
+to global optimality only when the continuous relaxation is convex
+(`global_convex`), feature flags (duals, ranging, warm starts, time
+limits, MIP gaps, iteration limits), availability and the installed
+version.
 
 ## Examples
 
@@ -46,6 +48,9 @@ opt_solver_capabilities("highs")
 #> 
 #> $global
 #> [1] "LP"   "MILP" "QP"  
+#> 
+#> $global_convex
+#> character(0)
 #> 
 #> $features
 #> $features$duals

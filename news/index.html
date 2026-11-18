@@ -89,7 +89,7 @@
 </ul></div>
 <div class="section level3">
 <h3 id="backends-0-1-0">Backends<a class="anchor" aria-label="anchor" href="#backends-0-1-0"></a></h3>
-<ul><li>HiGHS (LP, MILP, convex QP, sensitivity ranging, warm starts and in-place updates across repeated solves), SCIP (global MIQCQP, MISOCP and polynomial NLP and MINLP by exact lifting to quadratic rows, native indicator and SOS constraints), Clarabel and SCS (LP, convex QP and conic programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP), IPOPT with exact sparse Hessians (compiled in when available), NLP branch and bound for MINLP with outer approximation bounds certified by weak duality, and ROI plugins.</li>
+<ul><li>HiGHS (LP, MILP, convex QP, sensitivity ranging, warm starts and in-place updates across repeated solves), SCIP (global MIQCQP, MISOCP and polynomial NLP and MINLP by exact lifting to quadratic rows, native indicator and SOS constraints), Clarabel and SCS (LP, convex QP and conic programs, with cone multipliers), OSQP (convex QP), NLopt (local NLP), IPOPT with exact sparse Hessians (compiled in when available), NLP branch and bound for MINLP with outer approximation bounds certified by weak duality (global when the continuous relaxation is convex, a heuristic otherwise), and ROI plugins. A local solver that stops because its steps stalled reports a local optimum, even on a convex model.</li>
 <li>
 <code><a href="../reference/opt_register_solver.html">opt_register_solver()</a></code> makes the backend contract public, so other solvers can be connected without changing optcompR.</li>
 </ul></div>
@@ -105,7 +105,7 @@
 </ul></div>
 <div class="section level3">
 <h3 id="sensitivity-and-analysis-0-1-0">Sensitivity and analysis<a class="anchor" aria-label="anchor" href="#sensitivity-and-analysis-0-1-0"></a></h3>
-<ul><li>Sensitivity ranging for LPs (<code><a href="../reference/opt_sensitivity.html">opt_sensitivity()</a></code>), fixed relaxations of mixed-integer results (<code><a href="../reference/opt_fixed_relaxation.html">opt_fixed_relaxation()</a></code>) and parameter scenario sweeps (<code><a href="../reference/opt_scenarios.html">opt_scenarios()</a></code>).</li>
+<ul><li>Sensitivity ranging for LPs (<code><a href="../reference/opt_sensitivity.html">opt_sensitivity()</a></code>), reporting the active side of ranged rows and covering problems with bounds only, fixed relaxations of mixed-integer results (<code><a href="../reference/opt_fixed_relaxation.html">opt_fixed_relaxation()</a></code>) and parameter scenario sweeps (<code><a href="../reference/opt_scenarios.html">opt_scenarios()</a></code>).</li>
 <li>Derivatives of optimal solutions with respect to parameters (<code><a href="../reference/opt_solution_jacobian.html">opt_solution_jacobian()</a></code>), for smooth, conic and semidefinite programs.</li>
 <li>Multiobjective scalarizations: <code><a href="../reference/opt_weighted.html">opt_weighted()</a></code>, <code><a href="../reference/opt_lexicographic.html">opt_lexicographic()</a></code> and <code><a href="../reference/opt_epsilon_constraint.html">opt_epsilon_constraint()</a></code>.</li>
 </ul></div>

@@ -99,7 +99,9 @@ becomes `"locally_infeasible"` (local solvers) or `"numerical_error"`,
 and a warning gives the violation. An objective that is not finite at
 the point (for example `log(0)`) also makes it `"infeasible_point"`. A
 backend is treated as local for the classes it does not declare global
-unless the model is continuous and proven convex.
+unless the model is continuous and proven convex. NLopt stopping on its
+function or step tolerance is reported as `"locally_optimal"` even then:
+stalled iterates are not a proof of optimality.
 
 ## Examples
 
@@ -116,7 +118,7 @@ r
 #>   problem:     LP (convex)
 #>   status:      optimal (primal: feasible_point, dual: feasible_point)
 #>   objective:   10
-#>   time:        0.004s (build 0.001s)
+#>   time:        0.007s (build 0.001s)
 opt_value(r, x)
 #> [1] 2
 ```
